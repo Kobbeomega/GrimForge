@@ -5532,3 +5532,229 @@ padding:1.25rem;
     flex-direction: column;
   }
 }
+/* =======================================================
+   MOBILE TEXT OVERFLOW FIX
+======================================================= */
+
+@media (max-width: 680px) {
+  /*
+   * Verhindert, dass Grid- und Flex-Kinder ihre
+   * verfügbare Spalte durch langen Text verbreitern.
+   */
+  .creator-section,
+  .creator-editor,
+  .creator-card-grid,
+  .point-buy-grid,
+  .point-buy-card,
+  .point-buy-card__header,
+  .point-buy-card__header > div,
+  .point-buy-card__facts,
+  .point-buy-card__facts > div,
+  .rolls-panel,
+  .rolls-section,
+  .ability-roll-grid,
+  .roll-value-card,
+  .roll-value-card__content,
+  .roll-skill-list,
+  .roll-skill-row,
+  .roll-skill-row__content,
+  .roll-skill-row__content > div,
+  .skills-grid,
+  .skill-card,
+  .skill-card__content,
+  .background-panel,
+  .background-panel__record,
+  .quick-overview,
+  .quick-overview__stats,
+  .quick-stat,
+  .quick-weapons,
+  .quick-weapons__grid,
+  .quick-weapon-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /*
+   * Überschriften etwas kleiner und flexibel skalieren.
+   */
+  .creator-section__header h2,
+  .rolls-panel__header h2,
+  .sheet-overview__header h2,
+  .skills-panel__header h2 {
+    font-size: clamp(1.35rem, 7vw, 1.8rem);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .point-buy-card__header h3,
+  .rolls-section__header h3,
+  .creator-equipment-group__header h3,
+  .creator-skill-source__header h3,
+  .background-panel__header h3,
+  .quick-overview__header h3 {
+    font-size: clamp(0.82rem, 4.4vw, 1.1rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  /*
+   * Lange Texte und deutsche Komposita dürfen umbrechen.
+   */
+  .creator-section p,
+  .creator-section span,
+  .creator-section strong,
+  .creator-section h2,
+  .creator-section h3,
+  .codex-card,
+  .codex-card__title,
+  .codex-card__description,
+  .codex-card__metadata li,
+  .point-buy-card,
+  .point-buy-card dt,
+  .point-buy-card dd,
+  .roll-value-card,
+  .roll-value-card strong,
+  .roll-value-card small,
+  .roll-skill-row,
+  .roll-skill-row strong,
+  .roll-skill-row small,
+  .skill-card,
+  .skill-card h3,
+  .skill-card p,
+  .background-panel,
+  .quick-overview,
+  .quick-weapon-card {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+  }
+
+  /*
+   * Point-Buy-Karten auf dem Handy kompakter.
+   */
+  .point-buy-card__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.45rem;
+  }
+
+  .point-buy-card__header > strong {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .point-buy-card__facts {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .point-buy-card__facts dt {
+    font-size: 0.48rem;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+  }
+
+  .point-buy-card__facts dd {
+    font-size: 0.78rem;
+  }
+
+  /*
+   * Würfelkarten bekommen mehr Raum für ihre Namen.
+   */
+  .roll-value-card {
+    grid-template-columns:
+      38px
+      minmax(0, 1fr)
+      auto;
+
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .roll-value-card__short {
+    width: 38px;
+    height: 38px;
+  }
+
+  .roll-value-card__content strong {
+    font-size: 0.76rem;
+    line-height: 1.25;
+  }
+
+  .roll-value-card__content small {
+    font-size: 0.62rem;
+    line-height: 1.35;
+  }
+
+  .roll-value-card output {
+    font-size: 1.1rem;
+    white-space: nowrap;
+  }
+
+  /*
+   * Fertigkeiten als dreiteilige Zeile, ohne Überlaufen.
+   */
+  .roll-skill-row {
+    grid-template-columns:
+      38px
+      minmax(0, 1fr)
+      auto;
+
+    gap: 0.65rem;
+    padding: 0.7rem;
+  }
+
+  .roll-skill-row__marker {
+    width: 38px;
+    height: 38px;
+  }
+
+  .roll-skill-row__content {
+    min-width: 0;
+  }
+
+  .roll-skill-row__content strong {
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  .roll-skill-row__content small,
+  .roll-skill-row__content > span {
+    font-size: 0.58rem;
+    line-height: 1.3;
+  }
+
+  .roll-skill-row output {
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
+
+  /*
+   * Kartenbeschreibungen nicht unnötig groß.
+   */
+  .codex-card__title {
+    font-size: clamp(0.9rem, 4.5vw, 1.1rem);
+    line-height: 1.2;
+  }
+
+  .codex-card__description,
+  .skill-card__content p,
+  .background-panel__feature p {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /*
+   * Große Vorschaunamen und lange Aktenbezeichnungen.
+   */
+  .sheet-overview__header h2,
+  .character-record-preview h2,
+  .character-sheet-header h1 {
+    max-width: 100%;
+
+    font-size: clamp(1.3rem, 7vw, 2rem);
+    line-height: 1.05;
+
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
