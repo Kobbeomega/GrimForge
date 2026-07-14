@@ -7,9 +7,14 @@ import { getCharacterInventory } from "../modules/archives/utils/getCharacterInv
 import { getCharacterVitals } from "../modules/archives/utils/getCharacterVitals";
 
 import { AbilitySealGrid } from "../modules/sheet/components/AbilitySealGrid";
+import { BackgroundPanel } from "../modules/sheet/components/BackgroundPanel";
+import { CharacterQuickOverview } from "../modules/sheet/components/CharacterQuickOverview";
 import { CharacterSheetHeader } from "../modules/sheet/components/CharacterSheetHeader";
 import { InventoryPanel } from "../modules/sheet/components/InventoryPanel";
+import { SkillsPanel } from "../modules/sheet/components/SkillsPanel";
 import { VitalPanel } from "../modules/sheet/components/VitalPanel";
+
+import { getCharacterDerivedStats } from "../modules/sheet/utils/getCharacterDerivedStats";
 
 import type {
   CharacterArchiveEntry,
@@ -20,7 +25,7 @@ import type {
 type CharacterSheetSection =
   | "overview"
   | "abilities"
-  | "features"
+  | "skills"
   | "inventory"
   | "transformation"
   | "chronicle";
@@ -51,9 +56,9 @@ const sheetSections: Array<{
     title: "Attribute",
   },
   {
-    id: "features",
+    id: "skills",
     chapter: "III",
-    title: "Fähigkeiten",
+    title: "Fertigkeiten",
   },
   {
     id: "inventory",
@@ -98,13 +103,20 @@ export function CharacterSheetPage({
   const inventory =
     getCharacterInventory(character);
 
+  const derivedStats =
+    getCharacterDerivedStats(
+      character,
+      inventory,
+    );
+
   function updateCharacter(
     changes: Partial<CharacterArchiveEntry>,
   ) {
     onUpdateCharacter({
       ...character,
       ...changes,
-      updatedAt: new Date().toISOString(),
+      updatedAt:
+        new Date().toISOString(),
     });
   }
 
@@ -119,12 +131,30 @@ export function CharacterSheetPage({
   function updateInventory(
     nextInventory: CharacterInventory,
   ) {
+    const nextDerivedStats =
+      getCharacterDerivedStats(
+        {
+          ...character,
+          inventory: nextInventory,
+        },
+        nextInventory,
+      );
+
     updateCharacter({
       inventory: nextInventory,
+
+      vitals: {
+        ...vitals,
+
+        armorClass:
+          nextDerivedStats.armorClass,
+      },
     });
   }
 
-  function handleDamage(amount: number) {
+  function handleDamage(
+    amount: number,
+  ) {
     const safeAmount = Math.max(
       0,
       Number.isFinite(amount)
@@ -157,7 +187,9 @@ export function CharacterSheetPage({
     });
   }
 
-  function handleHeal(amount: number) {
+  function handleHeal(
+    amount: number,
+  ) {
     const safeAmount = Math.max(
       0,
       Number.isFinite(amount)
@@ -190,12 +222,14 @@ export function CharacterSheetPage({
   }
 
   function handleShortRest() {
-    const recoveredHitPoints = Math.max(
-      1,
-      Math.floor(
-        vitals.maximumHitPoints / 4,
-      ),
-    );
+    const recoveredHitPoints =
+      Math.max(
+        1,
+        Math.floor(
+          vitals.maximumHitPoints /
+            4,
+        ),
+      );
 
     updateVitals({
       ...vitals,
@@ -235,7 +269,11 @@ export function CharacterSheetPage({
 
         <span className="sheet-toolbar__status">
           Status:{" "}
-          {statusLabels[character.status]}
+          {
+            statusLabels[
+              character.status
+            ]
+          }
         </span>
       </div>
 
@@ -244,43 +282,46 @@ export function CharacterSheetPage({
           className="sheet-navigation"
           aria-label="Kapitel der Charakterakte"
         >
-          {sheetSections.map((section) => {
-            const selected =
-              activeSection === section.id;
+          {sheetSections.map(
+            (section) => {
+              const selected =
+                activeSection ===
+                section.id;
 
-            return (
-              <button
-                key={section.id}
-                type="button"
-                className={[
-                  "sheet-navigation__button",
-                  selected
-                    ? "sheet-navigation__button--active"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                aria-current={
-                  selected
-                    ? "page"
-                    : undefined
-                }
-                onClick={() =>
-                  setActiveSection(
-                    section.id,
-                  )
-                }
-              >
-                <span>
-                  {section.chapter}
-                </span>
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  className={[
+                    "sheet-navigation__button",
+                    selected
+                      ? "sheet-navigation__button--active"
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  aria-current={
+                    selected
+                      ? "page"
+                      : undefined
+                  }
+                  onClick={() =>
+                    setActiveSection(
+                      section.id,
+                    )
+                  }
+                >
+                  <span>
+                    {section.chapter}
+                  </span>
 
-                <strong>
-                  {section.title}
-                </strong>
-              </button>
-            );
-          })}
+                  <strong>
+                    {section.title}
+                  </strong>
+                </button>
+              );
+            },
+          )}
         </aside>
 
         <main className="sheet-content">
@@ -289,6 +330,9 @@ export function CharacterSheetPage({
             <CharacterOverview
               character={character}
               vitals={vitals}
+              derivedStats={
+                derivedStats
+              }
               onDamage={handleDamage}
               onHeal={handleHeal}
               onTemporaryHitPointsChange={
@@ -314,11 +358,9 @@ export function CharacterSheetPage({
           )}
 
           {activeSection ===
-            "features" && (
-            <SheetPlaceholder
-              chapter="Kapitel III"
-              title="Fähigkeiten"
-              description="Klassenmerkmale, Talente und besondere Fähigkeiten werden hier gesammelt."
+            "skills" && (
+            <SkillsPanel
+              character={character}
             />
           )}
 
@@ -359,8 +401,18 @@ interface CharacterOverviewProps {
   character: CharacterArchiveEntry;
   vitals: CharacterVitals;
 
-  onDamage: (amount: number) => void;
-  onHeal: (amount: number) => void;
+  derivedStats:
+    ReturnType<
+      typeof getCharacterDerivedStats
+    >;
+
+  onDamage: (
+    amount: number,
+  ) => void;
+
+  onHeal: (
+    amount: number,
+  ) => void;
 
   onTemporaryHitPointsChange: (
     value: number,
@@ -377,6 +429,7 @@ interface CharacterOverviewProps {
 function CharacterOverview({
   character,
   vitals,
+  derivedStats,
   onDamage,
   onHeal,
   onTemporaryHitPointsChange,
@@ -394,26 +447,53 @@ function CharacterOverview({
   return (
     <section className="sheet-overview">
       <header className="sheet-overview__header">
-        <p>{character.fileNumber}</p>
+        <p>
+          {character.fileNumber}
+        </p>
 
-        <h2>{character.name}</h2>
+        <h2>
+          {character.name}
+        </h2>
 
-        <span>{character.summary}</span>
+        <span>
+          {character.summary}
+        </span>
       </header>
+
+      <CharacterQuickOverview
+        vitals={vitals}
+        derivedStats={
+          derivedStats
+        }
+      />
 
       <dl className="sheet-overview__facts">
         <div>
           <dt>Abstammung</dt>
-          <dd>{character.ancestry}</dd>
+
+          <dd>
+            {character.ancestry}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Hintergrund</dt>
+
+          <dd>
+            {character.backgroundName ??
+              "Nicht gespeichert"}
+          </dd>
         </div>
 
         <div>
           <dt>Klasse</dt>
+
           <dd>{classLabel}</dd>
         </div>
 
         <div>
           <dt>Stufe</dt>
+
           <dd>{character.level}</dd>
         </div>
 
@@ -421,7 +501,11 @@ function CharacterOverview({
           <dt>Status</dt>
 
           <dd>
-            {statusLabels[character.status]}
+            {
+              statusLabels[
+                character.status
+              ]
+            }
           </dd>
         </div>
 
@@ -431,6 +515,18 @@ function CharacterOverview({
           <dd>
             {character.transformation ||
               "Keine Wandlung"}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Geübte Fertigkeiten</dt>
+
+          <dd>
+            {
+              character
+                .skillProficiencies
+                ?.length ?? 0
+            }
           </dd>
         </div>
 
@@ -445,6 +541,10 @@ function CharacterOverview({
         </div>
       </dl>
 
+      <BackgroundPanel
+        character={character}
+      />
+
       <VitalPanel
         vitals={vitals}
         onDamage={onDamage}
@@ -452,15 +552,22 @@ function CharacterOverview({
         onTemporaryHitPointsChange={
           onTemporaryHitPointsChange
         }
-        onVitalsChange={onVitalsChange}
-        onShortRest={onShortRest}
-        onLongRest={onLongRest}
+        onVitalsChange={
+          onVitalsChange
+        }
+        onShortRest={
+          onShortRest
+        }
+        onLongRest={
+          onLongRest
+        }
       />
 
       {character.abilityScores && (
         <section className="sheet-overview__abilities">
           <div className="sheet-overview__section-heading">
             <p>Grundwerte</p>
+
             <h3>Attribute</h3>
           </div>
 
@@ -498,13 +605,15 @@ function CharacterAbilities({
         <h2>Attribute</h2>
 
         <span>
-          Die sechs Grundwerte und ihre
-          Modifikatoren.
+          Die sechs Grundwerte und
+          ihre Modifikatoren.
         </span>
       </header>
 
       <AbilitySealGrid
-        values={character.abilityScores}
+        values={
+          character.abilityScores
+        }
       />
     </section>
   );
@@ -539,7 +648,11 @@ function formatDate(
 ): string {
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return "Unbekannt";
   }
 

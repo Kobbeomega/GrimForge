@@ -3,11 +3,17 @@ import type {
   AbilityScores,
 } from "../../compendium/core";
 
+import type {
+  SkillId,
+} from "../../compendium/skills";
+
 export const creatorStepIds = [
   "identity",
   "ancestry",
+  "background",
   "class",
   "abilities",
+  "skills",
   "equipment",
   "transformation",
   "summary",
@@ -37,32 +43,44 @@ export const creatorSteps: CreatorStepDefinition[] = [
     shortTitle: "Blutlinie",
   },
   {
-    id: "class",
+    id: "background",
     chapter: "III",
+    title: "Hintergrund",
+    shortTitle: "Herkunft",
+  },
+  {
+    id: "class",
+    chapter: "IV",
     title: "Klasse",
     shortTitle: "Pfad",
   },
   {
     id: "abilities",
-    chapter: "IV",
+    chapter: "V",
     title: "Attribute",
     shortTitle: "Attribute",
   },
   {
+    id: "skills",
+    chapter: "VI",
+    title: "Fertigkeiten",
+    shortTitle: "Fertigkeiten",
+  },
+  {
     id: "equipment",
-    chapter: "V",
-    title: "Ausrüstung",
+    chapter: "VII",
+    title: "Startausrüstung",
     shortTitle: "Ausrüstung",
   },
   {
     id: "transformation",
-    chapter: "VI",
+    chapter: "VIII",
     title: "Transformation",
     shortTitle: "Wandlung",
   },
   {
     id: "summary",
-    chapter: "VII",
+    chapter: "IX",
     title: "Zusammenfassung",
     shortTitle: "Abschluss",
   },
@@ -74,6 +92,11 @@ export interface CharacterIdentityDraft {
   pronouns: string;
   alignment: string;
   summary: string;
+}
+
+export interface StartingEquipmentSelection {
+  choiceId: string;
+  equipmentId: string;
 }
 
 export interface CharacterCreatorDraft {
@@ -88,6 +111,8 @@ export interface CharacterCreatorDraft {
   ancestryVariantId: string;
   ancestryBonusChoices: AbilityId[];
 
+  backgroundId: string;
+
   classId: string;
   subclassId: string;
 
@@ -95,7 +120,23 @@ export interface CharacterCreatorDraft {
 
   baseAbilities: AbilityScores;
 
+  /**
+   * Fertigkeiten, die über die Klasse gewählt wurden.
+   * Hintergrundfertigkeiten werden später automatisch
+   * mit diesen Werten zusammengeführt.
+   */
+  classSkillProficiencies: SkillId[];
+
+  /**
+   * Vorbereitung für Schurke, Barde und spätere
+   * Klassenmerkmale.
+   */
+  skillExpertise: SkillId[];
+
   equipmentIds: string[];
+
+  startingEquipmentSelections:
+    StartingEquipmentSelection[];
 
   transformationId: string;
   transformationStage: number;
@@ -132,6 +173,8 @@ export function createEmptyCharacterDraft(
     ancestryVariantId: "",
     ancestryBonusChoices: [],
 
+    backgroundId: "",
+
     classId: "",
     subclassId: "",
 
@@ -146,7 +189,11 @@ export function createEmptyCharacterDraft(
       charisma: 10,
     },
 
+    classSkillProficiencies: [],
+    skillExpertise: [],
+
     equipmentIds: [],
+    startingEquipmentSelections: [],
 
     transformationId: "",
     transformationStage: 0,
@@ -167,8 +214,11 @@ export function getCreatorStepIndex(
 export function getNextCreatorStep(
   stepId: CreatorStepId,
 ): CreatorStepId | null {
-  const currentIndex = getCreatorStepIndex(stepId);
-  const nextStep = creatorSteps[currentIndex + 1];
+  const currentIndex =
+    getCreatorStepIndex(stepId);
+
+  const nextStep =
+    creatorSteps[currentIndex + 1];
 
   return nextStep?.id ?? null;
 }
@@ -176,8 +226,11 @@ export function getNextCreatorStep(
 export function getPreviousCreatorStep(
   stepId: CreatorStepId,
 ): CreatorStepId | null {
-  const currentIndex = getCreatorStepIndex(stepId);
-  const previousStep = creatorSteps[currentIndex - 1];
+  const currentIndex =
+    getCreatorStepIndex(stepId);
+
+  const previousStep =
+    creatorSteps[currentIndex - 1];
 
   return previousStep?.id ?? null;
 }

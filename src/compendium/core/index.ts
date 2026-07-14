@@ -8,6 +8,11 @@ export {
   isAbilityId,
 } from "./abilities";
 
+export {
+  getProficiencyBonus,
+  getSkillBonus,
+} from "./proficiency";
+
 export type {
   AbilityId,
   AbilityScores,

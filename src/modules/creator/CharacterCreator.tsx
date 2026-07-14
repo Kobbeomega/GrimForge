@@ -2,19 +2,33 @@ import { ChapterHeader } from "../../components/ui/ChapterHeader";
 import { GrimButton } from "../../components/ui/GrimButton";
 import { PaperPage } from "../../components/ui/PaperPage";
 
+import {
+  getBackgroundById,
+} from "../../compendium/backgrounds";
+
+import {
+  getClassSkillChoice,
+} from "../../compendium/classes/skillChoices";
+
 import { CharacterCreatorLayout } from "./components/CharacterCreatorLayout";
 import { CharacterRecordPreview } from "./components/CharacterRecordPreview";
 import { CreatorStepNavigation } from "./components/CreatorStepNavigation";
 
 import { AbilitiesStep } from "./components/steps/AbilitiesStep";
 import { AncestryStep } from "./components/steps/AncestryStep";
+import { BackgroundStep } from "./components/steps/BackgroundStep";
 import { ClassStep } from "./components/steps/ClassStep";
+import { EquipmentStep } from "./components/steps/EquipmentStep";
 import { IdentityStep } from "./components/steps/IdentityStep";
+import { SkillsStep } from "./components/steps/SkillsStep";
 
 import { useCharacterCreator } from "./useCharacterCreator";
 import { mapDraftToArchiveEntry } from "./mappers/mapDraftToArchiveEntry";
 
-import type { CharacterArchiveEntry } from "../archives/types";
+import type {
+  CharacterArchiveEntry,
+} from "../archives/types";
+
 import type {
   CharacterCreatorDraft,
   CharacterIdentityDraft,
@@ -45,9 +59,12 @@ export function CharacterCreator({
   });
 
   const previewCharacter =
-    mapDraftToArchiveEntry(creator.draft);
+    mapDraftToArchiveEntry(
+      creator.draft,
+    );
 
-  const isEditing = Boolean(initialDraft);
+  const isEditing =
+    Boolean(initialDraft);
 
   function handleIdentityChange(
     identity: CharacterIdentityDraft,
@@ -67,7 +84,10 @@ export function CharacterCreator({
         "Die Akte kann ohne einen Namen nicht besiegelt werden.",
       );
 
-      creator.setCurrentStep("identity");
+      creator.setCurrentStep(
+        "identity",
+      );
+
       return;
     }
 
@@ -76,7 +96,22 @@ export function CharacterCreator({
         "Wähle zuerst eine Abstammung.",
       );
 
-      creator.setCurrentStep("ancestry");
+      creator.setCurrentStep(
+        "ancestry",
+      );
+
+      return;
+    }
+
+    if (!creator.draft.backgroundId) {
+      window.alert(
+        "Wähle zuerst einen Hintergrund.",
+      );
+
+      creator.setCurrentStep(
+        "background",
+      );
+
       return;
     }
 
@@ -85,14 +120,44 @@ export function CharacterCreator({
         "Wähle zuerst eine Klasse.",
       );
 
-      creator.setCurrentStep("class");
+      creator.setCurrentStep(
+        "class",
+      );
+
       return;
     }
 
-    const sealedCharacter: CharacterArchiveEntry = {
+    const classSkillChoice =
+      getClassSkillChoice(
+        creator.draft.classId,
+      );
+
+    if (
+      classSkillChoice &&
+      creator.draft
+        .classSkillProficiencies
+        .length !==
+        classSkillChoice.choose
+    ) {
+      window.alert(
+        `Wähle genau ${classSkillChoice.choose} Klassenfertigkeiten.`,
+      );
+
+      creator.setCurrentStep(
+        "skills",
+      );
+
+      return;
+    }
+
+    const sealedCharacter:
+      CharacterArchiveEntry = {
       ...previewCharacter,
+
       status: "active",
-      updatedAt: new Date().toISOString(),
+
+      updatedAt:
+        new Date().toISOString(),
     };
 
     onFinished(sealedCharacter);
@@ -105,8 +170,12 @@ export function CharacterCreator({
       case "identity":
         return (
           <IdentityStep
-            value={creator.draft.identity}
-            onChange={handleIdentityChange}
+            value={
+              creator.draft.identity
+            }
+            onChange={
+              handleIdentityChange
+            }
           />
         );
 
@@ -117,34 +186,75 @@ export function CharacterCreator({
               creator.draft.ancestryId
             }
             selectedVariantId={
-              creator.draft.ancestryVariantId
+              creator.draft
+                .ancestryVariantId
             }
             selectedBonusChoices={
-              creator.draft.ancestryBonusChoices
+              creator.draft
+                .ancestryBonusChoices
             }
             onSelect={(ancestryId) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                ancestryId,
-                ancestryVariantId: "",
-                ancestryBonusChoices: [],
-              }))
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  ancestryId,
+
+                  ancestryVariantId:
+                    "",
+
+                  ancestryBonusChoices:
+                    [],
+                }),
+              )
             }
             onSelectVariant={(
               ancestryVariantId,
             ) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                ancestryVariantId,
-              }))
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  ancestryVariantId,
+                }),
+              )
             }
             onBonusChoicesChange={(
               ancestryBonusChoices,
             ) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                ancestryBonusChoices,
-              }))
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  ancestryBonusChoices,
+                }),
+              )
+            }
+          />
+        );
+
+      case "background":
+        return (
+          <BackgroundStep
+            selectedBackgroundId={
+              creator.draft.backgroundId
+            }
+            onSelectBackground={(
+              backgroundId,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  backgroundId,
+
+                  /*
+                   * Ein neuer Hintergrund kann
+                   * Überschneidungen mit bisherigen
+                   * Klassenfertigkeiten erzeugen.
+                   */
+                  classSkillProficiencies:
+                    [],
+                }),
+              )
             }
           />
         );
@@ -159,17 +269,31 @@ export function CharacterCreator({
               creator.draft.subclassId
             }
             onSelectClass={(classId) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                classId,
-                subclassId: "",
-              }))
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  classId,
+
+                  subclassId: "",
+
+                  classSkillProficiencies:
+                    [],
+
+                  startingEquipmentSelections:
+                    [],
+                }),
+              )
             }
-            onSelectSubclass={(subclassId) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                subclassId,
-              }))
+            onSelectSubclass={(
+              subclassId,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  subclassId,
+                }),
+              )
             }
           />
         );
@@ -178,30 +302,69 @@ export function CharacterCreator({
         return (
           <AbilitiesStep
             values={
-              creator.draft.baseAbilities
+              creator.draft
+                .baseAbilities
             }
-            onChange={(baseAbilities) =>
-              creator.updateDraft((draft) => ({
-                ...draft,
-                baseAbilities,
-              }))
+            onChange={(
+              baseAbilities,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  baseAbilities,
+                }),
+              )
+            }
+          />
+        );
+
+      case "skills":
+        return (
+          <SkillsStep
+            classId={
+              creator.draft.classId
+            }
+            backgroundId={
+              creator.draft.backgroundId
+            }
+            selectedSkillIds={
+              creator.draft
+                .classSkillProficiencies
+            }
+            onChange={(
+              classSkillProficiencies,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  classSkillProficiencies,
+                }),
+              )
             }
           />
         );
 
       case "equipment":
         return (
-          <CreatorPlaceholder
-            chapter="Kapitel V"
-            title="Ausrüstung"
-            description="Hier wird später die Startausrüstung des Charakters gewählt."
+          <EquipmentStep
+            draft={creator.draft}
+            onSelectionsChange={(
+              startingEquipmentSelections,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  startingEquipmentSelections,
+                }),
+              )
+            }
           />
         );
 
       case "transformation":
         return (
           <CreatorPlaceholder
-            chapter="Kapitel VI"
+            chapter="Kapitel VIII"
             title="Transformation"
             description="Hier werden später Wandlung, Transformationsstufe sowie positive und negative Effekte verwaltet."
           />
@@ -210,7 +373,9 @@ export function CharacterCreator({
       case "summary":
         return (
           <CreatorSummary
-            character={previewCharacter}
+            character={
+              previewCharacter
+            }
             isEditing={isEditing}
           />
         );
@@ -218,10 +383,12 @@ export function CharacterCreator({
   }
 
   const isFirstStep =
-    creator.draft.currentStep === "identity";
+    creator.draft.currentStep ===
+    "identity";
 
   const isLastStep =
-    creator.draft.currentStep === "summary";
+    creator.draft.currentStep ===
+    "summary";
 
   return (
     <PaperPage>
@@ -235,7 +402,7 @@ export function CharacterCreator({
         subtitle={
           isEditing
             ? "Überarbeite den bestehenden Eintrag und versiegle die Änderungen erneut."
-            : "Führe das entstehende Schicksal durch die sieben Kapitel."
+            : "Führe das entstehende Schicksal durch die neun Kapitel."
         }
       />
 
@@ -293,7 +460,9 @@ export function CharacterCreator({
                 ) : (
                   <GrimButton
                     type="button"
-                    onClick={handleSealRecord}
+                    onClick={
+                      handleSealRecord
+                    }
                   >
                     {isEditing
                       ? "Änderungen besiegeln"
@@ -309,15 +478,19 @@ export function CharacterCreator({
             fileNumber={
               previewCharacter.fileNumber
             }
-            name={previewCharacter.name}
+            name={
+              previewCharacter.name
+            }
             title={
               creator.draft.identity.title
             }
             pronouns={
-              creator.draft.identity.pronouns
+              creator.draft.identity
+                .pronouns
             }
             alignment={
-              creator.draft.identity.alignment
+              creator.draft.identity
+                .alignment
             }
             ancestry={
               previewCharacter.ancestry
@@ -328,7 +501,9 @@ export function CharacterCreator({
             subclass={
               previewCharacter.subclass
             }
-            level={previewCharacter.level}
+            level={
+              previewCharacter.level
+            }
             summary={
               previewCharacter.summary
             }
@@ -379,11 +554,16 @@ function CreatorSummary({
   character,
   isEditing,
 }: CreatorSummaryProps) {
+  const background =
+    getBackgroundById(
+      character.backgroundId ?? "",
+    );
+
   return (
     <section className="creator-section">
       <header className="creator-section__header">
         <p className="creator-section__chapter">
-          Kapitel VII
+          Kapitel IX
         </p>
 
         <h2>Zusammenfassung</h2>
@@ -398,21 +578,38 @@ function CreatorSummary({
       <dl className="creator-summary">
         <div>
           <dt>Aktennummer</dt>
-          <dd>{character.fileNumber}</dd>
+
+          <dd>
+            {character.fileNumber}
+          </dd>
         </div>
 
         <div>
           <dt>Name</dt>
+
           <dd>{character.name}</dd>
         </div>
 
         <div>
           <dt>Abstammung</dt>
-          <dd>{character.ancestry}</dd>
+
+          <dd>
+            {character.ancestry}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Hintergrund</dt>
+
+          <dd>
+            {background?.name ??
+              "Nicht gewählt"}
+          </dd>
         </div>
 
         <div>
           <dt>Klasse</dt>
+
           <dd>
             {[
               character.className,
@@ -424,12 +621,27 @@ function CreatorSummary({
         </div>
 
         <div>
+          <dt>Fertigkeiten</dt>
+
+          <dd>
+            {
+              character
+                .skillProficiencies
+                ?.length ?? 0
+            }{" "}
+            geübt
+          </dd>
+        </div>
+
+        <div>
           <dt>Stufe</dt>
+
           <dd>{character.level}</dd>
         </div>
 
         <div>
           <dt>Vorgang</dt>
+
           <dd>
             {isEditing
               ? "Bestehende Akte aktualisieren"

@@ -3,6 +3,14 @@ import type {
   AbilityScores,
 } from "../../compendium/core";
 
+import type {
+  SkillId,
+} from "../../compendium/skills";
+
+import type {
+  BackgroundFeature,
+} from "../../compendium/backgrounds";
+
 export type CharacterStatus =
   | "active"
   | "retired"
@@ -29,22 +37,12 @@ export type InventoryItemCategory =
 
 export interface CharacterInventoryItem {
   id: string;
-
   name: string;
-
   category: InventoryItemCategory;
-
   quantity: number;
-
-  /**
-   * Gewicht eines einzelnen Gegenstandes.
-   */
   weight: number;
-
   equipped: boolean;
-
   notes: string;
-
   createdAt: string;
   updatedAt: string;
 }
@@ -75,6 +73,13 @@ export interface CharacterArchiveEntry {
   ancestryVariantId?: string;
   ancestryBonusChoices?: AbilityId[];
 
+  backgroundId?: string;
+  backgroundName?: string;
+  backgroundFeature?: BackgroundFeature;
+
+  toolProficiencies?: string[];
+  languageChoices?: number;
+
   className: string;
   classId?: string;
 
@@ -82,6 +87,9 @@ export interface CharacterArchiveEntry {
   subclassId?: string;
 
   level: number;
+
+  skillProficiencies?: SkillId[];
+  skillExpertise?: SkillId[];
 
   summary: string;
 
@@ -94,18 +102,8 @@ export interface CharacterArchiveEntry {
 
   vitals?: CharacterVitals;
 
-  /**
-   * Neue Inventarstruktur.
-   *
-   * Optional, damit ältere gespeicherte Akten
-   * weiterhin geladen werden können.
-   */
   inventory?: CharacterInventory;
 
-  /**
-   * Altes Feld aus dem Creator.
-   * Bleibt vorerst aus Kompatibilitätsgründen erhalten.
-   */
   equipmentIds?: string[];
 
   sealId?: string;

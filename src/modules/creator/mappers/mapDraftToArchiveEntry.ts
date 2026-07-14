@@ -1,7 +1,29 @@
 import { ancestries } from "../../../compendium/ancestries";
 import { classes } from "../../../compendium/classes";
 
-import type { CharacterArchiveEntry } from "../../archives/types";
+import {
+  equipmentPacks,
+  getEquipmentById,
+  startingEquipment,
+} from "../../../compendium/equipment";
+
+import type {
+  ArmorItem,
+  EquipmentDefinition,
+  WeaponItem,
+} from "../../../compendium/equipment";
+import {
+  getBackgroundById,
+} from "../../../compendium/backgrounds";
+import type {
+  SkillId,
+} from "../../../compendium/skills";
+import type {
+  CharacterArchiveEntry,
+  CharacterInventoryItem,
+  InventoryItemCategory,
+} from "../../archives/types";
+
 import type { CharacterCreatorDraft } from "../types";
 
 export function mapDraftToArchiveEntry(
@@ -31,6 +53,31 @@ export function mapDraftToArchiveEntry(
       ? `${selectedAncestry.name} · ${selectedVariant.name}`
       : selectedAncestry.name
     : "Nicht festgelegt";
+const selectedBackground =
+  getBackgroundById(
+    draft.backgroundId,
+  );
+
+const skillProficiencies =
+  Array.from(
+    new Set<SkillId>([
+      ...(
+        selectedBackground
+          ?.skillProficiencies ??
+        []
+      ),
+
+      ...draft
+        .classSkillProficiencies,
+    ]),
+  );
+  const timestamp = new Date().toISOString();
+
+  const inventoryItems =
+    createStartingInventoryItems(
+      draft,
+      timestamp,
+    );
 
   return {
     id: draft.id,
@@ -64,7 +111,30 @@ export function mapDraftToArchiveEntry(
     ancestryBonusChoices: [
       ...draft.ancestryBonusChoices,
     ],
+backgroundId:
+  selectedBackground?.id,
 
+backgroundName:
+  selectedBackground?.name,
+
+backgroundFeature:
+  selectedBackground
+    ? {
+        ...selectedBackground.feature,
+      }
+    : undefined,
+
+toolProficiencies:
+  selectedBackground
+    ? [
+        ...selectedBackground
+          .toolProficiencies,
+      ]
+    : [],
+
+languageChoices:
+  selectedBackground
+    ?.languageChoices ?? 0,
     className:
       selectedClass?.name ??
       "Nicht festgelegt",
@@ -79,28 +149,43 @@ export function mapDraftToArchiveEntry(
       draft.subclassId || undefined,
 
     level: draft.level,
+skillProficiencies,
 
+skillExpertise: [
+  ...draft.skillExpertise,
+],
     abilityScores: {
       ...draft.baseAbilities,
     },
-vitals: {
-  maximumHitPoints: 10,
 
-  currentHitPoints: 10,
+    vitals: {
+      maximumHitPoints: 10,
+      currentHitPoints: 10,
+      temporaryHitPoints: 0,
+      armorClass: 10,
 
-  temporaryHitPoints: 0,
+      initiativeModifier:
+        Math.floor(
+          (draft.baseAbilities.dexterity - 10) /
+            2,
+        ),
 
-  armorClass: 10,
+      speed: 9,
+    },
 
-  initiativeModifier: Math.floor(
-    ((draft.baseAbilities.dexterity ?? 10) - 10) / 2,
-  ),
+    inventory: {
+      items: inventoryItems,
 
-  speed: 9,
-},
-    equipmentIds: [
-      ...draft.equipmentIds,
-    ],
+      currency: {
+        copper: 0,
+        silver: 0,
+        gold: 0,
+      },
+    },
+
+    equipmentIds: inventoryItems.map(
+      (item) => item.id,
+    ),
 
     summary:
       draft.identity.summary.trim() ||
@@ -110,7 +195,7 @@ vitals: {
 
     createdAt: draft.createdAt,
 
-    updatedAt: draft.updatedAt,
+    updatedAt: timestamp,
 
     transformation:
       draft.transformationId || undefined,
@@ -121,4 +206,320 @@ vitals: {
     transformationStage:
       draft.transformationStage || undefined,
   };
+}
+
+interface InventorySourceEntry {
+  equipmentId: string;
+  quantity: number;
+}
+
+function createStartingInventoryItems(
+  draft: CharacterCreatorDraft,
+  timestamp: string,
+): CharacterInventoryItem[] {
+  const configuration =
+    startingEquipment.find(
+      (entry) =>
+        entry.classId === draft.classId,
+    );
+
+  if (!configuration) {
+    return [];
+  }
+
+  const selectedEntries: InventorySourceEntry[] =
+    draft.startingEquipmentSelections.map(
+      (selection) => ({
+        equipmentId: selection.equipmentId,
+        quantity: 1,
+      }),
+    );
+
+  const guaranteedEntries: InventorySourceEntry[] =
+    configuration.guaranteedEquipment.map(
+      (equipmentId) => ({
+        equipmentId,
+        quantity: 1,
+      }),
+    );
+
+  const packEntries: InventorySourceEntry[] =
+    configuration.guaranteedPacks.flatMap(
+      (packId) => {
+        const pack = equipmentPacks.find(
+          (entry) => entry.id === packId,
+        );
+
+        return pack?.items ?? [];
+      },
+    );
+
+  const combinedEntries = mergeEquipmentEntries([
+    ...selectedEntries,
+    ...guaranteedEntries,
+    ...packEntries,
+  ]);
+
+  return combinedEntries.flatMap((entry) => {
+    const definition = getEquipmentById(
+      entry.equipmentId,
+    );
+
+    if (!definition) {
+      return [];
+    }
+
+    return [
+      createInventoryItem(
+        definition,
+        entry.quantity,
+        timestamp,
+      ),
+    ];
+  });
+}
+
+function mergeEquipmentEntries(
+  entries: InventorySourceEntry[],
+): InventorySourceEntry[] {
+  const quantities = new Map<string, number>();
+
+  for (const entry of entries) {
+    const safeQuantity = Math.max(
+      1,
+      Math.floor(entry.quantity),
+    );
+
+    const currentQuantity =
+      quantities.get(entry.equipmentId) ?? 0;
+
+    quantities.set(
+      entry.equipmentId,
+      currentQuantity + safeQuantity,
+    );
+  }
+
+  return Array.from(
+    quantities.entries(),
+    ([equipmentId, quantity]) => ({
+      equipmentId,
+      quantity,
+    }),
+  );
+}
+
+function createInventoryItem(
+  definition: EquipmentDefinition,
+  quantity: number,
+  timestamp: string,
+): CharacterInventoryItem {
+  return {
+    id: definition.id,
+
+    name: definition.name,
+
+    category:
+      mapInventoryCategory(definition),
+
+    quantity,
+
+    /*
+     * Die Compendium-Werte sind in D&D-Pfund
+     * hinterlegt. Das bestehende Inventar zeigt kg,
+     * deshalb rechnen wir sie hier um.
+     */
+    weight: poundsToKilograms(
+      definition.weight,
+    ),
+
+    equipped: false,
+
+    notes:
+      createEquipmentNotes(definition),
+
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function mapInventoryCategory(
+  definition: EquipmentDefinition,
+): InventoryItemCategory {
+  switch (definition.category) {
+    case "weapon":
+      return "weapon";
+
+    case "armor":
+    case "shield":
+      return "armor";
+
+    case "consumable":
+      return "consumable";
+
+    case "tool":
+      return "tool";
+
+    case "gear":
+    default:
+      return "adventuring-gear";
+  }
+}
+
+function createEquipmentNotes(
+  definition: EquipmentDefinition,
+): string {
+  if (definition.category === "weapon") {
+    return createWeaponNotes(definition);
+  }
+
+  if (
+    definition.category === "armor" ||
+    definition.category === "shield"
+  ) {
+    return createArmorNotes(definition);
+  }
+
+  return (
+    definition.description ??
+    "Teil der Startausrüstung."
+  );
+}
+
+function createWeaponNotes(
+  weapon: WeaponItem,
+): string {
+  const notes: string[] = [
+    `${weapon.damage.dice}W${weapon.damage.die} ${getDamageTypeLabel(
+      weapon.damage.type,
+    )}`,
+  ];
+
+  if (weapon.versatile) {
+    notes.push(
+      `Vielseitig: ${weapon.versatile.dice}W${weapon.versatile.die}`,
+    );
+  }
+
+  if (weapon.range) {
+    notes.push(
+      weapon.range.long
+        ? `Reichweite: ${weapon.range.normal}/${weapon.range.long} ft`
+        : `Reichweite: ${weapon.range.normal} ft`,
+    );
+  }
+
+  if (weapon.properties.length > 0) {
+    notes.push(
+      weapon.properties
+        .map(getWeaponPropertyLabel)
+        .join(", "),
+    );
+  }
+
+  return notes.join(" · ");
+}
+
+function createArmorNotes(
+  armor: ArmorItem,
+): string {
+  const notes: string[] = [];
+
+  if (armor.category === "shield") {
+    notes.push(`Rüstungsklasse +${armor.armorClass}`);
+  } else {
+    notes.push(`Rüstungsklasse ${armor.armorClass}`);
+  }
+
+  if (armor.dexterityModifier) {
+    notes.push(
+      typeof armor.maximumDexterityBonus ===
+        "number"
+        ? `GE-Bonus bis +${armor.maximumDexterityBonus}`
+        : "Voller GE-Bonus",
+    );
+  } else {
+    notes.push("Kein GE-Bonus");
+  }
+
+  if (armor.strengthRequirement) {
+    notes.push(
+      `Mindeststärke ${armor.strengthRequirement}`,
+    );
+  }
+
+  if (armor.stealthDisadvantage) {
+    notes.push(
+      "Nachteil auf Heimlichkeit",
+    );
+  }
+
+  return notes.join(" · ");
+}
+
+function getDamageTypeLabel(
+  damageType:
+    | "slashing"
+    | "piercing"
+    | "bludgeoning",
+): string {
+  switch (damageType) {
+    case "slashing":
+      return "Hieb";
+
+    case "piercing":
+      return "Stich";
+
+    case "bludgeoning":
+      return "Wucht";
+  }
+}
+
+function getWeaponPropertyLabel(
+  property:
+    | "light"
+    | "heavy"
+    | "finesse"
+    | "two-handed"
+    | "versatile"
+    | "reach"
+    | "thrown"
+    | "loading"
+    | "ammunition",
+): string {
+  switch (property) {
+    case "light":
+      return "Leicht";
+
+    case "heavy":
+      return "Schwer";
+
+    case "finesse":
+      return "Finesse";
+
+    case "two-handed":
+      return "Zweihändig";
+
+    case "versatile":
+      return "Vielseitig";
+
+    case "reach":
+      return "Reichweite";
+
+    case "thrown":
+      return "Geworfen";
+
+    case "loading":
+      return "Laden";
+
+    case "ammunition":
+      return "Munition";
+  }
+}
+
+function poundsToKilograms(
+  pounds: number,
+): number {
+  const kilograms = pounds * 0.45359237;
+
+  return Number(kilograms.toFixed(2));
 }
