@@ -1,4 +1,7 @@
 import { ancestries } from "../../../compendium/ancestries";
+import {
+  getBackgroundById,
+} from "../../../compendium/backgrounds";
 import { classes } from "../../../compendium/classes";
 
 import {
@@ -12,66 +15,77 @@ import type {
   EquipmentDefinition,
   WeaponItem,
 } from "../../../compendium/equipment";
-import {
-  getBackgroundById,
-} from "../../../compendium/backgrounds";
+
 import type {
   SkillId,
 } from "../../../compendium/skills";
+
 import type {
   CharacterArchiveEntry,
   CharacterInventoryItem,
   InventoryItemCategory,
 } from "../../archives/types";
 
-import type { CharacterCreatorDraft } from "../types";
+import type {
+  CharacterCreatorDraft,
+} from "../types";
 
 export function mapDraftToArchiveEntry(
   draft: CharacterCreatorDraft,
 ): CharacterArchiveEntry {
-  const selectedAncestry = ancestries.find(
-    (entry) => entry.id === draft.ancestryId,
-  );
+  const selectedAncestry =
+    ancestries.find(
+      (entry) =>
+        entry.id === draft.ancestryId,
+    );
 
   const selectedVariant =
     selectedAncestry?.variants.find(
       (entry) =>
-        entry.id === draft.ancestryVariantId,
+        entry.id ===
+        draft.ancestryVariantId,
     );
 
-  const selectedClass = classes.find(
-    (entry) => entry.id === draft.classId,
-  );
+  const selectedBackground =
+    getBackgroundById(
+      draft.backgroundId,
+    );
+
+  const selectedClass =
+    classes.find(
+      (entry) =>
+        entry.id === draft.classId,
+    );
 
   const selectedSubclass =
     selectedClass?.subclasses.find(
-      (entry) => entry.id === draft.subclassId,
+      (entry) =>
+        entry.id === draft.subclassId,
     );
 
-  const ancestryLabel = selectedAncestry
-    ? selectedVariant
-      ? `${selectedAncestry.name} · ${selectedVariant.name}`
-      : selectedAncestry.name
-    : "Nicht festgelegt";
-const selectedBackground =
-  getBackgroundById(
-    draft.backgroundId,
-  );
+  const ancestryLabel =
+    selectedAncestry
+      ? selectedVariant
+        ? `${selectedAncestry.name} · ${selectedVariant.name}`
+        : selectedAncestry.name
+      : "Nicht festgelegt";
 
-const skillProficiencies =
-  Array.from(
-    new Set<SkillId>([
-      ...(
-        selectedBackground
-          ?.skillProficiencies ??
-        []
-      ),
+  const skillProficiencies =
+    Array.from(
+      new Set<SkillId>([
+        ...(
+          selectedBackground
+            ?.skillProficiencies ??
+          []
+        ),
 
-      ...draft
-        .classSkillProficiencies,
-    ]),
-  );
-  const timestamp = new Date().toISOString();
+        ...draft
+          .classSkillProficiencies,
+      ]),
+    );
+
+  const timestamp =
+    new Date().toISOString();
 
   const inventoryItems =
     createStartingInventoryItems(
@@ -82,7 +96,8 @@ const skillProficiencies =
   return {
     id: draft.id,
 
-    fileNumber: draft.fileNumber,
+    fileNumber:
+      draft.fileNumber,
 
     name:
       draft.identity.name.trim() ||
@@ -100,60 +115,70 @@ const skillProficiencies =
       draft.identity.alignment.trim() ||
       undefined,
 
-    ancestry: ancestryLabel,
+    ancestry:
+      ancestryLabel,
 
     ancestryId:
-      draft.ancestryId || undefined,
+      draft.ancestryId ||
+      undefined,
 
     ancestryVariantId:
-      draft.ancestryVariantId || undefined,
+      draft.ancestryVariantId ||
+      undefined,
 
     ancestryBonusChoices: [
       ...draft.ancestryBonusChoices,
     ],
-backgroundId:
-  selectedBackground?.id,
 
-backgroundName:
-  selectedBackground?.name,
+    backgroundId:
+      selectedBackground?.id,
 
-backgroundFeature:
-  selectedBackground
-    ? {
-        ...selectedBackground.feature,
-      }
-    : undefined,
+    backgroundName:
+      selectedBackground?.name,
 
-toolProficiencies:
-  selectedBackground
-    ? [
-        ...selectedBackground
-          .toolProficiencies,
-      ]
-    : [],
+    backgroundFeature:
+      selectedBackground
+        ? {
+            ...selectedBackground.feature,
+          }
+        : undefined,
 
-languageChoices:
-  selectedBackground
-    ?.languageChoices ?? 0,
+    toolProficiencies:
+      selectedBackground
+        ? [
+            ...selectedBackground
+              .toolProficiencies,
+          ]
+        : [],
+
+    languageChoices:
+      selectedBackground
+        ?.languageChoices ?? 0,
+
     className:
       selectedClass?.name ??
       "Nicht festgelegt",
 
     classId:
-      draft.classId || undefined,
+      draft.classId ||
+      undefined,
 
     subclass:
       selectedSubclass?.name,
 
     subclassId:
-      draft.subclassId || undefined,
+      draft.subclassId ||
+      undefined,
 
-    level: draft.level,
-skillProficiencies,
+    level:
+      draft.level,
 
-skillExpertise: [
-  ...draft.skillExpertise,
-],
+    skillProficiencies,
+
+    skillExpertise: [
+      ...draft.skillExpertise,
+    ],
+
     abilityScores: {
       ...draft.baseAbilities,
     },
@@ -166,8 +191,11 @@ skillExpertise: [
 
       initiativeModifier:
         Math.floor(
-          (draft.baseAbilities.dexterity - 10) /
-            2,
+          (
+            draft.baseAbilities
+              .dexterity -
+            10
+          ) / 2,
         ),
 
       speed: 9,
@@ -183,9 +211,10 @@ skillExpertise: [
       },
     },
 
-    equipmentIds: inventoryItems.map(
-      (item) => item.id,
-    ),
+    equipmentIds:
+      inventoryItems.map(
+        (item) => item.id,
+      ),
 
     summary:
       draft.identity.summary.trim() ||
@@ -193,18 +222,23 @@ skillExpertise: [
 
     status: "draft",
 
-    createdAt: draft.createdAt,
+    createdAt:
+      draft.createdAt,
 
-    updatedAt: timestamp,
+    updatedAt:
+      timestamp,
 
     transformation:
-      draft.transformationId || undefined,
+      draft.transformationId ||
+      undefined,
 
     transformationId:
-      draft.transformationId || undefined,
+      draft.transformationId ||
+      undefined,
 
     transformationStage:
-      draft.transformationStage || undefined,
+      draft.transformationStage ||
+      undefined,
   };
 }
 
@@ -220,87 +254,141 @@ function createStartingInventoryItems(
   const configuration =
     startingEquipment.find(
       (entry) =>
-        entry.classId === draft.classId,
+        entry.classId ===
+        draft.classId,
     );
 
   if (!configuration) {
     return [];
   }
 
-  const selectedEntries: InventorySourceEntry[] =
-    draft.startingEquipmentSelections.map(
-      (selection) => ({
-        equipmentId: selection.equipmentId,
-        quantity: 1,
-      }),
-    );
+  const selectedEntries:
+    InventorySourceEntry[] =
+      draft
+        .startingEquipmentSelections
+        .flatMap((selection) => {
+          const choice =
+            configuration.choices.find(
+              (entry) =>
+                entry.id ===
+                selection.choiceId,
+            );
 
-  const guaranteedEntries: InventorySourceEntry[] =
-    configuration.guaranteedEquipment.map(
-      (equipmentId) => ({
-        equipmentId,
-        quantity: 1,
-      }),
-    );
+          const option =
+            choice?.options.find(
+              (entry) =>
+                entry.id ===
+                selection.optionId,
+            );
 
-  const packEntries: InventorySourceEntry[] =
-    configuration.guaranteedPacks.flatMap(
-      (packId) => {
-        const pack = equipmentPacks.find(
-          (entry) => entry.id === packId,
+          if (!option) {
+            return [];
+          }
+
+          const directEntries =
+            option.equipment ?? [];
+
+          const packEntries =
+            (option.packIds ?? [])
+              .flatMap((packId) => {
+                const pack =
+                  equipmentPacks.find(
+                    (entry) =>
+                      entry.id ===
+                      packId,
+                  );
+
+                return (
+                  pack?.items ?? []
+                );
+              });
+
+          return [
+            ...directEntries,
+            ...packEntries,
+          ];
+        });
+
+  const guaranteedEntries:
+    InventorySourceEntry[] =
+      configuration
+        .guaranteedEquipment;
+
+  const guaranteedPackEntries:
+    InventorySourceEntry[] =
+      configuration
+        .guaranteedPacks
+        .flatMap((packId) => {
+          const pack =
+            equipmentPacks.find(
+              (entry) =>
+                entry.id ===
+                packId,
+            );
+
+          return pack?.items ?? [];
+        });
+
+  const combinedEntries =
+    mergeEquipmentEntries([
+      ...selectedEntries,
+      ...guaranteedEntries,
+      ...guaranteedPackEntries,
+    ]);
+
+  return combinedEntries.flatMap(
+    (entry) => {
+      const definition =
+        getEquipmentById(
+          entry.equipmentId,
         );
 
-        return pack?.items ?? [];
-      },
-    );
+      if (!definition) {
+        return [];
+      }
 
-  const combinedEntries = mergeEquipmentEntries([
-    ...selectedEntries,
-    ...guaranteedEntries,
-    ...packEntries,
-  ]);
-
-  return combinedEntries.flatMap((entry) => {
-    const definition = getEquipmentById(
-      entry.equipmentId,
-    );
-
-    if (!definition) {
-      return [];
-    }
-
-    return [
-      createInventoryItem(
-        definition,
-        entry.quantity,
-        timestamp,
-      ),
-    ];
-  });
+      return [
+        createInventoryItem(
+          definition,
+          entry.quantity,
+          timestamp,
+        ),
+      ];
+    },
+  );
 }
 
 function mergeEquipmentEntries(
   entries: InventorySourceEntry[],
 ): InventorySourceEntry[] {
-  const quantities = new Map<string, number>();
+  const quantities =
+    new Map<string, number>();
 
   for (const entry of entries) {
-    const safeQuantity = Math.max(
-      1,
-      Math.floor(entry.quantity),
-    );
+    const safeQuantity =
+      Math.max(
+        1,
+        Math.floor(
+          entry.quantity,
+        ),
+      );
 
     const currentQuantity =
-      quantities.get(entry.equipmentId) ?? 0;
+      quantities.get(
+        entry.equipmentId,
+      ) ?? 0;
 
     quantities.set(
       entry.equipmentId,
-      currentQuantity + safeQuantity,
+
+      currentQuantity +
+        safeQuantity,
     );
   }
 
   return Array.from(
     quantities.entries(),
+
     ([equipmentId, quantity]) => ({
       equipmentId,
       quantity,
@@ -319,26 +407,29 @@ function createInventoryItem(
     name: definition.name,
 
     category:
-      mapInventoryCategory(definition),
+      mapInventoryCategory(
+        definition,
+      ),
 
     quantity,
 
-    /*
-     * Die Compendium-Werte sind in D&D-Pfund
-     * hinterlegt. Das bestehende Inventar zeigt kg,
-     * deshalb rechnen wir sie hier um.
-     */
-    weight: poundsToKilograms(
-      definition.weight,
-    ),
+    weight:
+      poundsToKilograms(
+        definition.weight,
+      ),
 
     equipped: false,
 
     notes:
-      createEquipmentNotes(definition),
+      createEquipmentNotes(
+        definition,
+      ),
 
-    createdAt: timestamp,
-    updatedAt: timestamp,
+    createdAt:
+      timestamp,
+
+    updatedAt:
+      timestamp,
   };
 }
 
@@ -354,11 +445,13 @@ function mapInventoryCategory(
       return "armor";
 
     case "consumable":
+    case "ammunition":
       return "consumable";
 
     case "tool":
       return "tool";
 
+    case "focus":
     case "gear":
     default:
       return "adventuring-gear";
@@ -368,15 +461,24 @@ function mapInventoryCategory(
 function createEquipmentNotes(
   definition: EquipmentDefinition,
 ): string {
-  if (definition.category === "weapon") {
-    return createWeaponNotes(definition);
+  if (
+    definition.category ===
+    "weapon"
+  ) {
+    return createWeaponNotes(
+      definition,
+    );
   }
 
   if (
-    definition.category === "armor" ||
-    definition.category === "shield"
+    definition.category ===
+      "armor" ||
+    definition.category ===
+      "shield"
   ) {
-    return createArmorNotes(definition);
+    return createArmorNotes(
+      definition,
+    );
   }
 
   return (
@@ -408,10 +510,14 @@ function createWeaponNotes(
     );
   }
 
-  if (weapon.properties.length > 0) {
+  if (
+    weapon.properties.length > 0
+  ) {
     notes.push(
       weapon.properties
-        .map(getWeaponPropertyLabel)
+        .map(
+          getWeaponPropertyLabel,
+        )
         .join(", "),
     );
   }
@@ -424,30 +530,45 @@ function createArmorNotes(
 ): string {
   const notes: string[] = [];
 
-  if (armor.category === "shield") {
-    notes.push(`Rüstungsklasse +${armor.armorClass}`);
+  if (
+    armor.category === "shield"
+  ) {
+    notes.push(
+      `Rüstungsklasse +${armor.armorClass}`,
+    );
   } else {
-    notes.push(`Rüstungsklasse ${armor.armorClass}`);
+    notes.push(
+      `Rüstungsklasse ${armor.armorClass}`,
+    );
   }
 
-  if (armor.dexterityModifier) {
+  if (
+    armor.dexterityModifier
+  ) {
     notes.push(
-      typeof armor.maximumDexterityBonus ===
+      typeof armor
+        .maximumDexterityBonus ===
         "number"
         ? `GE-Bonus bis +${armor.maximumDexterityBonus}`
         : "Voller GE-Bonus",
     );
   } else {
-    notes.push("Kein GE-Bonus");
+    notes.push(
+      "Kein GE-Bonus",
+    );
   }
 
-  if (armor.strengthRequirement) {
+  if (
+    armor.strengthRequirement
+  ) {
     notes.push(
       `Mindeststärke ${armor.strengthRequirement}`,
     );
   }
 
-  if (armor.stealthDisadvantage) {
+  if (
+    armor.stealthDisadvantage
+  ) {
     notes.push(
       "Nachteil auf Heimlichkeit",
     );
@@ -519,7 +640,10 @@ function getWeaponPropertyLabel(
 function poundsToKilograms(
   pounds: number,
 ): number {
-  const kilograms = pounds * 0.45359237;
+  const kilograms =
+    pounds * 0.45359237;
 
-  return Number(kilograms.toFixed(2));
+  return Number(
+    kilograms.toFixed(2),
+  );
 }

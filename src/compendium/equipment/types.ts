@@ -4,7 +4,9 @@ export type EquipmentCategory =
   | "shield"
   | "gear"
   | "tool"
-  | "consumable";
+  | "consumable"
+  | "focus"
+  | "ammunition";
 
 export type WeaponCategory =
   | "simple"
@@ -37,13 +39,21 @@ export interface EquipmentItem {
   name: string;
   category: EquipmentCategory;
 
+  /**
+   * Gewicht in D&D-Pfund.
+   */
   weight: number;
+
+  /**
+   * Preis in Goldmünzen.
+   */
   price: number;
 
   description?: string;
 }
 
-export interface WeaponItem extends EquipmentItem {
+export interface WeaponItem
+  extends EquipmentItem {
   category: "weapon";
 
   weaponCategory: WeaponCategory;
@@ -60,7 +70,8 @@ export interface WeaponItem extends EquipmentItem {
   properties: WeaponProperty[];
 }
 
-export interface ArmorItem extends EquipmentItem {
+export interface ArmorItem
+  extends EquipmentItem {
   category: "armor" | "shield";
 
   armorClass: number;
@@ -74,11 +85,14 @@ export interface ArmorItem extends EquipmentItem {
   stealthDisadvantage?: boolean;
 }
 
-export interface GearItem extends EquipmentItem {
+export interface GearItem
+  extends EquipmentItem {
   category:
     | "gear"
     | "tool"
-    | "consumable";
+    | "consumable"
+    | "focus"
+    | "ammunition";
 }
 
 export interface EquipmentPackItem {
@@ -89,6 +103,7 @@ export interface EquipmentPackItem {
 export interface EquipmentPack {
   id: string;
   name: string;
+  description: string;
   items: EquipmentPackItem[];
 }
 

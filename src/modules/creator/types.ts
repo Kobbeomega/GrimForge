@@ -96,7 +96,7 @@ export interface CharacterIdentityDraft {
 
 export interface StartingEquipmentSelection {
   choiceId: string;
-  equipmentId: string;
+  optionId: string;
 }
 
 export interface CharacterCreatorDraft {
@@ -120,17 +120,7 @@ export interface CharacterCreatorDraft {
 
   baseAbilities: AbilityScores;
 
-  /**
-   * Fertigkeiten, die über die Klasse gewählt wurden.
-   * Hintergrundfertigkeiten werden später automatisch
-   * mit diesen Werten zusammengeführt.
-   */
   classSkillProficiencies: SkillId[];
-
-  /**
-   * Vorbereitung für Schurke, Barde und spätere
-   * Klassenmerkmale.
-   */
   skillExpertise: SkillId[];
 
   equipmentIds: string[];
@@ -153,7 +143,8 @@ export interface CharacterCreatorState {
 export function createEmptyCharacterDraft(
   fileNumber: string,
 ): CharacterCreatorDraft {
-  const timestamp = new Date().toISOString();
+  const timestamp =
+    new Date().toISOString();
 
   return {
     id: crypto.randomUUID(),
@@ -217,10 +208,10 @@ export function getNextCreatorStep(
   const currentIndex =
     getCreatorStepIndex(stepId);
 
-  const nextStep =
-    creatorSteps[currentIndex + 1];
-
-  return nextStep?.id ?? null;
+  return (
+    creatorSteps[currentIndex + 1]
+      ?.id ?? null
+  );
 }
 
 export function getPreviousCreatorStep(
@@ -229,8 +220,8 @@ export function getPreviousCreatorStep(
   const currentIndex =
     getCreatorStepIndex(stepId);
 
-  const previousStep =
-    creatorSteps[currentIndex - 1];
-
-  return previousStep?.id ?? null;
+  return (
+    creatorSteps[currentIndex - 1]
+      ?.id ?? null
+  );
 }

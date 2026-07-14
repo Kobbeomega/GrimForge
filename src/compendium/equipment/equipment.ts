@@ -7,124 +7,419 @@ import type {
 
 export const weapons: WeaponItem[] = [
   {
-    id: "longsword",
-    name: "Langschwert",
+    id: "club",
+    name: "Keule",
     category: "weapon",
-    weaponCategory: "martial",
-
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 4,
+      type: "bludgeoning",
+    },
+    properties: ["light"],
+    weight: 2,
+    price: 0.1,
+  },
+  {
+    id: "dagger",
+    name: "Dolch",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 4,
+      type: "piercing",
+    },
+    range: {
+      normal: 20,
+      long: 60,
+    },
+    properties: [
+      "finesse",
+      "light",
+      "thrown",
+    ],
+    weight: 1,
+    price: 2,
+  },
+  {
+    id: "dart",
+    name: "Wurfpfeil",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 4,
+      type: "piercing",
+    },
+    range: {
+      normal: 20,
+      long: 60,
+    },
+    properties: [
+      "finesse",
+      "thrown",
+    ],
+    weight: 0.25,
+    price: 0.05,
+  },
+  {
+    id: "greatclub",
+    name: "Zweihändige Keule",
+    category: "weapon",
+    weaponCategory: "simple",
     damage: {
       dice: 1,
       die: 8,
+      type: "bludgeoning",
+    },
+    properties: ["two-handed"],
+    weight: 10,
+    price: 0.2,
+  },
+  {
+    id: "handaxe",
+    name: "Handaxt",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
       type: "slashing",
     },
-
+    range: {
+      normal: 20,
+      long: 60,
+    },
+    properties: [
+      "light",
+      "thrown",
+    ],
+    weight: 2,
+    price: 5,
+  },
+  {
+    id: "javelin",
+    name: "Wurfspeer",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "piercing",
+    },
+    range: {
+      normal: 30,
+      long: 120,
+    },
+    properties: ["thrown"],
+    weight: 2,
+    price: 0.5,
+  },
+  {
+    id: "mace",
+    name: "Streitkolben",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "bludgeoning",
+    },
+    properties: [],
+    weight: 4,
+    price: 5,
+  },
+  {
+    id: "quarterstaff",
+    name: "Kampfstab",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "bludgeoning",
+    },
     versatile: {
       dice: 1,
-      die: 10,
-      type: "slashing",
+      die: 8,
+      type: "bludgeoning",
     },
-
     properties: ["versatile"],
-
-    weight: 3,
-    price: 15,
+    weight: 4,
+    price: 0.2,
   },
-
+  {
+    id: "spear",
+    name: "Speer",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "piercing",
+    },
+    versatile: {
+      dice: 1,
+      die: 8,
+      type: "piercing",
+    },
+    range: {
+      normal: 20,
+      long: 60,
+    },
+    properties: [
+      "thrown",
+      "versatile",
+    ],
+    weight: 3,
+    price: 1,
+  },
+  {
+    id: "light-crossbow",
+    name: "Leichte Armbrust",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 8,
+      type: "piercing",
+    },
+    range: {
+      normal: 80,
+      long: 320,
+    },
+    properties: [
+      "ammunition",
+      "loading",
+      "two-handed",
+    ],
+    weight: 5,
+    price: 25,
+  },
+  {
+    id: "shortbow",
+    name: "Kurzbogen",
+    category: "weapon",
+    weaponCategory: "simple",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "piercing",
+    },
+    range: {
+      normal: 80,
+      long: 320,
+    },
+    properties: [
+      "ammunition",
+      "two-handed",
+    ],
+    weight: 2,
+    price: 25,
+  },
   {
     id: "battleaxe",
     name: "Streitaxt",
     category: "weapon",
     weaponCategory: "martial",
-
     damage: {
       dice: 1,
       die: 8,
       type: "slashing",
     },
-
     versatile: {
       dice: 1,
       die: 10,
       type: "slashing",
     },
-
     properties: ["versatile"],
-
     weight: 4,
     price: 10,
   },
-
+  {
+    id: "greataxe",
+    name: "Große Axt",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 12,
+      type: "slashing",
+    },
+    properties: [
+      "heavy",
+      "two-handed",
+    ],
+    weight: 7,
+    price: 30,
+  },
+  {
+    id: "greatsword",
+    name: "Großschwert",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 2,
+      die: 6,
+      type: "slashing",
+    },
+    properties: [
+      "heavy",
+      "two-handed",
+    ],
+    weight: 6,
+    price: 50,
+  },
+  {
+    id: "longsword",
+    name: "Langschwert",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 8,
+      type: "slashing",
+    },
+    versatile: {
+      dice: 1,
+      die: 10,
+      type: "slashing",
+    },
+    properties: ["versatile"],
+    weight: 3,
+    price: 15,
+  },
+  {
+    id: "rapier",
+    name: "Rapier",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 8,
+      type: "piercing",
+    },
+    properties: ["finesse"],
+    weight: 2,
+    price: 25,
+  },
+  {
+    id: "scimitar",
+    name: "Krummsäbel",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "slashing",
+    },
+    properties: [
+      "finesse",
+      "light",
+    ],
+    weight: 3,
+    price: 25,
+  },
+  {
+    id: "shortsword",
+    name: "Kurzschwert",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 6,
+      type: "piercing",
+    },
+    properties: [
+      "finesse",
+      "light",
+    ],
+    weight: 2,
+    price: 10,
+  },
   {
     id: "warhammer",
     name: "Kriegshammer",
     category: "weapon",
     weaponCategory: "martial",
-
     damage: {
       dice: 1,
       die: 8,
       type: "bludgeoning",
     },
-
     versatile: {
       dice: 1,
       die: 10,
       type: "bludgeoning",
     },
-
     properties: ["versatile"],
-
     weight: 2,
     price: 15,
+  },
+  {
+    id: "longbow",
+    name: "Langbogen",
+    category: "weapon",
+    weaponCategory: "martial",
+    damage: {
+      dice: 1,
+      die: 8,
+      type: "piercing",
+    },
+    range: {
+      normal: 150,
+      long: 600,
+    },
+    properties: [
+      "ammunition",
+      "heavy",
+      "two-handed",
+    ],
+    weight: 2,
+    price: 50,
   },
 ];
 
 export const armor: ArmorItem[] = [
   {
-    id: "shield",
-    name: "Schild",
-
-    category: "shield",
-
-    armorClass: 2,
-
-    dexterityModifier: false,
-
-    weight: 6,
-
+    id: "leather",
+    name: "Lederrüstung",
+    category: "armor",
+    armorClass: 11,
+    dexterityModifier: true,
+    weight: 10,
     price: 10,
   },
-
+  {
+    id: "scale-mail",
+    name: "Schuppenpanzer",
+    category: "armor",
+    armorClass: 14,
+    dexterityModifier: true,
+    maximumDexterityBonus: 2,
+    stealthDisadvantage: true,
+    weight: 45,
+    price: 50,
+  },
   {
     id: "chain-mail",
-    name: "Kettenhemd",
-
+    name: "Kettenrüstung",
     category: "armor",
-
     armorClass: 16,
-
     dexterityModifier: false,
-
     strengthRequirement: 13,
-
+    stealthDisadvantage: true,
     weight: 55,
-
     price: 75,
   },
-
   {
-    id: "leather",
-
-    name: "Lederrüstung",
-
-    category: "armor",
-
-    armorClass: 11,
-
-    dexterityModifier: true,
-
-    weight: 10,
-
+    id: "shield",
+    name: "Schild",
+    category: "shield",
+    armorClass: 2,
+    dexterityModifier: false,
+    weight: 6,
     price: 10,
   },
 ];
@@ -132,74 +427,157 @@ export const armor: ArmorItem[] = [
 export const gear: GearItem[] = [
   {
     id: "backpack",
-
     name: "Rucksack",
-
     category: "gear",
-
     weight: 5,
-
     price: 2,
   },
-
   {
     id: "bedroll",
-
     name: "Schlafsack",
-
     category: "gear",
-
     weight: 7,
-
     price: 1,
   },
-
   {
-    id: "rope",
-
-    name: "Hanfseil (50 ft)",
-
+    id: "blanket",
+    name: "Decke",
     category: "gear",
-
-    weight: 10,
-
-    price: 1,
-  },
-
-  {
-    id: "torch",
-
-    name: "Fackel",
-
-    category: "consumable",
-
-    weight: 1,
-
-    price: 0.01,
-  },
-
-  {
-    id: "ration",
-
-    name: "Rationen",
-
-    category: "consumable",
-
-    weight: 2,
-
+    weight: 3,
     price: 0.5,
   },
-
+  {
+    id: "crowbar",
+    name: "Brecheisen",
+    category: "gear",
+    weight: 5,
+    price: 2,
+  },
+  {
+    id: "hammer",
+    name: "Hammer",
+    category: "gear",
+    weight: 3,
+    price: 1,
+  },
+  {
+    id: "piton",
+    name: "Kletterhaken",
+    category: "gear",
+    weight: 0.25,
+    price: 0.05,
+  },
+  {
+    id: "rope",
+    name: "Hanfseil (50 ft)",
+    category: "gear",
+    weight: 10,
+    price: 1,
+  },
+  {
+    id: "torch",
+    name: "Fackel",
+    category: "consumable",
+    weight: 1,
+    price: 0.01,
+  },
+  {
+    id: "ration",
+    name: "Tagesration",
+    category: "consumable",
+    weight: 2,
+    price: 0.5,
+  },
   {
     id: "waterskin",
-
     name: "Wasserschlauch",
-
     category: "gear",
-
     weight: 5,
-
     price: 0.2,
+  },
+  {
+    id: "tinderbox",
+    name: "Zunderbüchse",
+    category: "gear",
+    weight: 1,
+    price: 0.5,
+  },
+  {
+    id: "mess-kit",
+    name: "Essgeschirr",
+    category: "gear",
+    weight: 1,
+    price: 0.2,
+  },
+  {
+    id: "healers-kit",
+    name: "Heilerausrüstung",
+    category: "tool",
+    weight: 3,
+    price: 5,
+  },
+  {
+    id: "thieves-tools",
+    name: "Diebeswerkzeug",
+    category: "tool",
+    weight: 1,
+    price: 25,
+  },
+  {
+    id: "lute",
+    name: "Laute",
+    category: "tool",
+    weight: 2,
+    price: 35,
+  },
+  {
+    id: "holy-symbol",
+    name: "Heiliges Symbol",
+    category: "focus",
+    weight: 1,
+    price: 5,
+  },
+  {
+    id: "druidic-focus",
+    name: "Druidischer Fokus",
+    category: "focus",
+    weight: 1,
+    price: 1,
+  },
+  {
+    id: "arcane-focus",
+    name: "Arkaner Fokus",
+    category: "focus",
+    weight: 1,
+    price: 10,
+  },
+  {
+    id: "component-pouch",
+    name: "Komponententasche",
+    category: "focus",
+    weight: 2,
+    price: 25,
+  },
+  {
+    id: "spellbook",
+    name: "Zauberbuch",
+    category: "gear",
+    weight: 3,
+    price: 50,
+  },
+  {
+    id: "arrows",
+    name: "Pfeile",
+    category: "ammunition",
+    weight: 0.05,
+    price: 0.05,
+  },
+  {
+    id: "crossbow-bolts",
+    name: "Armbrustbolzen",
+    category: "ammunition",
+    weight: 0.075,
+    price: 0.05,
   },
 ];
 
@@ -209,7 +587,9 @@ export const equipment: EquipmentDefinition[] = [
   ...gear,
 ];
 
-export function getEquipmentById(id: string) {
+export function getEquipmentById(
+  id: string,
+): EquipmentDefinition | undefined {
   return equipment.find(
     (entry) => entry.id === id,
   );

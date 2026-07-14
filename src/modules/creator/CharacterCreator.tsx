@@ -1,7 +1,9 @@
 import { ChapterHeader } from "../../components/ui/ChapterHeader";
 import { GrimButton } from "../../components/ui/GrimButton";
 import { PaperPage } from "../../components/ui/PaperPage";
-
+import {
+  startingEquipment,
+} from "../../compendium/equipment";
 import {
   getBackgroundById,
 } from "../../compendium/backgrounds";
@@ -90,7 +92,41 @@ export function CharacterCreator({
 
       return;
     }
+const equipmentConfiguration =
+  startingEquipment.find(
+    (entry) =>
+      entry.classId ===
+      creator.draft.classId,
+  );
 
+if (equipmentConfiguration) {
+  const completedEquipmentChoices =
+    equipmentConfiguration.choices.filter(
+      (choice) =>
+        creator.draft
+          .startingEquipmentSelections
+          .some(
+            (selection) =>
+              selection.choiceId ===
+              choice.id,
+          ),
+    ).length;
+
+  if (
+    completedEquipmentChoices !==
+    equipmentConfiguration.choices.length
+  ) {
+    window.alert(
+      "Treffe zuerst alle Entscheidungen zur Startausrüstung.",
+    );
+
+    creator.setCurrentStep(
+      "equipment",
+    );
+
+    return;
+  }
+}
     if (!creator.draft.ancestryId) {
       window.alert(
         "Wähle zuerst eine Abstammung.",
@@ -149,7 +185,42 @@ export function CharacterCreator({
 
       return;
     }
+const pointBuyCosts: Record<
+  number,
+  number
+> = {
+  8: 0,
+  9: 1,
+  10: 2,
+  11: 3,
+  12: 4,
+  13: 5,
+  14: 7,
+  15: 9,
+};
 
+const spentAbilityPoints =
+  Object.values(
+    creator.draft.baseAbilities,
+  ).reduce(
+    (total, value) =>
+      total +
+      (pointBuyCosts[value] ??
+        Number.POSITIVE_INFINITY),
+    0,
+  );
+
+if (spentAbilityPoints !== 27) {
+  window.alert(
+    "Verteile im Point-Buy-System genau 27 Punkte.",
+  );
+
+  creator.setCurrentStep(
+    "abilities",
+  );
+
+  return;
+}
     const sealedCharacter:
       CharacterArchiveEntry = {
       ...previewCharacter,

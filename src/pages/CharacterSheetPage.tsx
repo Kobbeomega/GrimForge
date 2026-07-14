@@ -11,7 +11,7 @@ import { BackgroundPanel } from "../modules/sheet/components/BackgroundPanel";
 import { CharacterQuickOverview } from "../modules/sheet/components/CharacterQuickOverview";
 import { CharacterSheetHeader } from "../modules/sheet/components/CharacterSheetHeader";
 import { InventoryPanel } from "../modules/sheet/components/InventoryPanel";
-import { SkillsPanel } from "../modules/sheet/components/SkillsPanel";
+import { RollsPanel } from "../modules/sheet/components/RollsPanel";
 import { VitalPanel } from "../modules/sheet/components/VitalPanel";
 
 import { getCharacterDerivedStats } from "../modules/sheet/utils/getCharacterDerivedStats";
@@ -25,7 +25,7 @@ import type {
 type CharacterSheetSection =
   | "overview"
   | "abilities"
-  | "skills"
+  | "rolls"
   | "inventory"
   | "transformation"
   | "chronicle";
@@ -56,9 +56,9 @@ const sheetSections: Array<{
     title: "Attribute",
   },
   {
-    id: "skills",
+    id: "rolls",
     chapter: "III",
-    title: "Fertigkeiten",
+    title: "Würfe",
   },
   {
     id: "inventory",
@@ -358,8 +358,8 @@ export function CharacterSheetPage({
           )}
 
           {activeSection ===
-            "skills" && (
-            <SkillsPanel
+            "rolls" && (
+            <RollsPanel
               character={character}
             />
           )}
