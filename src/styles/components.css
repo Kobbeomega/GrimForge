@@ -4811,16 +4811,17 @@ padding:1.25rem;
   }
 }
 /* =======================================================
-   POINT BUY
+/* =======================================================
+   POINT BUY — COMPACT DESKTOP + MOBILE
 ======================================================= */
 
 .point-buy-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-lg);
+  gap: 1rem;
 
-  padding: var(--space-lg);
+  padding: 1rem;
 
   background:
     radial-gradient(
@@ -4830,29 +4831,27 @@ padding:1.25rem;
     ),
     rgba(0, 0, 0, 0.22);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.28);
+  border: 1px solid rgba(156, 105, 211, 0.28);
 }
 
 .point-buy-budget {
   display: grid;
-  gap: var(--space-xs);
+  gap: 0.25rem;
 }
 
 .point-buy-budget > span {
   color: var(--color-text-muted);
 
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .point-buy-budget > strong {
   color: var(--color-primary-light);
 
-  font-size: 2.2rem;
+  font-size: 1.9rem;
   line-height: 1;
 }
 
@@ -4862,50 +4861,55 @@ padding:1.25rem;
   font-size: 0.5em;
 }
 
-.point-buy-budget
-  > strong.point-buy-budget--complete {
+.point-buy-budget > strong.point-buy-budget--complete {
   color: var(--color-paper);
 }
 
 .point-buy-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .point-buy-toolbar__actions button {
-  min-height: 44px;
-  padding:
-    0
-    var(--space-md);
+  min-height: 38px;
+  padding: 0 0.85rem;
 
   color: var(--color-paper);
 
-  background:
-    rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.3);
+  border: 1px solid rgba(156, 105, 211, 0.3);
+
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
 
   cursor: pointer;
 }
 
+/*
+ * Auto-fit ist hier wichtiger als feste drei Spalten:
+ * Der Creator teilt sich den Bildschirm mit Navigation
+ * und Vorschau, weshalb selbst große Monitore nur eine
+ * relativ schmale Editor-Spalte besitzen können.
+ */
 .point-buy-grid {
   display: grid;
   grid-template-columns:
     repeat(
-      3,
-      minmax(0, 1fr)
+      auto-fit,
+      minmax(185px, 1fr)
     );
-  gap: var(--space-md);
+  gap: 0.85rem;
 }
 
 .point-buy-card {
   display: grid;
-  gap: var(--space-lg);
+  gap: 1rem;
 
-  padding: var(--space-lg);
+  min-width: 0;
+  padding: 1rem;
 
   background:
     linear-gradient(
@@ -4915,76 +4919,79 @@ padding:1.25rem;
     ),
     rgba(0, 0, 0, 0.22);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.24);
+  border: 1px solid rgba(156, 105, 211, 0.24);
 }
 
 .point-buy-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-md);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.65rem;
 }
 
 .point-buy-card__header > div {
   display: grid;
-  gap: var(--space-xs);
+  gap: 0.2rem;
+
+  min-width: 0;
 }
 
 .point-buy-card__header span {
   color: var(--color-primary-light);
 
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
 }
 
 .point-buy-card__header h3 {
   margin: 0;
 
+  overflow-wrap: anywhere;
+
   color: var(--color-paper);
 
-  font-size: 1rem;
-  letter-spacing: 0.07em;
+  font-size: clamp(0.78rem, 1.1vw, 0.95rem);
+  line-height: 1.15;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .point-buy-card__header > strong {
   color: var(--color-primary-light);
 
-  font-size: 1.35rem;
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .point-buy-card__controls {
   display: grid;
   grid-template-columns:
-    52px
-    minmax(70px, 1fr)
-    52px;
-  gap: var(--space-sm);
+    40px
+    minmax(54px, 1fr)
+    40px;
+  gap: 0.45rem;
 }
 
 .point-buy-card__controls button {
-  min-height: 52px;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
 
   color: var(--color-paper);
 
-  background:
-    rgba(106, 60, 146, 0.15);
+  background: rgba(106, 60, 146, 0.15);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.32);
+  border: 1px solid rgba(156, 105, 211, 0.32);
 
-  font-size: 1.4rem;
+  font-size: 1.1rem;
+  line-height: 1;
 
   cursor: pointer;
 }
 
 .point-buy-card__controls button:disabled {
   cursor: not-allowed;
-
   opacity: 0.3;
 }
 
@@ -4993,44 +5000,44 @@ padding:1.25rem;
   align-items: center;
   justify-content: center;
 
-  min-height: 52px;
+  min-width: 0;
+  min-height: 40px;
 
   color: var(--color-paper);
 
-  background:
-    rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.3);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.22);
+  border: 1px solid rgba(156, 105, 211, 0.22);
 
-  font-size: 1.7rem;
+  font-size: 1.35rem;
   font-weight: 700;
 }
 
 .point-buy-card__facts {
   display: grid;
   grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
-  gap: var(--space-sm);
+    repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
 
   margin: 0;
 }
 
-.point-buy-card__facts div {
+.point-buy-card__facts > div {
   display: grid;
-  gap: var(--space-xs);
+  gap: 0.15rem;
+
+  min-width: 0;
 }
 
 .point-buy-card__facts dt {
+  overflow-wrap: anywhere;
+
   color: var(--color-text-muted);
 
-  font-size: 0.6rem;
+  font-size: 0.52rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  line-height: 1.25;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
@@ -5038,62 +5045,60 @@ padding:1.25rem;
   margin: 0;
 
   color: var(--color-paper);
+
+  font-size: 0.85rem;
 }
 
 .point-buy-costs {
   display: grid;
-  gap: var(--space-md);
+  gap: 0.75rem;
 
-  padding: var(--space-md);
+  padding: 0.85rem;
 
-  background:
-    rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.16);
 
-  border:
-    1px solid
-    rgba(156, 105, 211, 0.18);
+  border: 1px solid rgba(156, 105, 211, 0.18);
 }
 
 .point-buy-costs > header {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-md);
+  gap: 0.75rem;
 }
 
 .point-buy-costs > header span {
   color: var(--color-primary-light);
 
-  font-size: 0.63rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .point-buy-costs > header strong {
   color: var(--color-text-muted);
 
-  font-size: 0.72rem;
+  font-size: 0.65rem;
 }
 
 .point-buy-costs > div {
   display: grid;
   grid-template-columns:
     repeat(
-      8,
-      minmax(0, 1fr)
+      auto-fit,
+      minmax(58px, 1fr)
     );
-  gap: var(--space-xs);
+  gap: 0.35rem;
 }
 
 .point-buy-costs > div > span {
   display: grid;
   justify-items: center;
-  gap: 3px;
+  gap: 2px;
 
-  padding: var(--space-sm);
+  padding: 0.5rem;
 
-  background:
-    rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .point-buy-costs > div strong {
@@ -5103,23 +5108,80 @@ padding:1.25rem;
 .point-buy-costs > div small {
   color: var(--color-text-muted);
 
-  font-size: 0.56rem;
+  font-size: 0.52rem;
 }
 
 .point-buy-warning {
   margin: 0;
-  padding: var(--space-md);
+  padding: 0.85rem;
 
   color: var(--color-paper);
 
-  background:
-    rgba(142, 34, 63, 0.12);
+  background: rgba(142, 34, 63, 0.12);
 
-  border:
-    1px solid
-    rgba(142, 34, 63, 0.36);
+  border: 1px solid rgba(142, 34, 63, 0.36);
 }
 
+/* Schmale Creator-Spalte auf Desktop/Tablets */
+@media (max-width: 1250px) {
+  .point-buy-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .point-buy-toolbar__actions {
+    justify-content: flex-start;
+  }
+
+  .point-buy-grid {
+    grid-template-columns:
+      repeat(
+        auto-fit,
+        minmax(170px, 1fr)
+      );
+  }
+}
+
+/* Smartphone */
+@media (max-width: 680px) {
+  .point-buy-toolbar__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .point-buy-toolbar__actions button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .point-buy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .point-buy-card {
+    padding: 0.9rem;
+  }
+
+  .point-buy-card__controls {
+    grid-template-columns:
+      48px
+      minmax(70px, 1fr)
+      48px;
+  }
+
+  .point-buy-card__controls button,
+  .point-buy-card__controls output {
+    min-height: 48px;
+  }
+
+  .point-buy-card__controls button {
+    width: 48px;
+  }
+
+  .point-buy-costs > header {
+    flex-direction: column;
+  }
+}
 /* =======================================================
    ROLLS PANEL
 ======================================================= */
