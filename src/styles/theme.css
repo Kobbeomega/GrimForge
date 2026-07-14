@@ -1,0 +1,78 @@
+:root{
+
+    /* ==========
+       Farben
+    ========== */
+
+    --color-background:#09090B;
+
+    --color-surface:#141317;
+
+    --color-surface-light:#1D1A22;
+
+    --color-paper:#DCCFBE;
+
+    --color-paper-dark:#B5A999;
+
+    --color-primary:#6A3C92;
+
+    --color-primary-dark:#36204F;
+
+    --color-primary-light:#9C69D3;
+
+    --color-text:#ECE8E1;
+
+    --color-text-muted:#AAA29A;
+
+    --color-border:#2D2933;
+
+    --color-danger:#8E223F;
+
+    --color-success:#51744D;
+
+    --color-warning:#A88232;
+
+
+    /* ==========
+       Abstände
+    ========== */
+
+    --space-xs:4px;
+
+    --space-sm:8px;
+
+    --space-md:16px;
+
+    --space-lg:24px;
+
+    --space-xl:32px;
+
+    --space-xxl:48px;
+
+
+    /* ==========
+       Schatten
+    ========== */
+
+    --shadow-paper:
+
+        0 0 24px rgba(0,0,0,.45);
+
+    --shadow-glow:
+
+        0 0 16px rgba(106,60,146,.25);
+
+
+    /* ==========
+       Rahmen
+    ========== */
+
+    --border-thin:
+
+        1px solid var(--color-border);
+
+    --border-primary:
+
+        2px solid var(--color-primary);
+
+}

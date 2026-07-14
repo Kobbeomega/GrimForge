@@ -1,0 +1,95 @@
+@import "./theme.css";
+@import "./fonts.css";
+@import "./components.css";
+@import "./layout.css";
+@import "./animations.css";
+:root{
+
+    background:#09090B;
+
+    color:#ECE8E1;
+
+    font-family:Georgia, serif;
+
+}
+
+*{
+
+    margin:0;
+
+    padding:0;
+
+    box-sizing:border-box;
+
+}
+
+body{
+
+    background:#09090B;
+
+}
+
+#root{
+
+    min-height:100vh;
+
+}
+
+.intro{
+
+    text-align:center;
+
+}
+
+.grim-symbol{
+
+    color:#6A3C92;
+
+    font-size:3rem;
+
+    margin-bottom:12px;
+
+}
+
+h1{
+
+    letter-spacing:.35em;
+
+    font-size:3rem;
+
+}
+
+.subtitle{
+
+    margin-top:10px;
+
+    color:#AAA29A;
+
+    letter-spacing:.25em;
+
+}
+
+.divider{
+
+    width:260px;
+
+    height:2px;
+
+    margin:28px auto;
+
+    background:linear-gradient(
+        to right,
+        transparent,
+        #6A3C92,
+        transparent
+    );
+
+}
+
+.version{
+
+    color:#777;
+
+    font-size:.85rem;
+
+}
