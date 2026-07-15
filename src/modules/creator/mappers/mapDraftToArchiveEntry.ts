@@ -1,8 +1,14 @@
-import { ancestries } from "../../../compendium/ancestries";
+import {
+  ancestries,
+} from "../../../compendium/ancestries";
+
 import {
   getBackgroundById,
 } from "../../../compendium/backgrounds";
-import { classes } from "../../../compendium/classes";
+
+import {
+  classes,
+} from "../../../compendium/classes";
 
 import {
   equipmentPacks,
@@ -94,7 +100,8 @@ export function mapDraftToArchiveEntry(
     );
 
   return {
-    id: draft.id,
+    id:
+      draft.id,
 
     fileNumber:
       draft.fileNumber,
@@ -129,6 +136,15 @@ export function mapDraftToArchiveEntry(
     ancestryBonusChoices: [
       ...draft.ancestryBonusChoices,
     ],
+ancestrySize:
+  draft.ancestrySize,
+
+ancestryTraitIds: [
+  ...draft.ancestryTraitIds,
+],
+
+ancestryUsesReducedSpeed:
+  draft.ancestryUsesReducedSpeed,
 
     backgroundId:
       selectedBackground?.id,
@@ -198,11 +214,15 @@ export function mapDraftToArchiveEntry(
           ) / 2,
         ),
 
-      speed: 9,
+      speed:
+  draft.ancestryUsesReducedSpeed
+    ? 7.5
+    : selectedAncestry?.speed ?? 9,
     },
 
     inventory: {
-      items: inventoryItems,
+      items:
+        inventoryItems,
 
       currency: {
         copper: 0,
@@ -211,16 +231,23 @@ export function mapDraftToArchiveEntry(
       },
     },
 
+    spellcasting:
+      cloneDraftSpellcasting(
+        draft,
+      ),
+
     equipmentIds:
       inventoryItems.map(
-        (item) => item.id,
+        (item) =>
+          item.id,
       ),
 
     summary:
       draft.identity.summary.trim() ||
       "Noch keine Beschreibung vorhanden.",
 
-    status: "draft",
+    status:
+      "draft",
 
     createdAt:
       draft.createdAt,
@@ -239,6 +266,36 @@ export function mapDraftToArchiveEntry(
     transformationStage:
       draft.transformationStage ||
       undefined,
+  };
+}
+
+function cloneDraftSpellcasting(
+  draft: CharacterCreatorDraft,
+): NonNullable<
+  CharacterArchiveEntry["spellcasting"]
+> {
+  return {
+    spellIds:
+      draft.spellcasting.spellIds.map(
+        (selection) => ({
+          ...selection,
+        }),
+      ),
+
+    slots: {
+      spentSlots: {
+        ...draft
+          .spellcasting
+          .slots
+          .spentSlots,
+      },
+
+      spentPactSlots:
+        draft
+          .spellcasting
+          .slots
+          .spentPactSlots,
+    },
   };
 }
 
@@ -266,48 +323,57 @@ function createStartingInventoryItems(
     InventorySourceEntry[] =
       draft
         .startingEquipmentSelections
-        .flatMap((selection) => {
-          const choice =
-            configuration.choices.find(
-              (entry) =>
-                entry.id ===
-                selection.choiceId,
-            );
-
-          const option =
-            choice?.options.find(
-              (entry) =>
-                entry.id ===
-                selection.optionId,
-            );
-
-          if (!option) {
-            return [];
-          }
-
-          const directEntries =
-            option.equipment ?? [];
-
-          const packEntries =
-            (option.packIds ?? [])
-              .flatMap((packId) => {
-                const pack =
-                  equipmentPacks.find(
-                    (entry) =>
-                      entry.id ===
-                      packId,
-                  );
-
-                return (
-                  pack?.items ?? []
+        .flatMap(
+          (selection) => {
+            const choice =
+              configuration
+                .choices
+                .find(
+                  (entry) =>
+                    entry.id ===
+                    selection.choiceId,
                 );
-              });
 
-          return [
-            ...directEntries,
-            ...packEntries,
-          ];
-        });
+            const option =
+              choice?.options.find(
+                (entry) =>
+                  entry.id ===
+                  selection.optionId,
+              );
+
+            if (!option) {
+              return [];
+            }
+
+            const directEntries =
+              option.equipment ?? [];
+
+            const packEntries =
+              (
+                option.packIds ??
+                []
+              ).flatMap(
+                (packId) => {
+                  const pack =
+                    equipmentPacks.find(
+                      (entry) =>
+                        entry.id ===
+                        packId,
+                    );
+
+                  return (
+                    pack?.items ??
+                    []
+                  );
+                },
+              );
+
+            return [
+              ...directEntries,
+              ...packEntries,
+            ];
+          },
+        );
 
   const guaranteedEntries:
     InventorySourceEntry[] =
@@ -318,16 +384,21 @@ function createStartingInventoryItems(
     InventorySourceEntry[] =
       configuration
         .guaranteedPacks
-        .flatMap((packId) => {
-          const pack =
-            equipmentPacks.find(
-              (entry) =>
-                entry.id ===
-                packId,
-            );
+        .flatMap(
+          (packId) => {
+            const pack =
+              equipmentPacks.find(
+                (entry) =>
+                  entry.id ===
+                  packId,
+              );
 
-          return pack?.items ?? [];
-        });
+            return (
+              pack?.items ??
+              []
+            );
+          },
+        );
 
   const combinedEntries =
     mergeEquipmentEntries([
@@ -389,7 +460,12 @@ function mergeEquipmentEntries(
   return Array.from(
     quantities.entries(),
 
-    ([equipmentId, quantity]) => ({
+    (
+      [
+        equipmentId,
+        quantity,
+      ],
+    ) => ({
       equipmentId,
       quantity,
     }),
@@ -402,9 +478,11 @@ function createInventoryItem(
   timestamp: string,
 ): CharacterInventoryItem {
   return {
-    id: definition.id,
+    id:
+      definition.id,
 
-    name: definition.name,
+    name:
+      definition.name,
 
     category:
       mapInventoryCategory(
@@ -418,7 +496,8 @@ function createInventoryItem(
         definition.weight,
       ),
 
-    equipped: false,
+    equipped:
+      false,
 
     notes:
       createEquipmentNotes(
@@ -531,7 +610,8 @@ function createArmorNotes(
   const notes: string[] = [];
 
   if (
-    armor.category === "shield"
+    armor.category ===
+    "shield"
   ) {
     notes.push(
       `Rüstungsklasse +${armor.armorClass}`,
@@ -636,7 +716,23 @@ function getWeaponPropertyLabel(
       return "Munition";
   }
 }
+export function getStoredAncestrySpeed(
+  entry: CharacterArchiveEntry,
+): number {
+  return (
+    entry.vitals?.speed ??
+    9
+  );
+}
 
+export function getStoredTraitCount(
+  entry: CharacterArchiveEntry,
+): number {
+  return (
+    entry.ancestryTraitIds
+      ?.length ?? 0
+  );
+}
 function poundsToKilograms(
   pounds: number,
 ): number {
@@ -646,4 +742,5 @@ function poundsToKilograms(
   return Number(
     kilograms.toFixed(2),
   );
+  
 }

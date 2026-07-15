@@ -6,10 +6,16 @@ import type {
 import type {
   SkillId,
 } from "../../compendium/skills";
-
+import type {
+  CharacterSize,
+} from "../../compendium/ancestries";
 import type {
   BackgroundFeature,
 } from "../../compendium/backgrounds";
+
+import type {
+  CharacterSpellcasting,
+} from "../../compendium/spells";
 
 export type CharacterStatus =
   | "active"
@@ -38,11 +44,16 @@ export type InventoryItemCategory =
 export interface CharacterInventoryItem {
   id: string;
   name: string;
+
   category: InventoryItemCategory;
+
   quantity: number;
   weight: number;
+
   equipped: boolean;
+
   notes: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +83,11 @@ export interface CharacterArchiveEntry {
   ancestryId?: string;
   ancestryVariantId?: string;
   ancestryBonusChoices?: AbilityId[];
+  ancestrySize?: CharacterSize;
+
+  ancestryTraitIds?: string[];
+
+  ancestryUsesReducedSpeed?: boolean;
 
   backgroundId?: string;
   backgroundName?: string;
@@ -104,17 +120,32 @@ export interface CharacterArchiveEntry {
 
   inventory?: CharacterInventory;
 
+  /**
+   * Optional, damit ältere Akten ohne
+   * Zauberdaten weiterhin geladen werden.
+   */
+  spellcasting?: CharacterSpellcasting;
+
   equipmentIds?: string[];
 
   sealId?: string;
 
   transformation?: string;
-  transformationId?: string;
-  transformationStage?: number;
+transformationId?: string;
+transformationStage?: number;
+transformationFeatureIds?: string[];
 }
 
 export interface CharacterArchiveActions {
-  onOpen: (characterId: string) => void;
-  onEdit: (characterId: string) => void;
-  onDelete: (characterId: string) => void;
+  onOpen: (
+    characterId: string,
+  ) => void;
+
+  onEdit: (
+    characterId: string,
+  ) => void;
+
+  onDelete: (
+    characterId: string,
+  ) => void;
 }

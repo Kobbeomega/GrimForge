@@ -1,15 +1,22 @@
-import { classes } from "../../../../compendium/classes";
+import {
+  classes,
+} from "../../../../compendium/classes";
+
 import {
   abilityLabels,
 } from "../../../../compendium/core";
 
-import { CodexCard } from "../../../../components/ui/CodexCard";
-
 interface ClassStepProps {
   selectedClassId: string;
   selectedSubclassId: string;
-  onSelectClass: (classId: string) => void;
-  onSelectSubclass: (subclassId: string) => void;
+
+  onSelectClass: (
+    classId: string,
+  ) => void;
+
+  onSelectSubclass: (
+    subclassId: string,
+  ) => void;
 }
 
 export function ClassStep({
@@ -18,134 +25,241 @@ export function ClassStep({
   onSelectClass,
   onSelectSubclass,
 }: ClassStepProps) {
-  const selectedClass = classes.find(
-    (entry) => entry.id === selectedClassId,
-  );
+  const selectedClass =
+    classes.find(
+      (entry) =>
+        entry.id ===
+        selectedClassId,
+    );
 
   return (
     <section className="creator-section">
       <header className="creator-section__header">
         <p className="creator-section__chapter">
-          Kapitel III
+          Kapitel IV
         </p>
 
         <h2>Klasse</h2>
 
         <p>
-          Wähle den Pfad, auf dem dein Charakter
-          die Dunkelheit durchschreiten wird.
+          Wähle den Pfad, auf dem dein
+          Charakter die Dunkelheit
+          durchschreiten wird.
         </p>
       </header>
 
-      <div className="creator-card-grid">
+      <div className="compact-class-grid">
         {classes.map((entry) => {
           const selected =
-            entry.id === selectedClassId;
+            entry.id ===
+            selectedClassId;
 
           const primaryAbilities =
             entry.primaryAbilities
               .map(
                 (abilityId) =>
-                  abilityLabels[abilityId],
+                  abilityLabels[
+                    abilityId
+                  ],
               )
-              .join(", ");
+              .join(" · ");
 
           const savingThrows =
             entry.savingThrows
               .map(
                 (abilityId) =>
-                  abilityLabels[abilityId],
+                  abilityLabels[
+                    abilityId
+                  ],
               )
-              .join(", ");
+              .join(" · ");
+
+          const armor =
+            entry
+              .armorProficiencies
+              .length > 0
+              ? entry
+                  .armorProficiencies
+                  .join(" · ")
+              : "Keine Rüstung";
+
+          const weapons =
+            entry
+              .weaponProficiencies
+              .length > 0
+              ? entry
+                  .weaponProficiencies
+                  .join(" · ")
+              : "Keine Waffenübung";
 
           return (
-            <CodexCard
+            <button
               key={entry.id}
-              eyebrow={`Trefferwürfel W${entry.hitDie}`}
-              title={entry.name}
-              description={entry.description}
-              selected={selected}
+              type="button"
+              className={[
+                "compact-class-card",
+
+                selected
+                  ? "compact-class-card--selected"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-pressed={selected}
               onClick={() =>
-                onSelectClass(entry.id)
+                onSelectClass(
+                  entry.id,
+                )
               }
-              metadata={[
-                entry.spellcasting
-                  ? "Zauberwirker"
-                  : "Nichtmagisch",
-                `Primär: ${primaryAbilities}`,
-                `Rettung: ${savingThrows}`,
-              ]}
             >
-              <dl className="creator-class-facts">
+              <header className="compact-class-card__header">
+                <div>
+                  <span>
+                    Trefferwürfel W
+                    {entry.hitDie}
+                  </span>
+
+                  <h3>
+                    {entry.name}
+                  </h3>
+                </div>
+
+                <strong>
+                  {selected
+                    ? "Gewählt"
+                    : "Wählen"}
+                </strong>
+              </header>
+
+              <p className="compact-class-card__description">
+                {entry.description}
+              </p>
+
+              <div className="compact-class-card__tags">
+                <span>
+                  {entry.spellcasting
+                    ? "Zauberwirker"
+                    : "Nichtmagisch"}
+                </span>
+
+                <span>
+                  Primär:{" "}
+                  {primaryAbilities}
+                </span>
+
+                <span>
+                  Rettung:{" "}
+                  {savingThrows}
+                </span>
+              </div>
+
+              <dl className="compact-class-card__facts">
                 <div>
                   <dt>Rüstung</dt>
-                  <dd>
-                    {entry.armorProficiencies.length > 0
-                      ? entry.armorProficiencies.join(", ")
-                      : "Keine"}
-                  </dd>
+
+                  <dd>{armor}</dd>
                 </div>
 
                 <div>
                   <dt>Waffen</dt>
-                  <dd>
-                    {entry.weaponProficiencies.join(", ")}
-                  </dd>
+
+                  <dd>{weapons}</dd>
                 </div>
 
                 <div>
                   <dt>Unterklassen</dt>
-                  <dd>{entry.subclasses.length}</dd>
+
+                  <dd>
+                    {
+                      entry
+                        .subclasses
+                        .length
+                    }
+                  </dd>
                 </div>
               </dl>
-            </CodexCard>
+            </button>
           );
         })}
       </div>
 
       {selectedClass && (
-        <section className="creator-subclass-section">
-          <div className="creator-subclass-section__header">
-            <p className="creator-section__chapter">
-              Vertiefung des Pfades
-            </p>
+        <section className="compact-subclass-section">
+          <header className="compact-subclass-section__header">
+            <div>
+              <p>
+                Vertiefung des Pfades
+              </p>
 
-            <h3>
-              Unterklasse für {selectedClass.name}
-            </h3>
+              <h3>
+                Unterklasse für{" "}
+                {selectedClass.name}
+              </h3>
+            </div>
 
-            <p>
-              Die Auswahl wird bereits gespeichert.
-              Stufenbeschränkungen ergänzen wir später.
-            </p>
-          </div>
+            <span>
+              Wähle die besondere
+              Ausprägung deines Pfades.
+            </span>
+          </header>
 
-          <div className="creator-subclass-grid">
-            {selectedClass.subclasses.map(
-              (subclass) => (
-                <button
-                  key={subclass.id}
-                  type="button"
-                  className={[
-                    "creator-subclass-card",
-                    selectedSubclassId === subclass.id
-                      ? "creator-subclass-card--selected"
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() =>
-                    onSelectSubclass(subclass.id)
-                  }
-                >
-                  <strong>{subclass.name}</strong>
+          <div className="compact-subclass-grid">
+            {selectedClass
+              .subclasses
+              .map(
+                (subclass) => {
+                  const selected =
+                    selectedSubclassId ===
+                    subclass.id;
 
-                  <span>
-                    {subclass.description}
-                  </span>
-                </button>
-              ),
-            )}
+                  return (
+                    <button
+                      key={
+                        subclass.id
+                      }
+                      type="button"
+                      className={[
+                        "compact-subclass-card",
+
+                        selected
+                          ? "compact-subclass-card--selected"
+                          : "",
+                      ]
+                        .filter(
+                          Boolean,
+                        )
+                        .join(" ")}
+                      aria-pressed={
+                        selected
+                      }
+                      onClick={() =>
+                        onSelectSubclass(
+                          subclass.id,
+                        )
+                      }
+                    >
+                      <span>
+                        {selected
+                          ? "Gewählt"
+                          : "Unterklasse"}
+                      </span>
+
+                      <strong>
+                        {
+                          subclass.name
+                        }
+                      </strong>
+
+                      <p>
+                        {
+                          subclass
+                            .description
+                        }
+                      </p>
+                    </button>
+                  );
+                },
+              )}
           </div>
         </section>
       )}

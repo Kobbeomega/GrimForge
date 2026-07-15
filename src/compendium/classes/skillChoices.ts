@@ -174,6 +174,20 @@ export const classSkillChoices: ClassSkillChoiceDefinition[] =
         "religion",
       ],
     },
+    {
+  classId: "monster-hunter",
+  choose: 3,
+  options: [
+    "athletics",
+    "history",
+    "investigation",
+    "medicine",
+    "nature",
+    "perception",
+    "religion",
+    "survival",
+  ],
+},
   ];
 
 export function getClassSkillChoice(

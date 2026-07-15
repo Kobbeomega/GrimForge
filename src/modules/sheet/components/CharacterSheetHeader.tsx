@@ -1,6 +1,8 @@
 import { GrimforgeSeal } from "../../../components/icons/GrimforgeSeal";
 
-import type { CharacterArchiveEntry } from "../../archives/types";
+import type {
+  CharacterArchiveEntry,
+} from "../../archives/types";
 
 interface CharacterSheetHeaderProps {
   character: CharacterArchiveEntry;
@@ -26,80 +28,90 @@ export function CharacterSheetHeader({
     .filter(Boolean)
     .join(" · ");
 
+  const transformationLabel =
+    character.transformation
+      ? [
+          character.transformation,
+          character.transformationStage
+            ? `Stufe ${character.transformationStage}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : "Keine";
+
   return (
-    <header className="character-sheet-header">
+    <header className="compact-sheet-header">
       <div
-        className="character-sheet-header__ornament"
+        className="compact-sheet-header__seal"
         aria-hidden="true"
       >
-        <span />
         <GrimforgeSeal
-          size={54}
-          className="character-sheet-header__seal"
+          size={46}
           title="Grimforge-Siegel"
         />
-        <span />
       </div>
 
-      <p className="character-sheet-header__file-number">
-        {character.fileNumber}
-      </p>
+      <section className="compact-sheet-header__main">
+        <div className="compact-sheet-header__eyebrow">
+          <span>
+            {character.fileNumber}
+          </span>
 
-      <h1 className="character-sheet-header__name">
-        {character.name}
-      </h1>
-
-      <p className="character-sheet-header__summary">
-        {character.summary ||
-          "Über dieses Schicksal wurde noch kein Vermerk niedergeschrieben."}
-      </p>
-
-      <div className="character-sheet-header__identity">
-        <section>
-          <small>Abstammung</small>
-          <strong>{character.ancestry}</strong>
-        </section>
-
-        <div
-          className="character-sheet-header__divider"
-          aria-hidden="true"
-        >
-          ◆
+          <strong>
+            {statusLabels[character.status]}
+          </strong>
         </div>
 
-        <section>
-          <small>Klasse</small>
-          <strong>{classLabel}</strong>
-        </section>
-      </div>
+        <h1>
+          {character.name}
+        </h1>
 
-      <dl className="character-sheet-header__metadata">
-        <div>
-          <dt>Stufe</dt>
-          <dd>{character.level}</dd>
-        </div>
+        <p>
+          {character.summary ||
+            "Über dieses Schicksal wurde noch kein Vermerk niedergeschrieben."}
+        </p>
+      </section>
 
-        <div>
-          <dt>Status</dt>
-          <dd>{statusLabels[character.status]}</dd>
-        </div>
+      <dl className="compact-sheet-header__identity">
+        <IdentityValue
+          label="Abstammung"
+          value={character.ancestry}
+        />
 
-        <div>
-          <dt>Wandlung</dt>
-          <dd>
-            {character.transformation
-              ? [
-                  character.transformation,
-                  character.transformationStage
-                    ? `Stufe ${character.transformationStage}`
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")
-              : "Keine"}
-          </dd>
-        </div>
+        <IdentityValue
+          label="Klasse"
+          value={classLabel}
+        />
+
+        <IdentityValue
+          label="Stufe"
+          value={String(character.level)}
+        />
+
+        <IdentityValue
+          label="Wandlung"
+          value={transformationLabel}
+        />
       </dl>
     </header>
+  );
+}
+
+interface IdentityValueProps {
+  label: string;
+  value: string;
+}
+
+function IdentityValue({
+  label,
+  value,
+}: IdentityValueProps) {
+  return (
+    <div>
+      <dt>{label}</dt>
+
+      <dd>{value}</dd>
+    </div>
   );
 }

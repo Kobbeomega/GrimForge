@@ -1,9 +1,6 @@
-import { useState } from "react";
-
-import { GrimButton } from "../../../components/ui/GrimButton";
 import {
-  formatAbilityModifier,
-} from "../../../compendium/core";
+  useState,
+} from "react";
 
 import type {
   CharacterVitals,
@@ -12,8 +9,13 @@ import type {
 interface VitalPanelProps {
   vitals: CharacterVitals;
 
-  onDamage: (amount: number) => void;
-  onHeal: (amount: number) => void;
+  onDamage: (
+    amount: number,
+  ) => void;
+
+  onHeal: (
+    amount: number,
+  ) => void;
 
   onTemporaryHitPointsChange: (
     value: number,
@@ -27,6 +29,10 @@ interface VitalPanelProps {
   onLongRest: () => void;
 }
 
+type VitalAction =
+  | "damage"
+  | "healing";
+
 export function VitalPanel({
   vitals,
   onDamage,
@@ -36,477 +42,695 @@ export function VitalPanel({
   onShortRest,
   onLongRest,
 }: VitalPanelProps) {
-  const [isEditing, setIsEditing] =
-    useState(false);
-
-  const [damageAmount, setDamageAmount] =
+  const [customAmount, setCustomAmount] =
     useState(1);
 
-  const [healingAmount, setHealingAmount] =
-    useState(1);
+  const [activeAction, setActiveAction] =
+    useState<VitalAction>("damage");
 
   const hitPointPercentage =
-    vitals.maximumHitPoints > 0
-      ? Math.max(
-          0,
-          Math.min(
-            100,
-            (vitals.currentHitPoints /
-              vitals.maximumHitPoints) *
-              100,
-          ),
-        )
-      : 0;
+    getHitPointPercentage(
+      vitals.currentHitPoints,
+      vitals.maximumHitPoints,
+    );
 
-  function updateVitalField(
-    field: keyof CharacterVitals,
-    value: number,
-  ) {
-    const normalizedValue =
-      Number.isFinite(value)
-        ? value
-        : 0;
+  const healthState =
+    getHealthState(
+      hitPointPercentage,
+      vitals.currentHitPoints,
+    );
 
-    const nextVitals: CharacterVitals = {
-      ...vitals,
-      [field]: normalizedValue,
-    };
+  function applyCustomAmount() {
+    const safeAmount =
+      Math.max(
+        0,
+        Math.floor(
+          Number.isFinite(customAmount)
+            ? customAmount
+            : 0,
+        ),
+      );
 
-    switch (field) {
-      case "maximumHitPoints":
-        nextVitals.maximumHitPoints =
-          Math.max(1, normalizedValue);
-
-        nextVitals.currentHitPoints =
-          Math.min(
-            nextVitals.currentHitPoints,
-            nextVitals.maximumHitPoints,
-          );
-        break;
-
-      case "currentHitPoints":
-        nextVitals.currentHitPoints =
-          Math.max(
-            0,
-            Math.min(
-              nextVitals.maximumHitPoints,
-              normalizedValue,
-            ),
-          );
-        break;
-
-      case "temporaryHitPoints":
-        nextVitals.temporaryHitPoints =
-          Math.max(0, normalizedValue);
-        break;
-
-      case "armorClass":
-        nextVitals.armorClass =
-          Math.max(0, normalizedValue);
-        break;
-
-      case "speed":
-        nextVitals.speed =
-          Math.max(0, normalizedValue);
-        break;
-
-      case "initiativeModifier":
-        nextVitals.initiativeModifier =
-          normalizedValue;
-        break;
+    if (safeAmount <= 0) {
+      return;
     }
 
-    onVitalsChange(nextVitals);
+    if (
+      activeAction ===
+      "damage"
+    ) {
+      onDamage(safeAmount);
+      return;
+    }
+
+    onHeal(safeAmount);
+  }
+
+  function changeMaximumHitPoints(
+    amount: number,
+  ) {
+    const maximumHitPoints =
+      Math.max(
+        1,
+        vitals.maximumHitPoints +
+          amount,
+      );
+
+    onVitalsChange({
+      ...vitals,
+
+      maximumHitPoints,
+
+      currentHitPoints:
+        Math.min(
+          vitals.currentHitPoints,
+          maximumHitPoints,
+        ),
+    });
+  }
+
+  function changeArmorClass(
+    amount: number,
+  ) {
+    onVitalsChange({
+      ...vitals,
+
+      armorClass:
+        Math.max(
+          0,
+          vitals.armorClass +
+            amount,
+        ),
+    });
+  }
+
+  function changeInitiative(
+    amount: number,
+  ) {
+    onVitalsChange({
+      ...vitals,
+
+      initiativeModifier:
+        vitals
+          .initiativeModifier +
+        amount,
+    });
+  }
+
+  function changeSpeed(
+    amount: number,
+  ) {
+    onVitalsChange({
+      ...vitals,
+
+      speed:
+        Math.max(
+          0,
+          vitals.speed +
+            amount,
+        ),
+    });
   }
 
   return (
-    <section className="vital-panel">
-      <header className="vital-panel__header">
-        <div className="vital-panel__header-copy">
-          <p>Spielzustand</p>
+    <section className="session-vitals">
+      <header className="session-vitals__header">
+        <div>
+          <p>Live-Modus</p>
 
-          <h3>Vitalwerte</h3>
+          <h3>Trefferpunkte</h3>
 
           <span>
-            Verwalte die wichtigsten Werte während
-            der laufenden Sitzung.
+            Schaden, Heilung und wichtige
+            Kampfwerte direkt verwalten.
           </span>
         </div>
 
-        <GrimButton
-          type="button"
-          onClick={() =>
-            setIsEditing((current) => !current)
-          }
+        <strong
+          className={[
+            "session-vitals__state",
+            `session-vitals__state--${healthState.id}`,
+          ].join(" ")}
         >
-          {isEditing
-            ? "Bearbeitung schließen"
-            : "Werte bearbeiten"}
-        </GrimButton>
+          {healthState.label}
+        </strong>
       </header>
 
-      {isEditing && (
-        <VitalEditor
-          vitals={vitals}
-          onFieldChange={updateVitalField}
-        />
-      )}
-
-      <div className="vital-panel__grid">
-        <article className="vital-card vital-card--hit-points">
-          <div className="vital-card__heading">
-            <small>Trefferpunkte</small>
+      <section
+        className={[
+          "session-health",
+          `session-health--${healthState.id}`,
+        ].join(" ")}
+      >
+        <header className="session-health__score">
+          <div>
+            <span>Aktuelle TP</span>
 
             <strong>
               {vitals.currentHitPoints}
-
-              <span>
-                {" "}
-                / {vitals.maximumHitPoints}
-              </span>
             </strong>
           </div>
 
+          <i aria-hidden="true">
+            /
+          </i>
+
+          <div>
+            <span>Maximum</span>
+
+            <strong>
+              {vitals.maximumHitPoints}
+            </strong>
+          </div>
+
+          {vitals.temporaryHitPoints >
+            0 && (
+            <div className="session-health__temporary">
+              <span>Temporär</span>
+
+              <strong>
+                +
+                {
+                  vitals
+                    .temporaryHitPoints
+                }
+              </strong>
+            </div>
+          )}
+        </header>
+
+        <div
+          className="session-health__meter"
+          role="progressbar"
+          aria-label="Trefferpunkte"
+          aria-valuemin={0}
+          aria-valuemax={
+            vitals.maximumHitPoints
+          }
+          aria-valuenow={
+            vitals.currentHitPoints
+          }
+        >
+          <i
+            style={{
+              width:
+                `${hitPointPercentage}%`,
+            }}
+          />
+        </div>
+
+        <div className="session-health__presets">
+          <QuickVitalAction
+            label="−1"
+            ariaLabel="1 Schaden"
+            onClick={() =>
+              onDamage(1)
+            }
+          />
+
+          <QuickVitalAction
+            label="−5"
+            ariaLabel="5 Schaden"
+            onClick={() =>
+              onDamage(5)
+            }
+          />
+
+          <QuickVitalAction
+            label="−10"
+            ariaLabel="10 Schaden"
+            onClick={() =>
+              onDamage(10)
+            }
+          />
+
+          <QuickVitalAction
+            label="+1"
+            ariaLabel="1 Trefferpunkt heilen"
+            variant="healing"
+            onClick={() =>
+              onHeal(1)
+            }
+          />
+
+          <QuickVitalAction
+            label="+5"
+            ariaLabel="5 Trefferpunkte heilen"
+            variant="healing"
+            onClick={() =>
+              onHeal(5)
+            }
+          />
+
+          <QuickVitalAction
+            label="+10"
+            ariaLabel="10 Trefferpunkte heilen"
+            variant="healing"
+            onClick={() =>
+              onHeal(10)
+            }
+          />
+        </div>
+
+        <div className="session-health__custom">
           <div
-            className="vital-card__meter"
-            role="progressbar"
-            aria-label="Trefferpunkte"
-            aria-valuemin={0}
-            aria-valuemax={
-              vitals.maximumHitPoints
-            }
-            aria-valuenow={
-              vitals.currentHitPoints
-            }
+            className="session-health__mode"
+            role="group"
+            aria-label="Art der Trefferpunktänderung"
           >
-            <span
-              style={{
-                width: `${hitPointPercentage}%`,
-              }}
-            />
-          </div>
-
-          <div className="vital-card__amount-row">
-            <label>
-              <span>Schaden</span>
-
-              <input
-                type="number"
-                min={0}
-                value={damageAmount}
-                onChange={(event) => {
-                  const value = Number(
-                    event.target.value,
-                  );
-
-                  setDamageAmount(
-                    Number.isFinite(value)
-                      ? Math.max(0, value)
-                      : 0,
-                  );
-                }}
-              />
-            </label>
-
-            <GrimButton
+            <button
               type="button"
+              className={
+                activeAction ===
+                "damage"
+                  ? "session-health__mode-button session-health__mode-button--active"
+                  : "session-health__mode-button"
+              }
+              aria-pressed={
+                activeAction ===
+                "damage"
+              }
               onClick={() =>
-                onDamage(damageAmount)
+                setActiveAction(
+                  "damage",
+                )
               }
             >
-              Schaden anwenden
-            </GrimButton>
-          </div>
+              Schaden
+            </button>
 
-          <div className="vital-card__amount-row">
-            <label>
-              <span>Heilung</span>
-
-              <input
-                type="number"
-                min={0}
-                value={healingAmount}
-                onChange={(event) => {
-                  const value = Number(
-                    event.target.value,
-                  );
-
-                  setHealingAmount(
-                    Number.isFinite(value)
-                      ? Math.max(0, value)
-                      : 0,
-                  );
-                }}
-              />
-            </label>
-
-            <GrimButton
+            <button
               type="button"
+              className={
+                activeAction ===
+                "healing"
+                  ? "session-health__mode-button session-health__mode-button--active session-health__mode-button--healing"
+                  : "session-health__mode-button session-health__mode-button--healing"
+              }
+              aria-pressed={
+                activeAction ===
+                "healing"
+              }
               onClick={() =>
-                onHeal(healingAmount)
+                setActiveAction(
+                  "healing",
+                )
               }
             >
-              Heilung anwenden
-            </GrimButton>
-          </div>
-
-          <div className="vital-card__controls">
-            <button
-              type="button"
-              onClick={() => onDamage(1)}
-            >
-              −1
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onDamage(5)}
-            >
-              −5
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onHeal(1)}
-            >
-              +1
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onHeal(5)}
-            >
-              +5
+              Heilung
             </button>
           </div>
-        </article>
 
-        <article className="vital-card">
-          <small>
-            Temporäre Trefferpunkte
-          </small>
+          <label>
+            <span>Menge</span>
 
-          <div className="vital-card__editable-value">
-            <button
-              type="button"
-              aria-label="Temporäre Trefferpunkte verringern"
-              onClick={() =>
-                onTemporaryHitPointsChange(
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={customAmount}
+              onChange={(event) =>
+                setCustomAmount(
                   Math.max(
-                    0,
-                    vitals.temporaryHitPoints - 1,
+                    1,
+                    Number(
+                      event
+                        .target
+                        .value,
+                    ),
                   ),
                 )
               }
-            >
-              −
-            </button>
+            />
+          </label>
 
-            <strong>
-              {vitals.temporaryHitPoints}
-            </strong>
+          <button
+            type="button"
+            className={[
+              "session-health__apply",
 
-            <button
-              type="button"
-              aria-label="Temporäre Trefferpunkte erhöhen"
-              onClick={() =>
-                onTemporaryHitPointsChange(
-                  vitals.temporaryHitPoints + 1,
-                )
-              }
-            >
-              +
-            </button>
-          </div>
-        </article>
+              activeAction ===
+              "healing"
+                ? "session-health__apply--healing"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={
+              applyCustomAmount
+            }
+          >
+            {activeAction ===
+            "damage"
+              ? "Schaden anwenden"
+              : "Heilung anwenden"}
+          </button>
+        </div>
+      </section>
 
-        <article className="vital-card">
-          <small>Rüstungsklasse</small>
+      <section className="session-vital-grid">
+        <EditableVital
+          abbreviation="TEMP"
+          label="Temporäre TP"
+          value={
+            vitals
+              .temporaryHitPoints
+          }
+          minimum={0}
+          onDecrease={() =>
+            onTemporaryHitPointsChange(
+              Math.max(
+                0,
+                vitals
+                  .temporaryHitPoints -
+                  1,
+              ),
+            )
+          }
+          onIncrease={() =>
+            onTemporaryHitPointsChange(
+              vitals
+                .temporaryHitPoints +
+                1,
+            )
+          }
+          onChange={
+            onTemporaryHitPointsChange
+          }
+        />
 
-          <strong className="vital-card__large-value">
-            {vitals.armorClass}
+        <EditableVital
+          abbreviation="MAX"
+          label="Maximale TP"
+          value={
+            vitals.maximumHitPoints
+          }
+          minimum={1}
+          onDecrease={() =>
+            changeMaximumHitPoints(
+              -1,
+            )
+          }
+          onIncrease={() =>
+            changeMaximumHitPoints(
+              1,
+            )
+          }
+          onChange={(value) => {
+            const maximumHitPoints =
+              Math.max(1, value);
+
+            onVitalsChange({
+              ...vitals,
+
+              maximumHitPoints,
+
+              currentHitPoints:
+                Math.min(
+                  vitals
+                    .currentHitPoints,
+                  maximumHitPoints,
+                ),
+            });
+          }}
+        />
+
+        <EditableVital
+          abbreviation="RK"
+          label="Rüstungsklasse"
+          value={vitals.armorClass}
+          minimum={0}
+          onDecrease={() =>
+            changeArmorClass(-1)
+          }
+          onIncrease={() =>
+            changeArmorClass(1)
+          }
+          onChange={(value) =>
+            onVitalsChange({
+              ...vitals,
+
+              armorClass:
+                Math.max(0, value),
+            })
+          }
+        />
+
+        <EditableVital
+          abbreviation="INI"
+          label="Initiative"
+          value={
+            vitals
+              .initiativeModifier
+          }
+          onDecrease={() =>
+            changeInitiative(-1)
+          }
+          onIncrease={() =>
+            changeInitiative(1)
+          }
+          onChange={(value) =>
+            onVitalsChange({
+              ...vitals,
+
+              initiativeModifier:
+                value,
+            })
+          }
+          signed
+        />
+
+        <EditableVital
+          abbreviation="BEW"
+          label="Bewegung"
+          value={vitals.speed}
+          suffix="m"
+          minimum={0}
+          onDecrease={() =>
+            changeSpeed(-1)
+          }
+          onIncrease={() =>
+            changeSpeed(1)
+          }
+          onChange={(value) =>
+            onVitalsChange({
+              ...vitals,
+
+              speed:
+                Math.max(0, value),
+            })
+          }
+        />
+      </section>
+
+      <section className="session-rests">
+        <div>
+          <span>Erholung</span>
+
+          <strong>
+            Trefferpunkte und Reserven
           </strong>
-        </article>
+        </div>
 
-        <article className="vital-card">
-          <small>Initiative</small>
-
-          <strong className="vital-card__large-value">
-            {formatAbilityModifier(
-              vitals.initiativeModifier,
-            )}
-          </strong>
-        </article>
-
-        <article className="vital-card">
-          <small>Bewegung</small>
-
-          <strong className="vital-card__large-value">
-            {vitals.speed}
-            <span> m</span>
-          </strong>
-        </article>
-      </div>
-
-      <footer className="vital-panel__rest-actions">
-        <GrimButton
+        <button
           type="button"
           onClick={onShortRest}
         >
-          Kurzrast
-        </GrimButton>
+          Kurze Rast
+        </button>
 
-        <GrimButton
+        <button
           type="button"
           onClick={onLongRest}
         >
-          Langrast
-        </GrimButton>
-      </footer>
+          Lange Rast
+        </button>
+      </section>
     </section>
   );
 }
 
-interface VitalEditorProps {
-  vitals: CharacterVitals;
+interface QuickVitalActionProps {
+  label: string;
+  ariaLabel: string;
 
-  onFieldChange: (
-    field: keyof CharacterVitals,
+  variant?: "damage" | "healing";
+
+  onClick: () => void;
+}
+
+function QuickVitalAction({
+  label,
+  ariaLabel,
+  variant = "damage",
+  onClick,
+}: QuickVitalActionProps) {
+  return (
+    <button
+      type="button"
+      className={[
+        "session-health__preset",
+
+        variant === "healing"
+          ? "session-health__preset--healing"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label={ariaLabel}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
+interface EditableVitalProps {
+  abbreviation: string;
+  label: string;
+
+  value: number;
+
+  minimum?: number;
+  suffix?: string;
+
+  signed?: boolean;
+
+  onDecrease: () => void;
+  onIncrease: () => void;
+
+  onChange: (
     value: number,
   ) => void;
 }
 
-function VitalEditor({
-  vitals,
-  onFieldChange,
-}: VitalEditorProps) {
-  return (
-    <section className="vital-editor">
-      <header className="vital-editor__header">
-        <p>Aktenkorrektur</p>
-
-        <h4>Grundwerte bearbeiten</h4>
-      </header>
-
-      <div className="vital-editor__grid">
-        <VitalEditorField
-          label="Maximale Trefferpunkte"
-          value={vitals.maximumHitPoints}
-          min={1}
-          onChange={(value) =>
-            onFieldChange(
-              "maximumHitPoints",
-              value,
-            )
-          }
-        />
-
-        <VitalEditorField
-          label="Aktuelle Trefferpunkte"
-          value={vitals.currentHitPoints}
-          min={0}
-          max={vitals.maximumHitPoints}
-          onChange={(value) =>
-            onFieldChange(
-              "currentHitPoints",
-              value,
-            )
-          }
-        />
-
-        <VitalEditorField
-          label="Temporäre Trefferpunkte"
-          value={vitals.temporaryHitPoints}
-          min={0}
-          onChange={(value) =>
-            onFieldChange(
-              "temporaryHitPoints",
-              value,
-            )
-          }
-        />
-
-        <VitalEditorField
-          label="Rüstungsklasse"
-          value={vitals.armorClass}
-          min={0}
-          onChange={(value) =>
-            onFieldChange(
-              "armorClass",
-              value,
-            )
-          }
-        />
-
-        <VitalEditorField
-          label="Initiative"
-          value={vitals.initiativeModifier}
-          onChange={(value) =>
-            onFieldChange(
-              "initiativeModifier",
-              value,
-            )
-          }
-        />
-
-        <VitalEditorField
-          label="Bewegung in Metern"
-          value={vitals.speed}
-          min={0}
-          step={0.5}
-          onChange={(value) =>
-            onFieldChange(
-              "speed",
-              value,
-            )
-          }
-        />
-      </div>
-    </section>
-  );
-}
-
-interface VitalEditorFieldProps {
-  label: string;
-  value: number;
-
-  min?: number;
-  max?: number;
-  step?: number;
-
-  onChange: (value: number) => void;
-}
-
-function VitalEditorField({
+function EditableVital({
+  abbreviation,
   label,
   value,
-  min,
-  max,
-  step = 1,
+  minimum,
+  suffix,
+  signed = false,
+  onDecrease,
+  onIncrease,
   onChange,
-}: VitalEditorFieldProps) {
+}: EditableVitalProps) {
+  const displayValue =
+    signed && value >= 0
+      ? `+${value}`
+      : String(value);
+
   return (
-    <label className="vital-editor__field">
-      <span>{label}</span>
+    <article className="session-vital">
+      <header>
+        <span>{abbreviation}</span>
 
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(event) => {
-          const nextValue = Number(
-            event.target.value,
-          );
+        <small>{label}</small>
+      </header>
 
-          onChange(
-            Number.isFinite(nextValue)
-              ? nextValue
-              : 0,
-          );
-        }}
-      />
-    </label>
+      <strong>
+        {displayValue}
+
+        {suffix && (
+          <small>{suffix}</small>
+        )}
+      </strong>
+
+      <div className="session-vital__controls">
+        <button
+          type="button"
+          aria-label={`${label} verringern`}
+          disabled={
+            typeof minimum ===
+              "number" &&
+            value <= minimum
+          }
+          onClick={onDecrease}
+        >
+          −
+        </button>
+
+        <input
+          type="number"
+          value={value}
+          min={minimum}
+          aria-label={label}
+          onChange={(event) =>
+            onChange(
+              Number(
+                event.target.value,
+              ),
+            )
+          }
+        />
+
+        <button
+          type="button"
+          aria-label={`${label} erhöhen`}
+          onClick={onIncrease}
+        >
+          +
+        </button>
+      </div>
+    </article>
   );
+}
+
+function getHitPointPercentage(
+  currentHitPoints: number,
+  maximumHitPoints: number,
+): number {
+  if (maximumHitPoints <= 0) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      (
+        currentHitPoints /
+        maximumHitPoints
+      ) * 100,
+    ),
+  );
+}
+
+function getHealthState(
+  percentage: number,
+  currentHitPoints: number,
+): {
+  id:
+    | "healthy"
+    | "wounded"
+    | "critical"
+    | "down";
+
+  label: string;
+} {
+  if (currentHitPoints <= 0) {
+    return {
+      id: "down",
+      label: "Kampfunfähig",
+    };
+  }
+
+  if (percentage <= 25) {
+    return {
+      id: "critical",
+      label: "Kritisch",
+    };
+  }
+
+  if (percentage <= 50) {
+    return {
+      id: "wounded",
+      label: "Verwundet",
+    };
+  }
+
+  return {
+    id: "healthy",
+    label: "Kampfbereit",
+  };
 }

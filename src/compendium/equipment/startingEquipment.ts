@@ -714,6 +714,98 @@ export const startingEquipment:
       ],
       guaranteedPacks: [],
     },
+    {
+  classId: "monster-hunter",
+
+  choices: [
+    {
+      id: "monster-hunter-armor",
+      title: "Rüstung",
+      options: [
+        option(
+          "monster-hunter-scale-mail",
+          "Schuppenpanzer",
+          [["scale-mail", 1]],
+        ),
+        option(
+          "monster-hunter-leather",
+          "Lederrüstung",
+          [["leather", 1]],
+        ),
+      ],
+    },
+
+    {
+      id: "monster-hunter-primary",
+      title: "Primärwaffe",
+      options: [
+        option(
+          "monster-hunter-longsword",
+          "Langschwert",
+          [["longsword", 1]],
+        ),
+        option(
+          "monster-hunter-rapier",
+          "Rapier",
+          [["rapier", 1]],
+        ),
+        option(
+          "monster-hunter-greatsword",
+          "Großschwert",
+          [["greatsword", 1]],
+        ),
+      ],
+    },
+
+    {
+      id: "monster-hunter-secondary",
+      title: "Sekundärbewaffnung",
+      options: [
+        option(
+          "monster-hunter-shield",
+          "Schild",
+          [["shield", 1]],
+        ),
+        option(
+          "monster-hunter-light-crossbow",
+          "Leichte Armbrust",
+          [
+            ["light-crossbow", 1],
+            ["crossbow-bolts", 20],
+          ],
+        ),
+        option(
+          "monster-hunter-handaxes",
+          "Zwei Handäxte",
+          [["handaxe", 2]],
+        ),
+      ],
+    },
+
+    {
+      id: "monster-hunter-pack",
+      title: "Ausrüstungspaket",
+      options: [
+        packOption(
+          "monster-hunter-dungeoneer",
+          "Gewölbeforscherpaket",
+          "dungeoneers-pack",
+        ),
+        packOption(
+          "monster-hunter-explorer",
+          "Entdeckerpaket",
+          "explorers-pack",
+        ),
+      ],
+    },
+  ],
+
+  guaranteedEquipment: [
+    item("dagger", 1),
+  ],
+
+  guaranteedPacks: [],
+},
   ];
 
 function item(
@@ -746,6 +838,7 @@ function option(
         quantity,
       }),
     ),
+    
   };
 }
 

@@ -18,6 +18,14 @@ import type {
   CharacterInventory,
 } from "../../archives/types";
 
+import {
+  getPassiveScores,
+} from "./getPassiveScores";
+
+import {
+  getSpellcastingStats,
+} from "./getSpellcastingStats";
+
 export interface EquippedWeaponSummary {
   id: string;
   name: string;
@@ -35,7 +43,16 @@ export interface EquippedWeaponSummary {
 export interface CharacterDerivedStats {
   armorClass: number;
 
+  /**
+   * Bleibt aus Kompatibilitätsgründen bestehen.
+   * Der Wert entspricht passiveScores.perception.
+   */
   passivePerception: number;
+
+  passiveScores:
+    ReturnType<
+      typeof getPassiveScores
+    >;
 
   proficiencyBonus: number;
 
@@ -43,7 +60,13 @@ export interface CharacterDerivedStats {
   carryingCapacity: number;
   carryingPercentage: number;
 
-  equippedWeapons: EquippedWeaponSummary[];
+  equippedWeapons:
+    EquippedWeaponSummary[];
+
+  spellcasting:
+    ReturnType<
+      typeof getSpellcastingStats
+    >;
 }
 
 const damageTypeLabels = {
@@ -69,41 +92,71 @@ export function getCharacterDerivedStats(
   inventory: CharacterInventory,
 ): CharacterDerivedStats {
   const strength =
-    character.abilityScores?.strength ?? 10;
+    character.abilityScores
+      ?.strength ?? 10;
 
   const dexterity =
-    character.abilityScores?.dexterity ?? 10;
+    character.abilityScores
+      ?.dexterity ?? 10;
 
   const wisdom =
-    character.abilityScores?.wisdom ?? 10;
+    character.abilityScores
+      ?.wisdom ?? 10;
 
   const dexterityModifier =
-    getAbilityModifier(dexterity);
+    getAbilityModifier(
+      dexterity,
+    );
 
   const wisdomModifier =
-    getAbilityModifier(wisdom);
+    getAbilityModifier(
+      wisdom,
+    );
 
   const proficiencyBonus =
-    getProficiencyBonus(character.level);
+    getProficiencyBonus(
+      character.level,
+    );
 
+  /*
+   * Dieser Einzelwert bleibt erhalten,
+   * damit bestehende Komponenten weiterhin
+   * derivedStats.passivePerception verwenden
+   * können.
+   */
   const perceptionProficient =
-    character.skillProficiencies?.includes(
-      "perception",
-    ) ?? false;
+    character
+      .skillProficiencies
+      ?.includes(
+        "perception",
+      ) ?? false;
 
   const perceptionExpertise =
-    character.skillExpertise?.includes(
-      "perception",
-    ) ?? false;
+    character
+      .skillExpertise
+      ?.includes(
+        "perception",
+      ) ?? false;
 
   const passivePerception =
     10 +
     getSkillBonus({
-      abilityModifier: wisdomModifier,
+      abilityModifier:
+        wisdomModifier,
+
       proficiencyBonus,
-      proficient: perceptionProficient,
-      expertise: perceptionExpertise,
+
+      proficient:
+        perceptionProficient,
+
+      expertise:
+        perceptionExpertise,
     });
+
+  const passiveScores =
+    getPassiveScores(
+      character,
+    );
 
   const armorClass =
     calculateArmorClass(
@@ -113,32 +166,43 @@ export function getCharacterDerivedStats(
 
   const totalWeight =
     inventory.items.reduce(
-      (sum, item) =>
+      (
+        sum,
+        item,
+      ) =>
         sum +
         item.weight *
-          Math.max(0, item.quantity),
+          Math.max(
+            0,
+            item.quantity,
+          ),
       0,
     );
 
   /*
-   * D&D-Traglast:
-   * Stärke × 15 lb.
+   * Klassische D&D-Traglast:
    *
-   * Dein Inventar speichert Gewicht in kg,
-   * daher erfolgt hier die Umrechnung.
+   * Stärke × 15 Pfund.
+   *
+   * Da das Inventar in Kilogramm arbeitet,
+   * wird das Ergebnis anschließend umgerechnet.
    */
   const carryingCapacity =
     poundsToKilograms(
-      Math.max(1, strength) * 15,
+      Math.max(
+        1,
+        strength,
+      ) * 15,
     );
 
   const carryingPercentage =
     carryingCapacity > 0
       ? Math.min(
           999,
-          (totalWeight /
-            carryingCapacity) *
-            100,
+          (
+            totalWeight /
+            carryingCapacity
+          ) * 100,
         )
       : 0;
 
@@ -147,6 +211,7 @@ export function getCharacterDerivedStats(
       (inventoryItem) => {
         if (
           !inventoryItem.equipped ||
+          inventoryItem.quantity <= 0 ||
           inventoryItem.category !==
             "weapon"
         ) {
@@ -175,14 +240,27 @@ export function getCharacterDerivedStats(
       },
     );
 
+  const spellcasting =
+    getSpellcastingStats(
+      character,
+    );
+
   return {
     armorClass,
+
     passivePerception,
+
+    passiveScores,
+
     proficiencyBonus,
+
     totalWeight,
     carryingCapacity,
     carryingPercentage,
+
     equippedWeapons,
+
+    spellcasting,
   };
 }
 
@@ -195,6 +273,7 @@ function calculateArmorClass(
       (inventoryItem) => {
         if (
           !inventoryItem.equipped ||
+          inventoryItem.quantity <= 0 ||
           inventoryItem.category !==
             "armor"
         ) {
@@ -218,20 +297,24 @@ function calculateArmorClass(
           return [];
         }
 
-        return [definition];
+        return [
+          definition,
+        ];
       },
     );
 
   const equippedArmor =
     equippedDefinitions.find(
       (definition) =>
-        definition.category === "armor",
+        definition.category ===
+        "armor",
     );
 
   const equippedShields =
     equippedDefinitions.filter(
       (definition) =>
-        definition.category === "shield",
+        definition.category ===
+        "shield",
     );
 
   const baseArmorClass =
@@ -240,18 +323,24 @@ function calculateArmorClass(
           equippedArmor,
           dexterityModifier,
         )
-      : 10 + dexterityModifier;
+      : 10 +
+        dexterityModifier;
 
   const shieldBonus =
     equippedShields.reduce(
-      (sum, shield) =>
-        sum + shield.armorClass,
+      (
+        sum,
+        shield,
+      ) =>
+        sum +
+        shield.armorClass,
       0,
     );
 
   return Math.max(
     0,
-    baseArmorClass + shieldBonus,
+    baseArmorClass +
+      shieldBonus,
   );
 }
 
@@ -259,16 +348,27 @@ function getArmorClassFromArmor(
   armor: ArmorItem,
   dexterityModifier: number,
 ): number {
-  if (!armor.dexterityModifier) {
+  if (
+    armor.category ===
+    "shield"
+  ) {
+    return armor.armorClass;
+  }
+
+  if (
+    !armor.dexterityModifier
+  ) {
     return armor.armorClass;
   }
 
   const dexterityBonus =
-    typeof armor.maximumDexterityBonus ===
-    "number"
+    typeof armor
+      .maximumDexterityBonus ===
+      "number"
       ? Math.min(
           dexterityModifier,
-          armor.maximumDexterityBonus,
+          armor
+            .maximumDexterityBonus,
         )
       : dexterityModifier;
 
@@ -283,8 +383,11 @@ function createWeaponSummary(
   quantity: number,
 ): EquippedWeaponSummary {
   return {
-    id: weapon.id,
-    name: weapon.name,
+    id:
+      weapon.id,
+
+    name:
+      weapon.name,
 
     damage:
       `${weapon.damage.dice}W` +

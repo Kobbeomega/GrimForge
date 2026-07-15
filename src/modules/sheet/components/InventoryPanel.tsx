@@ -1,6 +1,18 @@
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import { GrimButton } from "../../../components/ui/GrimButton";
+
+import {
+  getEquipmentById,
+} from "../../../compendium/equipment";
+
+import type {
+  EquipmentDefinition,
+  WeaponItem,
+} from "../../../compendium/equipment";
 
 import type {
   CharacterCurrency,
@@ -25,6 +37,10 @@ interface NewInventoryItemDraft {
   notes: string;
 }
 
+type InventoryFilter =
+  | "all"
+  | InventoryItemCategory;
+
 const categoryLabels: Record<
   InventoryItemCategory,
   string
@@ -36,6 +52,14 @@ const categoryLabels: Record<
   tool: "Werkzeug",
   treasure: "Wertgegenstand",
   other: "Sonstiges",
+};
+
+const filterLabels: Record<
+  InventoryFilter,
+  string
+> = {
+  all: "Alles",
+  ...categoryLabels,
 };
 
 const emptyItemDraft: NewInventoryItemDraft = {
@@ -53,6 +77,9 @@ export function InventoryPanel({
   const [isAddingItem, setIsAddingItem] =
     useState(false);
 
+  const [activeFilter, setActiveFilter] =
+    useState<InventoryFilter>("all");
+
   const [newItem, setNewItem] =
     useState<NewInventoryItemDraft>(
       emptyItemDraft,
@@ -64,10 +91,44 @@ export function InventoryPanel({
         (sum, item) =>
           sum +
           item.weight *
-            item.quantity,
+            Math.max(0, item.quantity),
         0,
       ),
     [inventory.items],
+  );
+
+  const totalItemCount = useMemo(
+    () =>
+      inventory.items.reduce(
+        (sum, item) =>
+          sum +
+          Math.max(0, item.quantity),
+        0,
+      ),
+    [inventory.items],
+  );
+
+  const equippedItems = useMemo(
+    () =>
+      inventory.items.filter(
+        (item) => item.equipped,
+      ),
+    [inventory.items],
+  );
+
+  const filteredItems = useMemo(
+    () =>
+      activeFilter === "all"
+        ? inventory.items
+        : inventory.items.filter(
+            (item) =>
+              item.category ===
+              activeFilter,
+          ),
+    [
+      activeFilter,
+      inventory.items,
+    ],
   );
 
   function handleAddItem() {
@@ -132,6 +193,7 @@ export function InventoryPanel({
           item.id === itemId
             ? {
                 ...updater(item),
+
                 updatedAt:
                   new Date().toISOString(),
               }
@@ -150,7 +212,7 @@ export function InventoryPanel({
         ...item,
 
         quantity: Math.max(
-          1,
+          0,
           item.quantity + amount,
         ),
       }),
@@ -205,16 +267,16 @@ export function InventoryPanel({
   }
 
   return (
-    <section className="inventory-panel">
-      <header className="inventory-panel__header">
+    <section className="live-inventory">
+      <header className="live-inventory__header">
         <div>
-          <p>Kapitel IV</p>
+          <p>Kapitel III</p>
 
           <h2>Inventar</h2>
 
           <span>
-            Waffen, Ausrüstung, Vorräte und
-            Wertgegenstände der geöffneten Akte.
+            Ausrüstung, Vorräte und Waffen für
+            die laufende Sitzung.
           </span>
         </div>
 
@@ -227,18 +289,27 @@ export function InventoryPanel({
           }
         >
           {isAddingItem
-            ? "Eintrag schließen"
+            ? "Editor schließen"
             : "Gegenstand hinzufügen"}
         </GrimButton>
       </header>
 
       <InventorySummary
-        itemCount={inventory.items.reduce(
-          (sum, item) =>
-            sum + item.quantity,
-          0,
-        )}
+        itemCount={totalItemCount}
+        uniqueItemCount={
+          inventory.items.length
+        }
+        equippedCount={
+          equippedItems.length
+        }
         totalWeight={totalWeight}
+      />
+
+      <EquippedItemsPanel
+        items={equippedItems}
+        onToggleEquipped={
+          toggleEquipped
+        }
       />
 
       <CurrencyEditor
@@ -258,22 +329,38 @@ export function InventoryPanel({
         />
       )}
 
+      <InventoryFilters
+        activeFilter={activeFilter}
+        items={inventory.items}
+        onChange={setActiveFilter}
+      />
+
       {inventory.items.length === 0 ? (
-        <div className="inventory-panel__empty">
-          <p>
-            Diese Akte enthält noch keine
-            Ausrüstung.
-          </p>
+        <div className="live-inventory__empty">
+          <strong>
+            Noch keine Ausrüstung
+          </strong>
 
           <span>
-            Füge beispielsweise Fackeln,
-            Rationen, Waffen oder Werkzeuge
+            Füge Waffen, Rüstungen,
+            Verbrauchsgüter oder Werkzeuge
             hinzu.
           </span>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="live-inventory__empty">
+          <strong>
+            Keine passenden Gegenstände
+          </strong>
+
+          <span>
+            In dieser Kategorie befinden sich
+            aktuell keine Einträge.
+          </span>
+        </div>
       ) : (
-        <div className="inventory-grid">
-          {inventory.items.map((item) => (
+        <div className="live-inventory__grid">
+          {filteredItems.map((item) => (
             <InventoryItemCard
               key={item.id}
               item={item}
@@ -299,27 +386,215 @@ export function InventoryPanel({
 
 interface InventorySummaryProps {
   itemCount: number;
+  uniqueItemCount: number;
+  equippedCount: number;
   totalWeight: number;
 }
 
 function InventorySummary({
   itemCount,
+  uniqueItemCount,
+  equippedCount,
   totalWeight,
 }: InventorySummaryProps) {
   return (
-    <dl className="inventory-summary">
+    <dl className="live-inventory-summary">
       <div>
         <dt>Gegenstände</dt>
+
         <dd>{itemCount}</dd>
+
+        <small>
+          {uniqueItemCount} Einträge
+        </small>
+      </div>
+
+      <div>
+        <dt>Ausgerüstet</dt>
+
+        <dd>{equippedCount}</dd>
+
+        <small>
+          kampfbereit
+        </small>
       </div>
 
       <div>
         <dt>Gesamtgewicht</dt>
+
         <dd>
-          {formatWeight(totalWeight)} kg
+          {formatWeight(totalWeight)}
         </dd>
+
+        <small>kg</small>
       </div>
     </dl>
+  );
+}
+
+interface EquippedItemsPanelProps {
+  items: CharacterInventoryItem[];
+
+  onToggleEquipped: (
+    itemId: string,
+  ) => void;
+}
+
+function EquippedItemsPanel({
+  items,
+  onToggleEquipped,
+}: EquippedItemsPanelProps) {
+  return (
+    <section className="equipped-items">
+      <header className="equipped-items__header">
+        <div>
+          <p>Live-Ausrüstung</p>
+
+          <h3>Ausgerüstete Gegenstände</h3>
+        </div>
+
+        <span>
+          {items.length} aktiv
+        </span>
+      </header>
+
+      {items.length === 0 ? (
+        <div className="equipped-items__empty">
+          <strong>
+            Nichts ausgerüstet
+          </strong>
+
+          <span>
+            Rüste unten eine Waffe, Rüstung
+            oder einen Schild aus.
+          </span>
+        </div>
+      ) : (
+        <div className="equipped-items__grid">
+          {items.map((item) => {
+            const definition =
+              getEquipmentById(item.id);
+
+            return (
+              <article
+                key={item.id}
+                className="equipped-item"
+              >
+                <header>
+                  <div>
+                    <span>
+                      {
+                        categoryLabels[
+                          item.category
+                        ]
+                      }
+                    </span>
+
+                    <h4>{item.name}</h4>
+                  </div>
+
+                  <strong>
+                    ×{item.quantity}
+                  </strong>
+                </header>
+
+                <EquipmentDefinitionDetails
+                  definition={definition}
+                  fallbackNotes={item.notes}
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    onToggleEquipped(
+                      item.id,
+                    )
+                  }
+                >
+                  Ablegen
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface InventoryFiltersProps {
+  activeFilter: InventoryFilter;
+
+  items: CharacterInventoryItem[];
+
+  onChange: (
+    filter: InventoryFilter,
+  ) => void;
+}
+
+function InventoryFilters({
+  activeFilter,
+  items,
+  onChange,
+}: InventoryFiltersProps) {
+  const filters: InventoryFilter[] = [
+    "all",
+    "weapon",
+    "armor",
+    "consumable",
+    "adventuring-gear",
+    "tool",
+    "treasure",
+    "other",
+  ];
+
+  return (
+    <nav
+      className="inventory-filters"
+      aria-label="Inventarkategorien"
+    >
+      {filters.map((filter) => {
+        const count =
+          filter === "all"
+            ? items.length
+            : items.filter(
+                (item) =>
+                  item.category ===
+                  filter,
+              ).length;
+
+        if (
+          filter !== "all" &&
+          count === 0
+        ) {
+          return null;
+        }
+
+        return (
+          <button
+            key={filter}
+            type="button"
+            className={
+              activeFilter === filter
+                ? "inventory-filters__button inventory-filters__button--active"
+                : "inventory-filters__button"
+            }
+            aria-pressed={
+              activeFilter === filter
+            }
+            onClick={() =>
+              onChange(filter)
+            }
+          >
+            <span>
+              {filterLabels[filter]}
+            </span>
+
+            <strong>{count}</strong>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -337,13 +612,14 @@ function CurrencyEditor({
   onChange,
 }: CurrencyEditorProps) {
   return (
-    <section className="inventory-currency">
+    <section className="live-currency">
       <header>
         <p>Vermögen</p>
+
         <h3>Münzen</h3>
       </header>
 
-      <div className="inventory-currency__grid">
+      <div className="live-currency__grid">
         <CurrencyField
           label="Kupfer"
           abbreviation="KM"
@@ -389,27 +665,370 @@ function CurrencyField({
   value,
   onChange,
 }: CurrencyFieldProps) {
-  return (
-    <label className="inventory-currency__field">
-      <span>{label}</span>
+  function change(
+    amount: number,
+  ) {
+    onChange(
+      Math.max(
+        0,
+        value + amount,
+      ),
+    );
+  }
 
-      <div>
-        <input
-          type="number"
-          min={0}
-          value={value}
-          onChange={(event) =>
-            onChange(
-              Number(event.target.value),
-            )
-          }
-        />
+  return (
+    <article className="live-currency__field">
+      <header>
+        <span>{label}</span>
 
         <strong>
           {abbreviation}
         </strong>
+      </header>
+
+      <div>
+        <button
+          type="button"
+          aria-label={`${label} verringern`}
+          disabled={value <= 0}
+          onClick={() => change(-1)}
+        >
+          −
+        </button>
+
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={value}
+          onChange={(event) =>
+            onChange(
+              Math.max(
+                0,
+                Number(
+                  event.target.value,
+                ),
+              ),
+            )
+          }
+        />
+
+        <button
+          type="button"
+          aria-label={`${label} erhöhen`}
+          onClick={() => change(1)}
+        >
+          +
+        </button>
       </div>
-    </label>
+    </article>
+  );
+}
+
+interface InventoryItemCardProps {
+  item: CharacterInventoryItem;
+
+  onQuantityChange: (
+    amount: number,
+  ) => void;
+
+  onToggleEquipped: () => void;
+  onRemove: () => void;
+}
+
+function InventoryItemCard({
+  item,
+  onQuantityChange,
+  onToggleEquipped,
+  onRemove,
+}: InventoryItemCardProps) {
+  const definition =
+    getEquipmentById(item.id);
+
+  const canEquip =
+    item.category === "weapon" ||
+    item.category === "armor" ||
+    item.category === "tool" ||
+    item.category ===
+      "adventuring-gear";
+
+  return (
+    <article
+      className={[
+        "live-inventory-item",
+
+        item.equipped
+          ? "live-inventory-item--equipped"
+          : "",
+
+        item.quantity === 0
+          ? "live-inventory-item--empty"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <header className="live-inventory-item__header">
+        <div>
+          <p>
+            {categoryLabels[item.category]}
+          </p>
+
+          <h3>{item.name}</h3>
+        </div>
+
+        {item.equipped && (
+          <span>Ausgerüstet</span>
+        )}
+      </header>
+
+      <EquipmentDefinitionDetails
+        definition={definition}
+        fallbackNotes={item.notes}
+      />
+
+      <dl className="live-inventory-item__facts">
+        <div>
+          <dt>Menge</dt>
+
+          <dd>{item.quantity}</dd>
+        </div>
+
+        <div>
+          <dt>Stückgewicht</dt>
+
+          <dd>
+            {formatWeight(item.weight)} kg
+          </dd>
+        </div>
+
+        <div>
+          <dt>Gesamt</dt>
+
+          <dd>
+            {formatWeight(
+              item.weight *
+                item.quantity,
+            )}{" "}
+            kg
+          </dd>
+        </div>
+      </dl>
+
+      <div className="live-inventory-item__quantity">
+        <button
+          type="button"
+          disabled={item.quantity <= 0}
+          aria-label={`${item.name} verbrauchen oder entfernen`}
+          onClick={() =>
+            onQuantityChange(-1)
+          }
+        >
+          −
+        </button>
+
+        <strong>{item.quantity}</strong>
+
+        <button
+          type="button"
+          aria-label={`${item.name} hinzufügen`}
+          onClick={() =>
+            onQuantityChange(1)
+          }
+        >
+          +
+        </button>
+      </div>
+
+      <footer className="live-inventory-item__actions">
+        {canEquip && (
+          <button
+            type="button"
+            disabled={
+              item.quantity <= 0
+            }
+            onClick={
+              onToggleEquipped
+            }
+          >
+            {item.equipped
+              ? "Ablegen"
+              : "Ausrüsten"}
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="live-inventory-item__remove"
+          onClick={onRemove}
+        >
+          Entfernen
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+interface EquipmentDefinitionDetailsProps {
+  definition:
+    | EquipmentDefinition
+    | undefined;
+
+  fallbackNotes: string;
+}
+
+function EquipmentDefinitionDetails({
+  definition,
+  fallbackNotes,
+}: EquipmentDefinitionDetailsProps) {
+  if (!definition) {
+    return fallbackNotes ? (
+      <p className="equipment-live-notes">
+        {fallbackNotes}
+      </p>
+    ) : null;
+  }
+
+  if (
+    definition.category === "weapon"
+  ) {
+    return (
+      <WeaponDetails
+        weapon={definition}
+      />
+    );
+  }
+
+  if (
+    definition.category === "armor" ||
+    definition.category === "shield"
+  ) {
+    return (
+      <dl className="equipment-live-facts">
+        <div>
+          <dt>Rüstungsklasse</dt>
+
+          <dd>
+            {definition.category ===
+            "shield"
+              ? `+${definition.armorClass}`
+              : definition.armorClass}
+          </dd>
+        </div>
+
+        <div>
+          <dt>GE-Bonus</dt>
+
+          <dd>
+            {definition.dexterityModifier
+              ? typeof definition.maximumDexterityBonus ===
+                "number"
+                ? `bis +${definition.maximumDexterityBonus}`
+                : "voll"
+              : "keiner"}
+          </dd>
+        </div>
+
+        {definition.strengthRequirement && (
+          <div>
+            <dt>Mindeststärke</dt>
+
+            <dd>
+              {
+                definition
+                  .strengthRequirement
+              }
+            </dd>
+          </div>
+        )}
+
+        <div>
+          <dt>Heimlichkeit</dt>
+
+          <dd>
+            {definition.stealthDisadvantage
+              ? "Nachteil"
+              : "Normal"}
+          </dd>
+        </div>
+      </dl>
+    );
+  }
+
+  const description =
+    definition.description ||
+    fallbackNotes;
+
+  return description ? (
+    <p className="equipment-live-notes">
+      {description}
+    </p>
+  ) : null;
+}
+
+function WeaponDetails({
+  weapon,
+}: {
+  weapon: WeaponItem;
+}) {
+  const properties =
+    weapon.properties.map(
+      getWeaponPropertyLabel,
+    );
+
+  return (
+    <section className="weapon-live-details">
+      <dl className="equipment-live-facts">
+        <div>
+          <dt>Schaden</dt>
+
+          <dd>
+            {weapon.damage.dice}W
+            {weapon.damage.die}{" "}
+            {getDamageTypeLabel(
+              weapon.damage.type,
+            )}
+          </dd>
+        </div>
+
+        {weapon.versatile && (
+          <div>
+            <dt>Vielseitig</dt>
+
+            <dd>
+              {weapon.versatile.dice}W
+              {weapon.versatile.die}
+            </dd>
+          </div>
+        )}
+
+        {weapon.range && (
+          <div>
+            <dt>Reichweite</dt>
+
+            <dd>
+              {weapon.range.normal}
+              {weapon.range.long
+                ? ` / ${weapon.range.long}`
+                : ""}{" "}
+              ft
+            </dd>
+          </div>
+        )}
+      </dl>
+
+      {properties.length > 0 && (
+        <div className="weapon-live-properties">
+          {properties.map(
+            (property) => (
+              <span key={property}>
+                {property}
+              </span>
+            ),
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -569,115 +1188,64 @@ function InventoryItemEditor({
   );
 }
 
-interface InventoryItemCardProps {
-  item: CharacterInventoryItem;
+function getDamageTypeLabel(
+  damageType:
+    | "slashing"
+    | "piercing"
+    | "bludgeoning",
+): string {
+  switch (damageType) {
+    case "slashing":
+      return "Hieb";
 
-  onQuantityChange: (
-    amount: number,
-  ) => void;
+    case "piercing":
+      return "Stich";
 
-  onToggleEquipped: () => void;
-  onRemove: () => void;
+    case "bludgeoning":
+      return "Wucht";
+  }
 }
 
-function InventoryItemCard({
-  item,
-  onQuantityChange,
-  onToggleEquipped,
-  onRemove,
-}: InventoryItemCardProps) {
-  return (
-    <article
-      className={[
-        "inventory-item",
-        item.equipped
-          ? "inventory-item--equipped"
-          : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
-      <header className="inventory-item__header">
-        <div>
-          <p>
-            {categoryLabels[item.category]}
-          </p>
+function getWeaponPropertyLabel(
+  property:
+    | "light"
+    | "heavy"
+    | "finesse"
+    | "two-handed"
+    | "versatile"
+    | "reach"
+    | "thrown"
+    | "loading"
+    | "ammunition",
+): string {
+  switch (property) {
+    case "light":
+      return "Leicht";
 
-          <h3>{item.name}</h3>
-        </div>
+    case "heavy":
+      return "Schwer";
 
-        {item.equipped && (
-          <span>
-            Ausgerüstet
-          </span>
-        )}
-      </header>
+    case "finesse":
+      return "Finesse";
 
-      <dl className="inventory-item__facts">
-        <div>
-          <dt>Menge</dt>
-          <dd>{item.quantity}</dd>
-        </div>
+    case "two-handed":
+      return "Zweihändig";
 
-        <div>
-          <dt>Gewicht</dt>
-          <dd>
-            {formatWeight(
-              item.weight *
-                item.quantity,
-            )}{" "}
-            kg
-          </dd>
-        </div>
-      </dl>
+    case "versatile":
+      return "Vielseitig";
 
-      {item.notes && (
-        <p className="inventory-item__notes">
-          {item.notes}
-        </p>
-      )}
+    case "reach":
+      return "Reichweite";
 
-      <div className="inventory-item__quantity">
-        <button
-          type="button"
-          onClick={() =>
-            onQuantityChange(-1)
-          }
-        >
-          −
-        </button>
+    case "thrown":
+      return "Geworfen";
 
-        <strong>{item.quantity}</strong>
+    case "loading":
+      return "Laden";
 
-        <button
-          type="button"
-          onClick={() =>
-            onQuantityChange(1)
-          }
-        >
-          +
-        </button>
-      </div>
-
-      <footer className="inventory-item__actions">
-        <button
-          type="button"
-          onClick={onToggleEquipped}
-        >
-          {item.equipped
-            ? "Ablegen"
-            : "Ausrüsten"}
-        </button>
-
-        <button
-          type="button"
-          onClick={onRemove}
-        >
-          Entfernen
-        </button>
-      </footer>
-    </article>
-  );
+    case "ammunition":
+      return "Munition";
+  }
 }
 
 function formatWeight(

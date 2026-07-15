@@ -1,16 +1,19 @@
 import { ChapterHeader } from "../../components/ui/ChapterHeader";
 import { GrimButton } from "../../components/ui/GrimButton";
 import { PaperPage } from "../../components/ui/PaperPage";
-import {
-  startingEquipment,
-} from "../../compendium/equipment";
-import {
-  getBackgroundById,
-} from "../../compendium/backgrounds";
 
 import {
   getClassSkillChoice,
 } from "../../compendium/classes/skillChoices";
+
+import {
+  startingEquipment,
+} from "../../compendium/equipment";
+
+import {
+  getTransformationById,
+  isTransformationSelectionComplete,
+} from "../../compendium/transformations";
 
 import { CharacterCreatorLayout } from "./components/CharacterCreatorLayout";
 import { CharacterRecordPreview } from "./components/CharacterRecordPreview";
@@ -24,8 +27,25 @@ import { EquipmentStep } from "./components/steps/EquipmentStep";
 import { IdentityStep } from "./components/steps/IdentityStep";
 import { SkillsStep } from "./components/steps/SkillsStep";
 
-import { useCharacterCreator } from "./useCharacterCreator";
-import { mapDraftToArchiveEntry } from "./mappers/mapDraftToArchiveEntry";
+import {
+  SpellsStep,
+} from "./components/steps/SpellStep";
+
+import {
+  TransformationStep,
+} from "./components/steps/TransformationStep";
+
+import {
+  mapDraftToArchiveEntry,
+} from "./mappers/mapDraftToArchiveEntry";
+
+import {
+  useCharacterCreator,
+} from "./useCharacterCreator";
+
+import {
+  validateSpellSelection,
+} from "./utils/getSpellSelectionRules";
 
 import type {
   CharacterArchiveEntry,
@@ -49,16 +69,31 @@ interface CharacterCreatorProps {
   ) => void;
 }
 
+const pointBuyCosts: Record<
+  number,
+  number
+> = {
+  8: 0,
+  9: 1,
+  10: 2,
+  11: 3,
+  12: 4,
+  13: 5,
+  14: 7,
+  15: 9,
+};
+
 export function CharacterCreator({
   fileNumber,
   initialDraft,
   onCancel,
   onFinished,
 }: CharacterCreatorProps) {
-  const creator = useCharacterCreator({
-    fileNumber,
-    initialDraft,
-  });
+  const creator =
+    useCharacterCreator({
+      fileNumber,
+      initialDraft,
+    });
 
   const previewCharacter =
     mapDraftToArchiveEntry(
@@ -68,13 +103,23 @@ export function CharacterCreator({
   const isEditing =
     Boolean(initialDraft);
 
+  const isFirstStep =
+    creator.draft.currentStep ===
+    "identity";
+
+  const isLastStep =
+    creator.draft.currentStep ===
+    "summary";
+
   function handleIdentityChange(
     identity: CharacterIdentityDraft,
   ) {
-    creator.updateDraft((draft) => ({
-      ...draft,
-      identity,
-    }));
+    creator.updateDraft(
+      (draft) => ({
+        ...draft,
+        identity,
+      }),
+    );
   }
 
   function handleSealRecord() {
@@ -92,44 +137,33 @@ export function CharacterCreator({
 
       return;
     }
-const equipmentConfiguration =
-  startingEquipment.find(
-    (entry) =>
-      entry.classId ===
-      creator.draft.classId,
-  );
 
-if (equipmentConfiguration) {
-  const completedEquipmentChoices =
-    equipmentConfiguration.choices.filter(
-      (choice) =>
-        creator.draft
-          .startingEquipmentSelections
-          .some(
-            (selection) =>
-              selection.choiceId ===
-              choice.id,
-          ),
-    ).length;
-
-  if (
-    completedEquipmentChoices !==
-    equipmentConfiguration.choices.length
-  ) {
-    window.alert(
-      "Treffe zuerst alle Entscheidungen zur Startausrüstung.",
-    );
-
-    creator.setCurrentStep(
-      "equipment",
-    );
-
-    return;
-  }
-}
     if (!creator.draft.ancestryId) {
       window.alert(
         "Wähle zuerst eine Abstammung.",
+      );
+
+      creator.setCurrentStep(
+        "ancestry",
+      );
+
+      return;
+    }
+
+    const maximumAncestryTraits =
+      creator.draft
+        .ancestryUsesReducedSpeed
+        ? 9
+        : 8;
+
+    if (
+      creator.draft
+        .ancestryTraitIds
+        .length !==
+      maximumAncestryTraits
+    ) {
+      window.alert(
+        `Wähle genau ${maximumAncestryTraits} Herkunftseigenschaften.`,
       );
 
       creator.setCurrentStep(
@@ -185,42 +219,149 @@ if (equipmentConfiguration) {
 
       return;
     }
-const pointBuyCosts: Record<
-  number,
-  number
-> = {
-  8: 0,
-  9: 1,
-  10: 2,
-  11: 3,
-  12: 4,
-  13: 5,
-  14: 7,
-  15: 9,
-};
 
-const spentAbilityPoints =
-  Object.values(
-    creator.draft.baseAbilities,
-  ).reduce(
-    (total, value) =>
-      total +
-      (pointBuyCosts[value] ??
-        Number.POSITIVE_INFINITY),
-    0,
-  );
+    const spentAbilityPoints =
+      Object.values(
+        creator.draft.baseAbilities,
+      ).reduce(
+        (total, value) =>
+          total +
+          (
+            pointBuyCosts[value] ??
+            Number.POSITIVE_INFINITY
+          ),
+        0,
+      );
 
-if (spentAbilityPoints !== 27) {
-  window.alert(
-    "Verteile im Point-Buy-System genau 27 Punkte.",
-  );
+    if (spentAbilityPoints !== 27) {
+      window.alert(
+        "Verteile im Point-Buy-System genau 27 Punkte.",
+      );
 
-  creator.setCurrentStep(
-    "abilities",
-  );
+      creator.setCurrentStep(
+        "abilities",
+      );
 
-  return;
-}
+      return;
+    }
+
+    const equipmentConfiguration =
+      startingEquipment.find(
+        (entry) =>
+          entry.classId ===
+          creator.draft.classId,
+      );
+
+    if (equipmentConfiguration) {
+      const completedEquipmentChoices =
+        equipmentConfiguration
+          .choices
+          .filter(
+            (choice) =>
+              creator.draft
+                .startingEquipmentSelections
+                .some(
+                  (selection) =>
+                    selection.choiceId ===
+                    choice.id,
+                ),
+          )
+          .length;
+
+      if (
+        completedEquipmentChoices !==
+        equipmentConfiguration
+          .choices
+          .length
+      ) {
+        window.alert(
+          "Treffe zuerst alle Entscheidungen zur Startausrüstung.",
+        );
+
+        creator.setCurrentStep(
+          "equipment",
+        );
+
+        return;
+      }
+    }
+
+    const spellValidation =
+      validateSpellSelection({
+        classId:
+          creator.draft.classId,
+
+        level:
+          creator.draft.level,
+
+        abilityScores:
+          creator.draft
+            .baseAbilities,
+
+        spellcasting:
+          creator.draft.spellcasting,
+      });
+
+    if (!spellValidation.valid) {
+      window.alert(
+        spellValidation.message ??
+          "Vervollständige zuerst die Zauberauswahl.",
+      );
+
+      creator.setCurrentStep(
+        "spells",
+      );
+
+      return;
+    }
+
+    if (
+      creator.draft.transformationId
+    ) {
+      const transformation =
+        getTransformationById(
+          creator.draft
+            .transformationId,
+        );
+
+      if (!transformation) {
+        window.alert(
+          "Die gewählte Transformation konnte nicht gefunden werden.",
+        );
+
+        creator.setCurrentStep(
+          "transformation",
+        );
+
+        return;
+      }
+
+      const transformationComplete =
+        isTransformationSelectionComplete({
+          transformation,
+
+          currentStage:
+            creator.draft
+              .transformationStage,
+
+          selectedFeatureIds:
+            creator.draft
+              .transformationFeatureIds,
+        });
+
+      if (!transformationComplete) {
+        window.alert(
+          "Vervollständige zuerst alle erforderlichen Gaben und Makel der Transformation.",
+        );
+
+        creator.setCurrentStep(
+          "transformation",
+        );
+
+        return;
+      }
+    }
+
     const sealedCharacter:
       CharacterArchiveEntry = {
       ...previewCharacter,
@@ -231,7 +372,9 @@ if (spentAbilityPoints !== 27) {
         new Date().toISOString(),
     };
 
-    onFinished(sealedCharacter);
+    onFinished(
+      sealedCharacter,
+    );
   }
 
   function renderCurrentStep(
@@ -254,48 +397,71 @@ if (spentAbilityPoints !== 27) {
         return (
           <AncestryStep
             selectedId={
-              creator.draft.ancestryId
-            }
-            selectedVariantId={
               creator.draft
-                .ancestryVariantId
+                .ancestryId
             }
-            selectedBonusChoices={
+            selectedSize={
               creator.draft
-                .ancestryBonusChoices
+                .ancestrySize
             }
-            onSelect={(ancestryId) =>
+            selectedTraitIds={
+              creator.draft
+                .ancestryTraitIds
+            }
+            usesReducedSpeed={
+              creator.draft
+                .ancestryUsesReducedSpeed
+            }
+            onSelect={(
+              ancestryId,
+              ancestrySize,
+              ancestryTraitIds,
+            ) =>
               creator.updateDraft(
                 (draft) => ({
                   ...draft,
 
                   ancestryId,
+                  ancestrySize,
+                  ancestryTraitIds,
 
-                  ancestryVariantId:
-                    "",
+                  ancestryUsesReducedSpeed:
+                    false,
+
+                  ancestryVariantId: "",
 
                   ancestryBonusChoices:
                     [],
                 }),
               )
             }
-            onSelectVariant={(
-              ancestryVariantId,
+            onSizeChange={(
+              ancestrySize,
             ) =>
               creator.updateDraft(
                 (draft) => ({
                   ...draft,
-                  ancestryVariantId,
+                  ancestrySize,
                 }),
               )
             }
-            onBonusChoicesChange={(
-              ancestryBonusChoices,
+            onTraitIdsChange={(
+              ancestryTraitIds,
             ) =>
               creator.updateDraft(
                 (draft) => ({
                   ...draft,
-                  ancestryBonusChoices,
+                  ancestryTraitIds,
+                }),
+              )
+            }
+            onReducedSpeedChange={(
+              ancestryUsesReducedSpeed,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  ancestryUsesReducedSpeed,
                 }),
               )
             }
@@ -306,7 +472,8 @@ if (spentAbilityPoints !== 27) {
         return (
           <BackgroundStep
             selectedBackgroundId={
-              creator.draft.backgroundId
+              creator.draft
+                .backgroundId
             }
             onSelectBackground={(
               backgroundId,
@@ -317,11 +484,6 @@ if (spentAbilityPoints !== 27) {
 
                   backgroundId,
 
-                  /*
-                   * Ein neuer Hintergrund kann
-                   * Überschneidungen mit bisherigen
-                   * Klassenfertigkeiten erzeugen.
-                   */
                   classSkillProficiencies:
                     [],
                 }),
@@ -337,9 +499,12 @@ if (spentAbilityPoints !== 27) {
               creator.draft.classId
             }
             selectedSubclassId={
-              creator.draft.subclassId
+              creator.draft
+                .subclassId
             }
-            onSelectClass={(classId) =>
+            onSelectClass={(
+              classId,
+            ) =>
               creator.updateDraft(
                 (draft) => ({
                   ...draft,
@@ -353,6 +518,15 @@ if (spentAbilityPoints !== 27) {
 
                   startingEquipmentSelections:
                     [],
+
+                  spellcasting: {
+                    spellIds: [],
+
+                    slots: {
+                      spentSlots: {},
+                      spentPactSlots: 0,
+                    },
+                  },
                 }),
               )
             }
@@ -396,7 +570,8 @@ if (spentAbilityPoints !== 27) {
               creator.draft.classId
             }
             backgroundId={
-              creator.draft.backgroundId
+              creator.draft
+                .backgroundId
             }
             selectedSkillIds={
               creator.draft
@@ -425,7 +600,37 @@ if (spentAbilityPoints !== 27) {
               creator.updateDraft(
                 (draft) => ({
                   ...draft,
+
                   startingEquipmentSelections,
+                }),
+              )
+            }
+          />
+        );
+
+      case "spells":
+        return (
+          <SpellsStep
+            classId={
+              creator.draft.classId
+            }
+            level={
+              creator.draft.level
+            }
+            abilityScores={
+              creator.draft
+                .baseAbilities
+            }
+            value={
+              creator.draft.spellcasting
+            }
+            onChange={(
+              spellcasting,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+                  spellcasting,
                 }),
               )
             }
@@ -434,32 +639,177 @@ if (spentAbilityPoints !== 27) {
 
       case "transformation":
         return (
-          <CreatorPlaceholder
-            chapter="Kapitel VIII"
-            title="Transformation"
-            description="Hier werden später Wandlung, Transformationsstufe sowie positive und negative Effekte verwaltet."
+          <TransformationStep
+            selectedId={
+              creator.draft
+                .transformationId
+            }
+            selectedStage={
+              creator.draft
+                .transformationStage
+            }
+            selectedFeatureIds={
+              creator.draft
+                .transformationFeatureIds
+            }
+            onSelect={(
+              transformationId,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  transformationId,
+
+                  transformationStage:
+                    transformationId
+                      ? 1
+                      : 0,
+
+                  transformationFeatureIds:
+                    [],
+                }),
+              )
+            }
+            onStageChange={(
+              transformationStage,
+              transformationFeatureIds,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  transformationStage,
+
+                  transformationFeatureIds,
+                }),
+              )
+            }
+            onFeatureIdsChange={(
+              transformationFeatureIds,
+            ) =>
+              creator.updateDraft(
+                (draft) => ({
+                  ...draft,
+
+                  transformationFeatureIds,
+                }),
+              )
+            }
           />
         );
 
       case "summary":
         return (
-          <CreatorSummary
-            character={
-              previewCharacter
-            }
-            isEditing={isEditing}
-          />
+          <section className="creator-section">
+            <header className="creator-section__header">
+              <p className="creator-section__chapter">
+                Kapitel X
+              </p>
+
+              <h2>
+                Zusammenfassung
+              </h2>
+
+              <p>
+                Prüfe die fertige Akte in
+                der Vorschau und versiegle
+                sie anschließend.
+              </p>
+            </header>
+
+            <dl className="creator-summary-facts">
+              <div>
+                <dt>Name</dt>
+
+                <dd>
+                  {creator.draft
+                    .identity
+                    .name
+                    .trim() ||
+                    "Nicht festgelegt"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Abstammung</dt>
+
+                <dd>
+                  {
+                    previewCharacter
+                      .ancestry
+                  }
+                </dd>
+              </div>
+
+              <div>
+                <dt>Hintergrund</dt>
+
+                <dd>
+                  {previewCharacter
+                    .backgroundName ??
+                    "Nicht festgelegt"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Klasse</dt>
+
+                <dd>
+                  {
+                    previewCharacter
+                      .className
+                  }
+                </dd>
+              </div>
+
+              <div>
+                <dt>Unterklasse</dt>
+
+                <dd>
+                  {previewCharacter
+                    .subclass ??
+                    "Keine gewählt"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Stufe</dt>
+
+                <dd>
+                  {
+                    previewCharacter
+                      .level
+                  }
+                </dd>
+              </div>
+
+              <div>
+                <dt>Transformation</dt>
+
+                <dd>
+                  {previewCharacter
+                    .transformation ??
+                    "Keine Wandlung"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Transformationsstufe
+                </dt>
+
+                <dd>
+                  {previewCharacter
+                    .transformationStage ??
+                    0}
+                </dd>
+              </div>
+            </dl>
+          </section>
         );
     }
   }
-
-  const isFirstStep =
-    creator.draft.currentStep ===
-    "identity";
-
-  const isLastStep =
-    creator.draft.currentStep ===
-    "summary";
 
   return (
     <PaperPage>
@@ -473,7 +823,7 @@ if (spentAbilityPoints !== 27) {
         subtitle={
           isEditing
             ? "Überarbeite den bestehenden Eintrag und versiegle die Änderungen erneut."
-            : "Führe das entstehende Schicksal durch die neun Kapitel."
+            : "Führe das entstehende Schicksal durch die zehn Kapitel."
         }
       />
 
@@ -494,7 +844,8 @@ if (spentAbilityPoints !== 27) {
         editor={
           <div className="creator-editor">
             {renderCurrentStep(
-              creator.draft.currentStep,
+              creator.draft
+                .currentStep,
             )}
 
             <footer className="creator-footer">
@@ -510,7 +861,8 @@ if (spentAbilityPoints !== 27) {
                   <GrimButton
                     type="button"
                     onClick={
-                      creator.goToPreviousStep
+                      creator
+                        .goToPreviousStep
                     }
                   >
                     Vorheriges Kapitel
@@ -547,36 +899,42 @@ if (spentAbilityPoints !== 27) {
         preview={
           <CharacterRecordPreview
             fileNumber={
-              previewCharacter.fileNumber
+              previewCharacter
+                .fileNumber
             }
             name={
               previewCharacter.name
             }
             title={
-              creator.draft.identity.title
+              creator.draft
+                .identity.title
             }
             pronouns={
-              creator.draft.identity
-                .pronouns
+              creator.draft
+                .identity.pronouns
             }
             alignment={
-              creator.draft.identity
-                .alignment
+              creator.draft
+                .identity.alignment
             }
             ancestry={
-              previewCharacter.ancestry
+              previewCharacter
+                .ancestry
             }
             className={
-              previewCharacter.className
+              previewCharacter
+                .className
             }
             subclass={
-              previewCharacter.subclass
+              previewCharacter
+                .subclass
             }
             level={
               previewCharacter.level
             }
             summary={
-              previewCharacter.summary
+              previewCharacter
+                .summary
             }
             status={
               isEditing
@@ -587,139 +945,5 @@ if (spentAbilityPoints !== 27) {
         }
       />
     </PaperPage>
-  );
-}
-
-interface CreatorPlaceholderProps {
-  chapter: string;
-  title: string;
-  description: string;
-}
-
-function CreatorPlaceholder({
-  chapter,
-  title,
-  description,
-}: CreatorPlaceholderProps) {
-  return (
-    <section className="creator-section">
-      <header className="creator-section__header">
-        <p className="creator-section__chapter">
-          {chapter}
-        </p>
-
-        <h2>{title}</h2>
-
-        <p>{description}</p>
-      </header>
-    </section>
-  );
-}
-
-interface CreatorSummaryProps {
-  character: CharacterArchiveEntry;
-  isEditing: boolean;
-}
-
-function CreatorSummary({
-  character,
-  isEditing,
-}: CreatorSummaryProps) {
-  const background =
-    getBackgroundById(
-      character.backgroundId ?? "",
-    );
-
-  return (
-    <section className="creator-section">
-      <header className="creator-section__header">
-        <p className="creator-section__chapter">
-          Kapitel IX
-        </p>
-
-        <h2>Zusammenfassung</h2>
-
-        <p>
-          {isEditing
-            ? "Prüfe die überarbeitete Akte, bevor die Änderungen versiegelt werden."
-            : "Prüfe die vollständige Akte, bevor sie im Grimforge-Archiv versiegelt wird."}
-        </p>
-      </header>
-
-      <dl className="creator-summary">
-        <div>
-          <dt>Aktennummer</dt>
-
-          <dd>
-            {character.fileNumber}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Name</dt>
-
-          <dd>{character.name}</dd>
-        </div>
-
-        <div>
-          <dt>Abstammung</dt>
-
-          <dd>
-            {character.ancestry}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Hintergrund</dt>
-
-          <dd>
-            {background?.name ??
-              "Nicht gewählt"}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Klasse</dt>
-
-          <dd>
-            {[
-              character.className,
-              character.subclass,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Fertigkeiten</dt>
-
-          <dd>
-            {
-              character
-                .skillProficiencies
-                ?.length ?? 0
-            }{" "}
-            geübt
-          </dd>
-        </div>
-
-        <div>
-          <dt>Stufe</dt>
-
-          <dd>{character.level}</dd>
-        </div>
-
-        <div>
-          <dt>Vorgang</dt>
-
-          <dd>
-            {isEditing
-              ? "Bestehende Akte aktualisieren"
-              : "Neue Akte anlegen"}
-          </dd>
-        </div>
-      </dl>
-    </section>
   );
 }

@@ -3,6 +3,10 @@ import {
 } from "../../../compendium/core";
 
 import {
+  getAncestryById,
+} from "../../../compendium/ancestries";
+
+import {
   getBackgroundById,
 } from "../../../compendium/backgrounds";
 
@@ -24,6 +28,11 @@ export function mapArchiveEntryToDraft(
   const timestamp =
     new Date().toISOString();
 
+  const ancestry =
+    getAncestryById(
+      character.ancestryId ?? "",
+    );
+
   const background =
     getBackgroundById(
       character.backgroundId ?? "",
@@ -33,13 +42,14 @@ export function mapArchiveEntryToDraft(
     background?.skillProficiencies ?? [];
 
   const classSkillProficiencies =
-    (character.skillProficiencies ?? [])
-      .filter(
-        (skillId) =>
-          !backgroundSkills.includes(
-            skillId,
-          ),
-      ) as SkillId[];
+    (
+      character.skillProficiencies ?? []
+    ).filter(
+      (skillId) =>
+        !backgroundSkills.includes(
+          skillId,
+        ),
+    ) as SkillId[];
 
   return {
     id: character.id,
@@ -50,29 +60,66 @@ export function mapArchiveEntryToDraft(
     currentStep: "identity",
 
     identity: {
-      name: character.name,
-      title: character.title ?? "",
+      name:
+        character.name,
+
+      title:
+        character.title ?? "",
+
       pronouns:
         character.pronouns ?? "",
+
       alignment:
         character.alignment ?? "",
-      summary: character.summary,
+
+      summary:
+        character.summary,
     },
+
+    /*
+     * Herkunft
+     */
 
     ancestryId:
       character.ancestryId ?? "",
 
     ancestryVariantId:
-      character.ancestryVariantId ??
-      "",
+      character.ancestryVariantId ?? "",
 
     ancestryBonusChoices: [
-      ...(character
-        .ancestryBonusChoices ?? []),
+      ...(
+        character
+          .ancestryBonusChoices ?? []
+      ),
     ],
+
+    ancestrySize:
+      character.ancestrySize ??
+      ancestry?.size ??
+      "medium",
+
+    ancestryTraitIds: [
+      ...(
+        character
+          .ancestryTraitIds ?? []
+      ),
+    ],
+
+    ancestryUsesReducedSpeed:
+      character
+        .ancestryUsesReducedSpeed ??
+      false,
+
+    /*
+     * Hintergrund
+     */
 
     backgroundId:
       character.backgroundId ?? "",
+
+    /*
+     * Klasse
+     */
 
     classId:
       character.classId ?? "",
@@ -80,47 +127,111 @@ export function mapArchiveEntryToDraft(
     subclassId:
       character.subclassId ?? "",
 
-    level: character.level,
+    level:
+      character.level,
+
+    /*
+     * Attribute
+     */
 
     baseAbilities: {
       ...defaultAbilityScores,
       ...character.abilityScores,
     },
 
+    /*
+     * Fertigkeiten
+     */
+
     classSkillProficiencies,
 
     skillExpertise: [
-      ...(character.skillExpertise ??
-        []),
-    ],
-
-    equipmentIds: [
-      ...(character.equipmentIds ??
-        []),
+      ...(
+        character
+          .skillExpertise ?? []
+      ),
     ],
 
     /*
-     * Das fertige Inventar bleibt erhalten.
-     * Die ursprünglichen Auswahlgruppen wurden
-     * in älteren Akten jedoch noch nicht separat
-     * gespeichert.
+     * Ausrüstung
      */
-    startingEquipmentSelections:
-      [],
+
+    equipmentIds: [
+      ...(
+        character.equipmentIds ?? []
+      ),
+    ],
+
+    startingEquipmentSelections: [],
+
+    /*
+     * Zauber
+     */
+
+    spellcasting:
+      character.spellcasting
+        ? {
+            spellIds:
+              character
+                .spellcasting
+                .spellIds
+                .map(
+                  (selection) => ({
+                    ...selection,
+                  }),
+                ),
+
+            slots: {
+              spentSlots: {
+                ...character
+                  .spellcasting
+                  .slots
+                  .spentSlots,
+              },
+
+              spentPactSlots:
+                character
+                  .spellcasting
+                  .slots
+                  .spentPactSlots,
+            },
+          }
+        : {
+            spellIds: [],
+
+            slots: {
+              spentSlots: {},
+              spentPactSlots: 0,
+            },
+          },
+
+    /*
+     * Transformation
+     */
 
     transformationId:
-      character.transformationId ??
-      "",
+      character.transformationId ?? "",
 
     transformationStage:
-      character.transformationStage ??
-      0,
+      character.transformationStage ?? 0,
+
+    transformationFeatureIds: [
+      ...(
+        character
+          .transformationFeatureIds ?? []
+      ),
+    ],
+
+    /*
+     * Zeitstempel
+     */
 
     createdAt:
       character.createdAt ??
       character.updatedAt ??
       timestamp,
 
-    updatedAt: timestamp,
+    updatedAt:
+      timestamp,
   };
 }

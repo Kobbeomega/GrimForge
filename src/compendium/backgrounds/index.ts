@@ -4,6 +4,7 @@ export {
 } from "./backgrounds";
 
 export type {
-  BackgroundDefinition,
   BackgroundFeature,
-} from "./types";
+  BackgroundSource,
+  CharacterBackground,
+} from "./backgrounds";

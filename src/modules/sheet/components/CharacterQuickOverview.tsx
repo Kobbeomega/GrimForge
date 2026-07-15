@@ -3,12 +3,12 @@ import {
 } from "../../../compendium/core";
 
 import type {
-  CharacterDerivedStats,
-} from "../utils/getCharacterDerivedStats";
-
-import type {
   CharacterVitals,
 } from "../../archives/types";
+
+import type {
+  CharacterDerivedStats,
+} from "../utils/getCharacterDerivedStats";
 
 interface CharacterQuickOverviewProps {
   vitals: CharacterVitals;
@@ -60,11 +60,22 @@ export function CharacterQuickOverview({
 
           <strong>
             {vitals.currentHitPoints}
+
             <small>
               {" "}
               / {vitals.maximumHitPoints}
             </small>
           </strong>
+
+          {vitals.temporaryHitPoints > 0 && (
+            <small className="quick-stat__temporary">
+              +
+              {
+                vitals.temporaryHitPoints
+              }{" "}
+              temporär
+            </small>
+          )}
 
           <div
             className="quick-stat__meter"
@@ -89,21 +100,17 @@ export function CharacterQuickOverview({
 
         <QuickStat
           label="Rüstungsklasse"
-          value={
-            String(
-              derivedStats.armorClass,
-            )
-          }
+          value={String(
+            derivedStats.armorClass,
+          )}
           note="Aus Ausrüstung"
         />
 
         <QuickStat
           label="Initiative"
-          value={
-            formatAbilityModifier(
-              vitals.initiativeModifier,
-            )
-          }
+          value={formatAbilityModifier(
+            vitals.initiativeModifier,
+          )}
         />
 
         <QuickStat
@@ -113,24 +120,45 @@ export function CharacterQuickOverview({
 
         <QuickStat
           label="Übungsbonus"
-          value={
-            formatAbilityModifier(
-              derivedStats
-                .proficiencyBonus,
-            )
-          }
+          value={formatAbilityModifier(
+            derivedStats
+              .proficiencyBonus,
+          )}
         />
 
         <QuickStat
           label="Passive Wahrnehmung"
-          value={
-            String(
-              derivedStats
-                .passivePerception,
-            )
-          }
+          value={String(
+            derivedStats
+              .passiveScores
+              .perception,
+          )}
+        />
+
+        <QuickStat
+          label="Passive Nachforschungen"
+          value={String(
+            derivedStats
+              .passiveScores
+              .investigation,
+          )}
+        />
+
+        <QuickStat
+          label="Passives Motiv erkennen"
+          value={String(
+            derivedStats
+              .passiveScores
+              .insight,
+          )}
         />
       </div>
+
+      {derivedStats.spellcasting.enabled && (
+        <SpellcastingQuickStats
+          derivedStats={derivedStats}
+        />
+      )}
 
       <section className="quick-carrying">
         <header>
@@ -214,6 +242,77 @@ function QuickStat({
   );
 }
 
+interface SpellcastingQuickStatsProps {
+  derivedStats:
+    CharacterDerivedStats;
+}
+
+function SpellcastingQuickStats({
+  derivedStats,
+}: SpellcastingQuickStatsProps) {
+  const spellcasting =
+    derivedStats.spellcasting;
+
+  return (
+    <section className="quick-spellcasting">
+      <header className="quick-spellcasting__header">
+        <div>
+          <p>Magische Ausbildung</p>
+
+          <h4>Zauberwerte</h4>
+        </div>
+      </header>
+
+      <div className="quick-spellcasting__grid">
+        <QuickStat
+          label="Zauberangriff"
+          value={
+            typeof spellcasting
+              .spellAttackBonus ===
+            "number"
+              ? formatAbilityModifier(
+                  spellcasting
+                    .spellAttackBonus,
+                )
+              : "—"
+          }
+        />
+
+        <QuickStat
+          label="Zauber-SG"
+          value={
+            typeof spellcasting
+              .spellSaveDifficultyClass ===
+            "number"
+              ? String(
+                  spellcasting
+                    .spellSaveDifficultyClass,
+                )
+              : "—"
+          }
+        />
+
+        <QuickStat
+          label="Zauberfokus"
+          value={
+            spellcasting.focusLabel ??
+            "Keiner"
+          }
+        />
+
+        <QuickStat
+          label="Ritualmagie"
+          value={
+            spellcasting.ritualCasting
+              ? "Ja"
+              : "Nein"
+          }
+        />
+      </div>
+    </section>
+  );
+}
+
 interface EquippedWeaponsProps {
   weapons:
     CharacterDerivedStats["equippedWeapons"];
@@ -291,7 +390,8 @@ function EquippedWeapons({
                       {
                         weapon
                           .versatileDamage
-                      }
+                      }{" "}
+                      {weapon.damageType}
                     </dd>
                   </div>
                 )}

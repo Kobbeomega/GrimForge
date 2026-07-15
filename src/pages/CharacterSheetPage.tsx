@@ -3,18 +3,53 @@ import { useState } from "react";
 import { GrimButton } from "../components/ui/GrimButton";
 import { PaperPage } from "../components/ui/PaperPage";
 
-import { getCharacterInventory } from "../modules/archives/utils/getCharacterInventory";
-import { getCharacterVitals } from "../modules/archives/utils/getCharacterVitals";
+import type {
+  CharacterSpellcasting,
+} from "../compendium/spells";
 
-import { AbilitySealGrid } from "../modules/sheet/components/AbilitySealGrid";
-import { BackgroundPanel } from "../modules/sheet/components/BackgroundPanel";
-import { CharacterQuickOverview } from "../modules/sheet/components/CharacterQuickOverview";
-import { CharacterSheetHeader } from "../modules/sheet/components/CharacterSheetHeader";
-import { InventoryPanel } from "../modules/sheet/components/InventoryPanel";
-import { RollsPanel } from "../modules/sheet/components/RollsPanel";
-import { VitalPanel } from "../modules/sheet/components/VitalPanel";
+import {
+  getCharacterInventory,
+} from "../modules/archives/utils/getCharacterInventory";
 
-import { getCharacterDerivedStats } from "../modules/sheet/utils/getCharacterDerivedStats";
+import {
+  getCharacterVitals,
+} from "../modules/archives/utils/getCharacterVitals";
+
+import {
+  AbilitySealGrid,
+} from "../modules/sheet/components/AbilitySealGrid";
+
+import {
+  CharacterQuickOverview,
+} from "../modules/sheet/components/CharacterQuickOverview";
+
+import {
+  CharacterSheetHeader,
+} from "../modules/sheet/components/CharacterSheetHeader";
+
+import {
+  CombatPanel,
+} from "../modules/sheet/components/CombatPanel";
+
+import {
+  FeaturesPanel,
+} from "../modules/sheet/components/FeaturesPanel";
+
+import {
+  InventoryPanel,
+} from "../modules/sheet/components/InventoryPanel";
+
+import {
+  RollsPanel,
+} from "../modules/sheet/components/RollsPanel";
+
+import {
+  VitalPanel,
+} from "../modules/sheet/components/VitalPanel";
+
+import {
+  getCharacterDerivedStats,
+} from "../modules/sheet/utils/getCharacterDerivedStats";
 
 import type {
   CharacterArchiveEntry,
@@ -24,11 +59,10 @@ import type {
 
 type CharacterSheetSection =
   | "overview"
-  | "abilities"
   | "rolls"
+  | "combat"
   | "inventory"
-  | "transformation"
-  | "chronicle";
+  | "features";
 
 interface CharacterSheetPageProps {
   character: CharacterArchiveEntry;
@@ -51,14 +85,14 @@ const sheetSections: Array<{
     title: "Übersicht",
   },
   {
-    id: "abilities",
+    id: "rolls",
     chapter: "II",
-    title: "Attribute",
+    title: "Würfe",
   },
   {
-    id: "rolls",
+    id: "combat",
     chapter: "III",
-    title: "Würfe",
+    title: "Kampf",
   },
   {
     id: "inventory",
@@ -66,14 +100,9 @@ const sheetSections: Array<{
     title: "Inventar",
   },
   {
-    id: "transformation",
+    id: "features",
     chapter: "V",
-    title: "Transformation",
-  },
-  {
-    id: "chronicle",
-    chapter: "VI",
-    title: "Chronik",
+    title: "Merkmale",
   },
 ];
 
@@ -92,16 +121,23 @@ export function CharacterSheetPage({
   onBack,
   onUpdateCharacter,
 }: CharacterSheetPageProps) {
-  const [activeSection, setActiveSection] =
+  const [
+    activeSection,
+    setActiveSection,
+  ] =
     useState<CharacterSheetSection>(
       "overview",
     );
 
   const vitals =
-    getCharacterVitals(character);
+    getCharacterVitals(
+      character,
+    );
 
   const inventory =
-    getCharacterInventory(character);
+    getCharacterInventory(
+      character,
+    );
 
   const derivedStats =
     getCharacterDerivedStats(
@@ -110,11 +146,13 @@ export function CharacterSheetPage({
     );
 
   function updateCharacter(
-    changes: Partial<CharacterArchiveEntry>,
+    changes:
+      Partial<CharacterArchiveEntry>,
   ) {
     onUpdateCharacter({
       ...character,
       ...changes,
+
       updatedAt:
         new Date().toISOString(),
     });
@@ -129,7 +167,8 @@ export function CharacterSheetPage({
   }
 
   function updateInventory(
-    nextInventory: CharacterInventory,
+    nextInventory:
+      CharacterInventory,
   ) {
     const nextDerivedStats =
       getCharacterDerivedStats(
@@ -147,24 +186,38 @@ export function CharacterSheetPage({
         ...vitals,
 
         armorClass:
-          nextDerivedStats.armorClass,
+          nextDerivedStats
+            .armorClass,
       },
+    });
+  }
+
+  function updateSpellcasting(
+    spellcasting:
+      CharacterSpellcasting,
+  ) {
+    updateCharacter({
+      spellcasting,
     });
   }
 
   function handleDamage(
     amount: number,
   ) {
-    const safeAmount = Math.max(
-      0,
-      Number.isFinite(amount)
-        ? amount
-        : 0,
-    );
+    const safeAmount =
+      Math.max(
+        0,
+
+        Number.isFinite(amount)
+          ? amount
+          : 0,
+      );
 
     const absorbedByTemporaryHitPoints =
       Math.min(
-        vitals.temporaryHitPoints,
+        vitals
+          .temporaryHitPoints,
+
         safeAmount,
       );
 
@@ -176,35 +229,45 @@ export function CharacterSheetPage({
       ...vitals,
 
       temporaryHitPoints:
-        vitals.temporaryHitPoints -
+        vitals
+          .temporaryHitPoints -
         absorbedByTemporaryHitPoints,
 
-      currentHitPoints: Math.max(
-        0,
-        vitals.currentHitPoints -
-          remainingDamage,
-      ),
+      currentHitPoints:
+        Math.max(
+          0,
+
+          vitals
+            .currentHitPoints -
+            remainingDamage,
+        ),
     });
   }
 
   function handleHeal(
     amount: number,
   ) {
-    const safeAmount = Math.max(
-      0,
-      Number.isFinite(amount)
-        ? amount
-        : 0,
-    );
+    const safeAmount =
+      Math.max(
+        0,
+
+        Number.isFinite(amount)
+          ? amount
+          : 0,
+      );
 
     updateVitals({
       ...vitals,
 
-      currentHitPoints: Math.min(
-        vitals.maximumHitPoints,
-        vitals.currentHitPoints +
-          safeAmount,
-      ),
+      currentHitPoints:
+        Math.min(
+          vitals
+            .maximumHitPoints,
+
+          vitals
+            .currentHitPoints +
+            safeAmount,
+        ),
     });
   }
 
@@ -214,10 +277,11 @@ export function CharacterSheetPage({
     updateVitals({
       ...vitals,
 
-      temporaryHitPoints: Math.max(
-        0,
-        value,
-      ),
+      temporaryHitPoints:
+        Math.max(
+          0,
+          value,
+        ),
     });
   }
 
@@ -225,8 +289,10 @@ export function CharacterSheetPage({
     const recoveredHitPoints =
       Math.max(
         1,
+
         Math.floor(
-          vitals.maximumHitPoints /
+          vitals
+            .maximumHitPoints /
             4,
         ),
       );
@@ -234,22 +300,51 @@ export function CharacterSheetPage({
     updateVitals({
       ...vitals,
 
-      currentHitPoints: Math.min(
-        vitals.maximumHitPoints,
-        vitals.currentHitPoints +
-          recoveredHitPoints,
-      ),
+      currentHitPoints:
+        Math.min(
+          vitals
+            .maximumHitPoints,
+
+          vitals
+            .currentHitPoints +
+            recoveredHitPoints,
+        ),
     });
   }
 
   function handleLongRest() {
-    updateVitals({
-      ...vitals,
+    updateCharacter({
+      vitals: {
+        ...vitals,
 
-      currentHitPoints:
-        vitals.maximumHitPoints,
+        currentHitPoints:
+          vitals
+            .maximumHitPoints,
 
-      temporaryHitPoints: 0,
+        temporaryHitPoints:
+          0,
+      },
+
+      spellcasting: {
+        spellIds:
+          (
+            character
+              .spellcasting
+              ?.spellIds ??
+            []
+          ).map(
+            (selection) => ({
+              ...selection,
+            }),
+          ),
+
+        slots: {
+          spentSlots: {},
+
+          spentPactSlots:
+            0,
+        },
+      },
     });
   }
 
@@ -294,6 +389,7 @@ export function CharacterSheetPage({
                   type="button"
                   className={[
                     "sheet-navigation__button",
+
                     selected
                       ? "sheet-navigation__button--active"
                       : "",
@@ -333,8 +429,12 @@ export function CharacterSheetPage({
               derivedStats={
                 derivedStats
               }
-              onDamage={handleDamage}
-              onHeal={handleHeal}
+              onDamage={
+                handleDamage
+              }
+              onHeal={
+                handleHeal
+              }
               onTemporaryHitPointsChange={
                 handleTemporaryHitPointsChange
               }
@@ -351,16 +451,20 @@ export function CharacterSheetPage({
           )}
 
           {activeSection ===
-            "abilities" && (
-            <CharacterAbilities
+            "rolls" && (
+            <RollsPanel
               character={character}
             />
           )}
 
           {activeSection ===
-            "rolls" && (
-            <RollsPanel
+            "combat" && (
+            <CombatPanel
               character={character}
+              inventory={inventory}
+              onSpellcastingChange={
+                updateSpellcasting
+              }
             />
           )}
 
@@ -375,20 +479,9 @@ export function CharacterSheetPage({
           )}
 
           {activeSection ===
-            "transformation" && (
-            <SheetPlaceholder
-              chapter="Kapitel V"
-              title="Transformation"
-              description="Die Transformationsstufen sowie positive und negative Effekte erscheinen hier."
-            />
-          )}
-
-          {activeSection ===
-            "chronicle" && (
-            <SheetPlaceholder
-              chapter="Kapitel VI"
-              title="Chronik"
-              description="Persönliche Notizen und Erinnerungen werden hier niedergeschrieben."
+            "features" && (
+            <FeaturesPanel
+              character={character}
             />
           )}
         </main>
@@ -398,8 +491,11 @@ export function CharacterSheetPage({
 }
 
 interface CharacterOverviewProps {
-  character: CharacterArchiveEntry;
-  vitals: CharacterVitals;
+  character:
+    CharacterArchiveEntry;
+
+  vitals:
+    CharacterVitals;
 
   derivedStats:
     ReturnType<
@@ -423,6 +519,7 @@ interface CharacterOverviewProps {
   ) => void;
 
   onShortRest: () => void;
+
   onLongRest: () => void;
 }
 
@@ -480,7 +577,8 @@ function CharacterOverview({
           <dt>Hintergrund</dt>
 
           <dd>
-            {character.backgroundName ??
+            {character
+              .backgroundName ??
               "Nicht gespeichert"}
           </dd>
         </div>
@@ -488,13 +586,17 @@ function CharacterOverview({
         <div>
           <dt>Klasse</dt>
 
-          <dd>{classLabel}</dd>
+          <dd>
+            {classLabel}
+          </dd>
         </div>
 
         <div>
           <dt>Stufe</dt>
 
-          <dd>{character.level}</dd>
+          <dd>
+            {character.level}
+          </dd>
         </div>
 
         <div>
@@ -510,16 +612,19 @@ function CharacterOverview({
         </div>
 
         <div>
-          <dt>Transformation</dt>
+          <dt>Wandlung</dt>
 
           <dd>
-            {character.transformation ||
+            {character
+              .transformation ||
               "Keine Wandlung"}
           </dd>
         </div>
 
         <div>
-          <dt>Geübte Fertigkeiten</dt>
+          <dt>
+            Geübte Fertigkeiten
+          </dt>
 
           <dd>
             {
@@ -531,7 +636,9 @@ function CharacterOverview({
         </div>
 
         <div>
-          <dt>Zuletzt geändert</dt>
+          <dt>
+            Zuletzt geändert
+          </dt>
 
           <dd>
             {formatDate(
@@ -541,14 +648,14 @@ function CharacterOverview({
         </div>
       </dl>
 
-      <BackgroundPanel
-        character={character}
-      />
-
       <VitalPanel
         vitals={vitals}
-        onDamage={onDamage}
-        onHeal={onHeal}
+        onDamage={
+          onDamage
+        }
+        onHeal={
+          onHeal
+        }
         onTemporaryHitPointsChange={
           onTemporaryHitPointsChange
         }
@@ -563,17 +670,29 @@ function CharacterOverview({
         }
       />
 
-      {character.abilityScores && (
+      {character
+        .abilityScores && (
         <section className="sheet-overview__abilities">
           <div className="sheet-overview__section-heading">
-            <p>Grundwerte</p>
+            <p>
+              Grundwerte
+            </p>
 
-            <h3>Attribute</h3>
+            <h3>
+              Attribute
+            </h3>
+
+            <span>
+              Die vollständigen
+              Würfwerte findest du
+              im Kapitel „Würfe“.
+            </span>
           </div>
 
           <AbilitySealGrid
             values={
-              character.abilityScores
+              character
+                .abilityScores
             }
           />
         </section>
@@ -582,71 +701,11 @@ function CharacterOverview({
   );
 }
 
-function CharacterAbilities({
-  character,
-}: {
-  character: CharacterArchiveEntry;
-}) {
-  if (!character.abilityScores) {
-    return (
-      <SheetPlaceholder
-        chapter="Kapitel II"
-        title="Attribute"
-        description="Für diese ältere Akte wurden noch keine Attributswerte gespeichert."
-      />
-    );
-  }
-
-  return (
-    <section className="sheet-abilities">
-      <header className="sheet-overview__section-heading">
-        <p>Kapitel II</p>
-
-        <h2>Attribute</h2>
-
-        <span>
-          Die sechs Grundwerte und
-          ihre Modifikatoren.
-        </span>
-      </header>
-
-      <AbilitySealGrid
-        values={
-          character.abilityScores
-        }
-      />
-    </section>
-  );
-}
-
-interface SheetPlaceholderProps {
-  chapter: string;
-  title: string;
-  description: string;
-}
-
-function SheetPlaceholder({
-  chapter,
-  title,
-  description,
-}: SheetPlaceholderProps) {
-  return (
-    <section className="sheet-placeholder">
-      <p className="creator-section__chapter">
-        {chapter}
-      </p>
-
-      <h2>{title}</h2>
-
-      <p>{description}</p>
-    </section>
-  );
-}
-
 function formatDate(
   value: string,
 ): string {
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
   if (
     Number.isNaN(

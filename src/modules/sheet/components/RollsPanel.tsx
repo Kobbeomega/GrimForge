@@ -39,15 +39,16 @@ export function RollsPanel({
     return (
       <section className="rolls-panel">
         <header className="rolls-panel__header">
-          <p>Kapitel III</p>
+          <div>
+            <p>Kapitel II</p>
 
-          <h2>Würfe</h2>
+            <h2>Attribute & Fertigkeiten</h2>
 
-          <span>
-            Für diese ältere Akte
-            wurden keine Attribute
-            gespeichert.
-          </span>
+            <span>
+              Für diese ältere Akte wurden
+              keine Attributswerte gespeichert.
+            </span>
+          </div>
         </header>
       </section>
     );
@@ -56,26 +57,22 @@ export function RollsPanel({
   const classDefinition =
     classes.find(
       (entry) =>
-        entry.id ===
-        character.classId,
+        entry.id === character.classId,
     );
 
   const savingThrowProficiencies =
     new Set<AbilityId>(
-      classDefinition
-        ?.savingThrows ?? [],
+      classDefinition?.savingThrows ?? [],
     );
 
   const skillProficiencies =
     new Set<SkillId>(
-      character.skillProficiencies ??
-        [],
+      character.skillProficiencies ?? [],
     );
 
   const skillExpertise =
     new Set<SkillId>(
-      character.skillExpertise ??
-        [],
+      character.skillExpertise ?? [],
     );
 
   const proficiencyBonus =
@@ -84,350 +81,435 @@ export function RollsPanel({
     );
 
   const passivePerception =
-    calculatePassivePerception({
-      wisdom:
-        abilityScores.wisdom,
-
+    calculatePassiveSkill({
+      character,
+      skillId: "perception",
       proficiencyBonus,
+      skillProficiencies,
+      skillExpertise,
+    });
 
-      proficient:
-        skillProficiencies.has(
-          "perception",
-        ),
+  const passiveInvestigation =
+    calculatePassiveSkill({
+      character,
+      skillId: "investigation",
+      proficiencyBonus,
+      skillProficiencies,
+      skillExpertise,
+    });
 
-      expertise:
-        skillExpertise.has(
-          "perception",
-        ),
+  const passiveInsight =
+    calculatePassiveSkill({
+      character,
+      skillId: "insight",
+      proficiencyBonus,
+      skillProficiencies,
+      skillExpertise,
     });
 
   return (
-    <section className="rolls-panel">
-      <header className="rolls-panel__header">
+    <section className="rolls-panel compact-rolls-panel">
+      <header className="rolls-panel__header compact-rolls-header">
         <div>
-          <p>Kapitel III</p>
+          <p>Kapitel II</p>
 
-          <h2>Würfe</h2>
+          <h2>Attribute & Fertigkeiten</h2>
 
           <span>
-            Alle Boni für Attributsproben,
-            Rettungswürfe und Fertigkeiten
-            auf einen Blick.
+            Alle Attributsmodifikatoren,
+            Rettungswürfe und Fertigkeitsboni
+            nach ihrem Bezugsattribut gruppiert.
           </span>
         </div>
 
-        <dl className="rolls-panel__summary">
-          <div>
-            <dt>Übungsbonus</dt>
+        <dl className="compact-rolls-summary">
+          <SummaryValue
+            label="Übungsbonus"
+            value={formatAbilityModifier(
+              proficiencyBonus,
+            )}
+          />
 
-            <dd>
-              {formatAbilityModifier(
-                proficiencyBonus,
-              )}
-            </dd>
-          </div>
+          <SummaryValue
+            label="Passive Wahrnehmung"
+            value={String(
+              passivePerception,
+            )}
+          />
 
-          <div>
-            <dt>
-              Passive Wahrnehmung
-            </dt>
+          <SummaryValue
+            label="Passive Nachforschungen"
+            value={String(
+              passiveInvestigation,
+            )}
+          />
 
-            <dd>
-              {passivePerception}
-            </dd>
-          </div>
+          <SummaryValue
+            label="Passives Motiv erkennen"
+            value={String(
+              passiveInsight,
+            )}
+          />
         </dl>
       </header>
 
-      <section className="rolls-section">
-        <header className="rolls-section__header">
-          <p>Grundproben</p>
+      <div className="ability-sheet-grid">
+        {abilityIds.map(
+          (abilityId) => {
+            const score =
+              abilityScores[abilityId];
 
-          <h3>Attributswürfe</h3>
+            const modifier =
+              getAbilityModifier(score);
 
-          <span>
-            Diese Boni gelten bei einer
-            direkten Attributsprobe ohne
-            Fertigkeit.
-          </span>
-        </header>
-
-        <div className="ability-roll-grid">
-          {abilityIds.map(
-            (abilityId) => {
-              const modifier =
-                getAbilityModifier(
-                  abilityScores[
-                    abilityId
-                  ],
-                );
-
-              return (
-                <RollValueCard
-                  key={abilityId}
-                  shortLabel={
-                    abilityShortLabels[
-                      abilityId
-                    ]
-                  }
-                  title={
-                    abilityLabels[
-                      abilityId
-                    ]
-                  }
-                  score={
-                    abilityScores[
-                      abilityId
-                    ]
-                  }
-                  bonus={modifier}
-                  status="Attributsprobe"
-                />
+            const savingThrowProficient =
+              savingThrowProficiencies.has(
+                abilityId,
               );
-            },
-          )}
-        </div>
-      </section>
 
-      <section className="rolls-section">
-        <header className="rolls-section__header">
-          <p>Widerstand</p>
-
-          <h3>Rettungswürfe</h3>
-
-          <span>
-            Klassenübungen sind bereits in
-            den angezeigten Boni enthalten.
-          </span>
-        </header>
-
-        <div className="ability-roll-grid">
-          {abilityIds.map(
-            (abilityId) => {
-              const modifier =
-                getAbilityModifier(
-                  abilityScores[
-                    abilityId
-                  ],
-                );
-
-              const proficient =
-                savingThrowProficiencies.has(
-                  abilityId,
-                );
-
-              const totalBonus =
-                modifier +
-                (proficient
+            const savingThrowBonus =
+              modifier +
+              (
+                savingThrowProficient
                   ? proficiencyBonus
-                  : 0);
-
-              return (
-                <RollValueCard
-                  key={abilityId}
-                  shortLabel={
-                    abilityShortLabels[
-                      abilityId
-                    ]
-                  }
-                  title={
-                    abilityLabels[
-                      abilityId
-                    ]
-                  }
-                  score={
-                    abilityScores[
-                      abilityId
-                    ]
-                  }
-                  bonus={totalBonus}
-                  proficient={
-                    proficient
-                  }
-                  status={
-                    proficient
-                      ? "Geübter Rettungswurf"
-                      : "Nicht geübt"
-                  }
-                />
-              );
-            },
-          )}
-        </div>
-      </section>
-
-      <section className="rolls-section">
-        <header className="rolls-section__header">
-          <p>Spezialisierte Proben</p>
-
-          <h3>Fertigkeiten</h3>
-
-          <span>
-            Alle 18 Fertigkeiten inklusive
-            Attribut, Übung und Expertise.
-          </span>
-        </header>
-
-        <div className="roll-skill-list">
-          {skills.map((skill) => {
-            const abilityModifier =
-              getAbilityModifier(
-                abilityScores[
-                  skill.abilityId
-                ],
+                  : 0
               );
 
-            const proficient =
-              skillProficiencies.has(
-                skill.id,
+            const abilitySkills =
+              skills.filter(
+                (skill) =>
+                  skill.abilityId ===
+                  abilityId,
               );
-
-            const expertise =
-              skillExpertise.has(
-                skill.id,
-              );
-
-            const bonus =
-              getSkillBonus({
-                abilityModifier,
-                proficiencyBonus,
-                proficient,
-                expertise,
-              });
 
             return (
-              <article
-                key={skill.id}
-                className={[
-                  "roll-skill-row",
-
-                  proficient
-                    ? "roll-skill-row--proficient"
-                    : "",
-
-                  expertise
-                    ? "roll-skill-row--expertise"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <div className="roll-skill-row__marker">
-                  <span>
-                    {
-                      abilityShortLabels[
-                        skill.abilityId
-                      ]
-                    }
-                  </span>
-                </div>
-
-                <div className="roll-skill-row__content">
-                  <div>
-                    <strong>
-                      {skill.name}
-                    </strong>
-
-                    <small>
-                      {
-                        abilityLabels[
-                          skill.abilityId
-                        ]
-                      }
-                    </small>
-                  </div>
-
-                  <span>
-                    {expertise
-                      ? "Expertise"
-                      : proficient
-                        ? "Geübt"
-                        : "Nicht geübt"}
-                  </span>
-                </div>
-
-                <output>
-                  {formatAbilityModifier(
-                    bonus,
-                  )}
-                </output>
-              </article>
+              <AbilitySheetCard
+                key={abilityId}
+                abilityId={abilityId}
+                score={score}
+                modifier={modifier}
+                savingThrowBonus={
+                  savingThrowBonus
+                }
+                savingThrowProficient={
+                  savingThrowProficient
+                }
+                skills={abilitySkills}
+                proficiencyBonus={
+                  proficiencyBonus
+                }
+                skillProficiencies={
+                  skillProficiencies
+                }
+                skillExpertise={
+                  skillExpertise
+                }
+              />
             );
-          })}
-        </div>
-      </section>
+          },
+        )}
+      </div>
+
+      <footer className="ability-sheet-legend">
+        <span>
+          <strong>★</strong>
+          Expertise
+        </span>
+
+        <span>
+          <strong>✓</strong>
+          Geübt
+        </span>
+
+        <span>
+          <strong>•</strong>
+          Nicht geübt
+        </span>
+      </footer>
     </section>
   );
 }
 
-interface RollValueCardProps {
-  shortLabel: string;
-  title: string;
-  score: number;
-  bonus: number;
-
-  status: string;
-
-  proficient?: boolean;
+interface SummaryValueProps {
+  label: string;
+  value: string;
 }
 
-function RollValueCard({
-  shortLabel,
-  title,
+function SummaryValue({
+  label,
+  value,
+}: SummaryValueProps) {
+  return (
+    <div>
+      <dt>{label}</dt>
+
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+interface AbilitySheetCardProps {
+  abilityId: AbilityId;
+
+  score: number;
+  modifier: number;
+
+  savingThrowBonus: number;
+  savingThrowProficient: boolean;
+
+  skills: typeof skills;
+
+  proficiencyBonus: number;
+
+  skillProficiencies:
+    ReadonlySet<SkillId>;
+
+  skillExpertise:
+    ReadonlySet<SkillId>;
+}
+
+function AbilitySheetCard({
+  abilityId,
   score,
-  bonus,
-  status,
-  proficient = false,
-}: RollValueCardProps) {
+  modifier,
+  savingThrowBonus,
+  savingThrowProficient,
+  skills: abilitySkills,
+  proficiencyBonus,
+  skillProficiencies,
+  skillExpertise,
+}: AbilitySheetCardProps) {
   return (
     <article
       className={[
-        "roll-value-card",
+        "ability-sheet-card",
 
-        proficient
-          ? "roll-value-card--proficient"
+        savingThrowProficient
+          ? "ability-sheet-card--save-proficient"
           : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      <span className="roll-value-card__short">
-        {shortLabel}
+      <header className="ability-sheet-card__header">
+        <div className="ability-sheet-card__identity">
+          <span>
+            {abilityShortLabels[abilityId]}
+          </span>
+
+          <h3>
+            {abilityLabels[abilityId]}
+          </h3>
+        </div>
+
+        <div className="ability-sheet-card__values">
+          <strong>{score}</strong>
+
+          <output>
+            {formatAbilityModifier(
+              modifier,
+            )}
+          </output>
+        </div>
+      </header>
+
+      <section className="ability-sheet-card__skills">
+        <header>
+          <span>Fertigkeiten</span>
+
+          <strong>
+            {abilitySkills.length}
+          </strong>
+        </header>
+
+        {abilitySkills.length === 0 ? (
+          <p className="ability-sheet-card__empty">
+            Keine Fertigkeiten an dieses
+            Attribut gebunden.
+          </p>
+        ) : (
+          <div className="ability-skill-list">
+            {abilitySkills.map(
+              (skill) => {
+                const expertise =
+                  skillExpertise.has(
+                    skill.id,
+                  );
+
+                const proficient =
+                  expertise ||
+                  skillProficiencies.has(
+                    skill.id,
+                  );
+
+                const bonus =
+                  getSkillBonus({
+                    abilityModifier:
+                      modifier,
+
+                    proficiencyBonus,
+
+                    proficient,
+
+                    expertise,
+                  });
+
+                return (
+                  <SkillValueRow
+                    key={skill.id}
+                    name={skill.name}
+                    bonus={bonus}
+                    proficient={
+                      proficient
+                    }
+                    expertise={
+                      expertise
+                    }
+                  />
+                );
+              },
+            )}
+          </div>
+        )}
+      </section>
+
+      <footer className="ability-sheet-card__save">
+        <div>
+          <span>
+            {savingThrowProficient
+              ? "✓"
+              : "•"}
+          </span>
+
+          <div>
+            <small>Rettungswurf</small>
+
+            <strong>
+              {savingThrowProficient
+                ? "Geübt"
+                : "Nicht geübt"}
+            </strong>
+          </div>
+        </div>
+
+        <output>
+          {formatAbilityModifier(
+            savingThrowBonus,
+          )}
+        </output>
+      </footer>
+    </article>
+  );
+}
+
+interface SkillValueRowProps {
+  name: string;
+  bonus: number;
+
+  proficient: boolean;
+  expertise: boolean;
+}
+
+function SkillValueRow({
+  name,
+  bonus,
+  proficient,
+  expertise,
+}: SkillValueRowProps) {
+  return (
+    <div
+      className={[
+        "ability-skill-row",
+
+        proficient
+          ? "ability-skill-row--proficient"
+          : "",
+
+        expertise
+          ? "ability-skill-row--expertise"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <span
+        className="ability-skill-row__marker"
+        aria-label={
+          expertise
+            ? "Expertise"
+            : proficient
+              ? "Geübt"
+              : "Nicht geübt"
+        }
+      >
+        {expertise
+          ? "★"
+          : proficient
+            ? "✓"
+            : "•"}
       </span>
 
-      <div className="roll-value-card__content">
-        <strong>{title}</strong>
-
-        <small>
-          Wert {score} · {status}
-        </small>
-      </div>
+      <strong>{name}</strong>
 
       <output>
         {formatAbilityModifier(
           bonus,
         )}
       </output>
-    </article>
+    </div>
   );
 }
 
-function calculatePassivePerception({
-  wisdom,
+function calculatePassiveSkill({
+  character,
+  skillId,
   proficiencyBonus,
-  proficient,
-  expertise,
+  skillProficiencies,
+  skillExpertise,
 }: {
-  wisdom: number;
+  character: CharacterArchiveEntry;
+
+  skillId: SkillId;
+
   proficiencyBonus: number;
-  proficient: boolean;
-  expertise: boolean;
+
+  skillProficiencies:
+    ReadonlySet<SkillId>;
+
+  skillExpertise:
+    ReadonlySet<SkillId>;
 }): number {
+  const skill =
+    skills.find(
+      (entry) =>
+        entry.id === skillId,
+    );
+
+  if (
+    !skill ||
+    !character.abilityScores
+  ) {
+    return 10;
+  }
+
+  const expertise =
+    skillExpertise.has(skillId);
+
+  const proficient =
+    expertise ||
+    skillProficiencies.has(
+      skillId,
+    );
+
   return (
     10 +
     getSkillBonus({
       abilityModifier:
-        getAbilityModifier(wisdom),
+        getAbilityModifier(
+          character.abilityScores[
+            skill.abilityId
+          ],
+        ),
 
       proficiencyBonus,
       proficient,

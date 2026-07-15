@@ -5,4 +5,5 @@ export {
 export type {
   CharacterClass,
   CharacterSubclass,
+  ClassSource,
 } from "./classes";

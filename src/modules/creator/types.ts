@@ -4,8 +4,16 @@ import type {
 } from "../../compendium/core";
 
 import type {
+  CharacterSize,
+} from "../../compendium/ancestries";
+
+import type {
   SkillId,
 } from "../../compendium/skills";
+
+import type {
+  CharacterSpellcasting,
+} from "../../compendium/spells";
 
 export const creatorStepIds = [
   "identity",
@@ -15,6 +23,7 @@ export const creatorStepIds = [
   "abilities",
   "skills",
   "equipment",
+  "spells",
   "transformation",
   "summary",
 ] as const;
@@ -29,62 +38,69 @@ export interface CreatorStepDefinition {
   shortTitle: string;
 }
 
-export const creatorSteps: CreatorStepDefinition[] = [
-  {
-    id: "identity",
-    chapter: "I",
-    title: "Identität",
-    shortTitle: "Identität",
-  },
-  {
-    id: "ancestry",
-    chapter: "II",
-    title: "Abstammung",
-    shortTitle: "Blutlinie",
-  },
-  {
-    id: "background",
-    chapter: "III",
-    title: "Hintergrund",
-    shortTitle: "Herkunft",
-  },
-  {
-    id: "class",
-    chapter: "IV",
-    title: "Klasse",
-    shortTitle: "Pfad",
-  },
-  {
-    id: "abilities",
-    chapter: "V",
-    title: "Attribute",
-    shortTitle: "Attribute",
-  },
-  {
-    id: "skills",
-    chapter: "VI",
-    title: "Fertigkeiten",
-    shortTitle: "Fertigkeiten",
-  },
-  {
-    id: "equipment",
-    chapter: "VII",
-    title: "Startausrüstung",
-    shortTitle: "Ausrüstung",
-  },
-  {
-    id: "transformation",
-    chapter: "VIII",
-    title: "Transformation",
-    shortTitle: "Wandlung",
-  },
-  {
-    id: "summary",
-    chapter: "IX",
-    title: "Zusammenfassung",
-    shortTitle: "Abschluss",
-  },
-];
+export const creatorSteps:
+  CreatorStepDefinition[] = [
+    {
+      id: "identity",
+      chapter: "I",
+      title: "Identität",
+      shortTitle: "Identität",
+    },
+    {
+      id: "ancestry",
+      chapter: "II",
+      title: "Abstammung",
+      shortTitle: "Blutlinie",
+    },
+    {
+      id: "background",
+      chapter: "III",
+      title: "Hintergrund",
+      shortTitle: "Herkunft",
+    },
+    {
+      id: "class",
+      chapter: "IV",
+      title: "Klasse",
+      shortTitle: "Pfad",
+    },
+    {
+      id: "abilities",
+      chapter: "V",
+      title: "Attribute",
+      shortTitle: "Attribute",
+    },
+    {
+      id: "skills",
+      chapter: "VI",
+      title: "Fertigkeiten",
+      shortTitle: "Fertigkeiten",
+    },
+    {
+      id: "equipment",
+      chapter: "VII",
+      title: "Startausrüstung",
+      shortTitle: "Ausrüstung",
+    },
+    {
+      id: "spells",
+      chapter: "VIII",
+      title: "Zauber",
+      shortTitle: "Magie",
+    },
+    {
+      id: "transformation",
+      chapter: "IX",
+      title: "Transformation",
+      shortTitle: "Wandlung",
+    },
+    {
+      id: "summary",
+      chapter: "X",
+      title: "Zusammenfassung",
+      shortTitle: "Abschluss",
+    },
+  ];
 
 export interface CharacterIdentityDraft {
   name: string;
@@ -111,6 +127,10 @@ export interface CharacterCreatorDraft {
   ancestryVariantId: string;
   ancestryBonusChoices: AbilityId[];
 
+  ancestrySize: CharacterSize;
+  ancestryTraitIds: string[];
+  ancestryUsesReducedSpeed: boolean;
+
   backgroundId: string;
 
   classId: string;
@@ -128,8 +148,11 @@ export interface CharacterCreatorDraft {
   startingEquipmentSelections:
     StartingEquipmentSelection[];
 
+  spellcasting: CharacterSpellcasting;
+
   transformationId: string;
   transformationStage: number;
+  transformationFeatureIds: string[];
 
   createdAt: string;
   updatedAt: string;
@@ -142,10 +165,9 @@ export interface CharacterCreatorState {
 
 export function createEmptyCharacterDraft(
   fileNumber: string,
-): CharacterCreatorDraft {
+): CharacterCreatorDraft  {
   const timestamp =
     new Date().toISOString();
-
   return {
     id: crypto.randomUUID(),
     fileNumber,
@@ -161,8 +183,16 @@ export function createEmptyCharacterDraft(
     },
 
     ancestryId: "",
+
     ancestryVariantId: "",
+
     ancestryBonusChoices: [],
+
+    ancestrySize: "medium",
+
+    ancestryTraitIds: [],
+
+    ancestryUsesReducedSpeed: false,
 
     backgroundId: "",
 
@@ -181,16 +211,28 @@ export function createEmptyCharacterDraft(
     },
 
     classSkillProficiencies: [],
+
     skillExpertise: [],
 
     equipmentIds: [],
+
     startingEquipmentSelections: [],
 
-    transformationId: "",
-    transformationStage: 0,
+    spellcasting: {
+      spellIds: [],
 
-    createdAt: timestamp,
-    updatedAt: timestamp,
+      slots: {
+        spentSlots: {},
+        spentPactSlots: 0,
+      },
+    },
+
+    transformationId: "",
+transformationStage: 0,
+transformationFeatureIds: [],
+
+createdAt: timestamp,
+updatedAt: timestamp,
   };
 }
 
@@ -198,7 +240,8 @@ export function getCreatorStepIndex(
   stepId: CreatorStepId,
 ): number {
   return creatorSteps.findIndex(
-    (step) => step.id === stepId,
+    (step) =>
+      step.id === stepId,
   );
 }
 
@@ -209,8 +252,9 @@ export function getNextCreatorStep(
     getCreatorStepIndex(stepId);
 
   return (
-    creatorSteps[currentIndex + 1]
-      ?.id ?? null
+    creatorSteps[
+      currentIndex + 1
+    ]?.id ?? null
   );
 }
 
@@ -221,7 +265,8 @@ export function getPreviousCreatorStep(
     getCreatorStepIndex(stepId);
 
   return (
-    creatorSteps[currentIndex - 1]
-      ?.id ?? null
+    creatorSteps[
+      currentIndex - 1
+    ]?.id ?? null
   );
 }
