@@ -260,13 +260,18 @@ ancestryUsesReducedSpeed:
       undefined,
 
     transformationId:
-      draft.transformationId ||
-      undefined,
+  draft.transformationId || undefined,
 
-    transformationStage:
-      draft.transformationStage ||
-      undefined,
-  };
+transformationStage:
+  draft.transformationId
+    ? draft.transformationStage
+    : undefined,
+
+transformationFeatureIds:
+  draft.transformationId
+    ? [...draft.transformationFeatureIds]
+    : [],
+};
 }
 
 function cloneDraftSpellcasting(
@@ -742,5 +747,4 @@ function poundsToKilograms(
   return Number(
     kilograms.toFixed(2),
   );
-  
 }
