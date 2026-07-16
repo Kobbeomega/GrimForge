@@ -6,6 +6,8 @@ import {
   getAbilityModifier,
 } from "../../../../compendium/core";
 
+import { getClassById } from "../../../../compendium/classes";
+
 import type {
   AbilityId,
   AbilityScores,
@@ -13,6 +15,7 @@ import type {
 
 interface AbilitiesStepProps {
   values: AbilityScores;
+  classId?: string;
 
   onChange: (
     values: AbilityScores,
@@ -52,10 +55,14 @@ const pointBuyStart: AbilityScores = {
 
 export function AbilitiesStep({
   values,
+  classId,
   onChange,
 }: AbilitiesStepProps) {
   const normalizedValues =
     normalizePointBuyScores(values);
+
+  const classDefinition = classId ? getClassById(classId) : undefined;
+  const recommendedAbilities = new Set(classDefinition?.primaryAbilities ?? []);
 
   const spentPoints =
     calculateSpentPoints(
@@ -123,8 +130,8 @@ export function AbilitiesStep({
   }
 
   return (
-    <section className="creator-section">
-      <header className="creator-section__header">
+    <section className="creator-section creator-dossier-step">
+      <header className="creator-section__header creator-dossier-step__header">
         <p className="creator-section__chapter">
           Kapitel V
         </p>
@@ -138,7 +145,18 @@ export function AbilitiesStep({
         </p>
       </header>
 
-      <section className="point-buy-toolbar">
+      {classDefinition && (
+        <aside className="ability-guidance">
+          <div className="ability-guidance__sigil" aria-hidden="true">◆</div>
+          <div>
+            <span>Empfehlung für {classDefinition.name}</span>
+            <strong>Priorisiere {classDefinition.primaryAbilities.map((id) => abilityLabels[id]).join(" und ")}</strong>
+            <p>Diese Attribute unterstützen die wichtigsten Klassenmerkmale deines gewählten Pfades.</p>
+          </div>
+        </aside>
+      )}
+
+      <section className="point-buy-toolbar point-buy-toolbar--reforged">
         <div className="point-buy-budget">
           <span>
             Verbleibende Punkte
@@ -203,16 +221,13 @@ export function AbilitiesStep({
             return (
               <article
                 key={abilityId}
-                className="point-buy-card"
+                className={["point-buy-card", recommendedAbilities.has(abilityId) ? "point-buy-card--recommended" : ""].filter(Boolean).join(" ")}
               >
                 <header className="point-buy-card__header">
                   <div>
                     <span>
-                      {
-                        abilityShortLabels[
-                          abilityId
-                        ]
-                      }
+                      {abilityShortLabels[abilityId]}
+                      {recommendedAbilities.has(abilityId) && <em>Empfohlen</em>}
                     </span>
 
                     <h3>

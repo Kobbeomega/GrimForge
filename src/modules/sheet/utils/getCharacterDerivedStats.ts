@@ -10,7 +10,6 @@ import {
 
 import type {
   ArmorItem,
-  WeaponItem,
 } from "../../../compendium/equipment";
 
 import type {
@@ -26,19 +25,13 @@ import {
   getSpellcastingStats,
 } from "./getSpellcastingStats";
 
-export interface EquippedWeaponSummary {
-  id: string;
-  name: string;
+import {
+  getEquippedWeaponAttacks,
+} from "./getWeaponAttack";
 
-  damage: string;
-  damageType: string;
-
-  versatileDamage?: string;
-
-  properties: string[];
-
-  quantity: number;
-}
+import type {
+  WeaponAttackSummary,
+} from "./getWeaponAttack";
 
 export interface CharacterDerivedStats {
   armorClass: number;
@@ -61,31 +54,13 @@ export interface CharacterDerivedStats {
   carryingPercentage: number;
 
   equippedWeapons:
-    EquippedWeaponSummary[];
+    WeaponAttackSummary[];
 
   spellcasting:
     ReturnType<
       typeof getSpellcastingStats
     >;
 }
-
-const damageTypeLabels = {
-  slashing: "Hieb",
-  piercing: "Stich",
-  bludgeoning: "Wucht",
-} as const;
-
-const weaponPropertyLabels = {
-  light: "Leicht",
-  heavy: "Schwer",
-  finesse: "Finesse",
-  "two-handed": "Zweihändig",
-  versatile: "Vielseitig",
-  reach: "Reichweite",
-  thrown: "Geworfen",
-  loading: "Laden",
-  ammunition: "Munition",
-} as const;
 
 export function getCharacterDerivedStats(
   character: CharacterArchiveEntry,
@@ -207,37 +182,9 @@ export function getCharacterDerivedStats(
       : 0;
 
   const equippedWeapons =
-    inventory.items.flatMap(
-      (inventoryItem) => {
-        if (
-          !inventoryItem.equipped ||
-          inventoryItem.quantity <= 0 ||
-          inventoryItem.category !==
-            "weapon"
-        ) {
-          return [];
-        }
-
-        const definition =
-          getEquipmentById(
-            inventoryItem.id,
-          );
-
-        if (
-          !definition ||
-          definition.category !==
-            "weapon"
-        ) {
-          return [];
-        }
-
-        return [
-          createWeaponSummary(
-            definition,
-            inventoryItem.quantity,
-          ),
-        ];
-      },
+    getEquippedWeaponAttacks(
+      character,
+      inventory,
     );
 
   const spellcasting =
@@ -376,43 +323,6 @@ function getArmorClassFromArmor(
     armor.armorClass +
     dexterityBonus
   );
-}
-
-function createWeaponSummary(
-  weapon: WeaponItem,
-  quantity: number,
-): EquippedWeaponSummary {
-  return {
-    id:
-      weapon.id,
-
-    name:
-      weapon.name,
-
-    damage:
-      `${weapon.damage.dice}W` +
-      `${weapon.damage.die}`,
-
-    damageType:
-      damageTypeLabels[
-        weapon.damage.type
-      ],
-
-    versatileDamage:
-      weapon.versatile
-        ? `${weapon.versatile.dice}W${weapon.versatile.die}`
-        : undefined,
-
-    properties:
-      weapon.properties.map(
-        (property) =>
-          weaponPropertyLabels[
-            property
-          ],
-      ),
-
-    quantity,
-  };
 }
 
 function poundsToKilograms(

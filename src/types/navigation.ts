@@ -2,6 +2,7 @@ export type AppSectionId =
   | "character"
   | "session"
   | "journal"
+  | "compendium"
   | "archive";
 
 export interface NavigationItem {

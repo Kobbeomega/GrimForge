@@ -242,6 +242,8 @@ ancestryUsesReducedSpeed:
           item.id,
       ),
 
+    spentClassResources: {},
+
     summary:
       draft.identity.summary.trim() ||
       "Noch keine Beschreibung vorhanden.",

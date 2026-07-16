@@ -1,12 +1,32 @@
 import { useState } from "react";
 
+import { CharacterPrintView } from "../modules/print/CharacterPrintView";
+
+import { exportSingleCharacter } from "../modules/archives/io/characterArchiveIO";
+
 import { GrimButton } from "../components/ui/GrimButton";
+
+import {
+  calculateCharacterRules,
+  restoreClassResource,
+  restoreClassResourcesByRest,
+  spendClassResource,
+} from "../rules";
+
+import {
+  createCharacterRuleInput,
+} from "../modules/sheet/rules/createCharacterRuleInput";
+
 import { PaperPage } from "../components/ui/PaperPage";
+
+import {
+  CharacterRulesSection,
+} from "../modules/sheet/components/CharacterRulesSection";
 
 import type {
   CharacterSpellcasting,
 } from "../compendium/spells";
-
+import "../modules/sheet/styles/character-rules.css";
 import {
   getCharacterInventory,
 } from "../modules/archives/utils/getCharacterInventory";
@@ -36,6 +56,14 @@ import {
 } from "../modules/sheet/components/FeaturesPanel";
 
 import {
+  MagicPanel,
+} from "../modules/sheet/components/MagicPanel";
+
+import {
+  TransformationPanel,
+} from "../modules/sheet/components/TransformationPanel";
+
+import {
   InventoryPanel,
 } from "../modules/sheet/components/InventoryPanel";
 
@@ -46,6 +74,10 @@ import {
 import {
   VitalPanel,
 } from "../modules/sheet/components/VitalPanel";
+
+import {
+  CharacterJournalPanel,
+} from "../modules/journal/components/CharacterJournalPanel";
 
 import {
   getCharacterDerivedStats,
@@ -62,7 +94,10 @@ type CharacterSheetSection =
   | "rolls"
   | "combat"
   | "inventory"
-  | "features";
+  | "features"
+  | "magic"
+  | "transformation"
+  | "journal";
 
 interface CharacterSheetPageProps {
   character: CharacterArchiveEntry;
@@ -103,6 +138,21 @@ const sheetSections: Array<{
     id: "features",
     chapter: "V",
     title: "Merkmale",
+  },
+  {
+    id: "magic",
+    chapter: "VI",
+    title: "Grimoire",
+  },
+  {
+    id: "transformation",
+    chapter: "VII",
+    title: "Wandlung",
+  },
+  {
+    id: "journal",
+    chapter: "VIII",
+    title: "Journal",
   },
 ];
 
@@ -285,46 +335,94 @@ export function CharacterSheetPage({
     });
   }
 
+  function handleSpendClassResource(
+    resourceId: string,
+    maximum: number,
+  ) {
+    updateCharacter({
+      spentClassResources:
+        spendClassResource({
+          usage:
+            character
+              .spentClassResources ??
+            {},
+          resourceId,
+          maximum,
+        }),
+    });
+  }
+
+  function handleRestoreClassResource(
+    resourceId: string,
+  ) {
+    updateCharacter({
+      spentClassResources:
+        restoreClassResource({
+          usage:
+            character
+              .spentClassResources ??
+            {},
+          resourceId,
+        }),
+    });
+  }
+
   function handleShortRest() {
     const recoveredHitPoints =
       Math.max(
         1,
-
         Math.floor(
-          vitals
-            .maximumHitPoints /
-            4,
+          vitals.maximumHitPoints / 4,
         ),
       );
 
-    updateVitals({
-      ...vitals,
-
-      currentHitPoints:
-        Math.min(
-          vitals
-            .maximumHitPoints,
-
-          vitals
-            .currentHitPoints +
-            recoveredHitPoints,
+    const rules =
+      calculateCharacterRules(
+        createCharacterRuleInput(
+          character,
         ),
+      );
+
+    updateCharacter({
+      vitals: {
+        ...vitals,
+        currentHitPoints:
+          Math.min(
+            vitals.maximumHitPoints,
+            vitals.currentHitPoints +
+              recoveredHitPoints,
+          ),
+      },
+      spentClassResources:
+        restoreClassResourcesByRest({
+          resources:
+            rules.classResources,
+          rest: "short-rest",
+        }),
     });
   }
 
   function handleLongRest() {
+    const rules =
+      calculateCharacterRules(
+        createCharacterRuleInput(
+          character,
+        ),
+      );
+
     updateCharacter({
       vitals: {
         ...vitals,
-
         currentHitPoints:
-          vitals
-            .maximumHitPoints,
-
-        temporaryHitPoints:
-          0,
+          vitals.maximumHitPoints,
+        temporaryHitPoints: 0,
       },
-
+      spentClassResources:
+        restoreClassResourcesByRest({
+          resources:
+            rules.classResources,
+          rest: "long-rest",
+        }),
       spellcasting: {
         spellIds:
           (
@@ -337,23 +435,20 @@ export function CharacterSheetPage({
               ...selection,
             }),
           ),
-
         slots: {
           spentSlots: {},
-
-          spentPactSlots:
-            0,
+          spentPactSlots: 0,
         },
       },
     });
   }
 
   return (
-    <PaperPage>
+    <>
+      <PaperPage>
       <CharacterSheetHeader
         character={character}
       />
-
       <div className="sheet-toolbar">
         <GrimButton
           type="button"
@@ -361,6 +456,22 @@ export function CharacterSheetPage({
         >
           Zurück zum Archiv
         </GrimButton>
+
+        <div className="sheet-toolbar__actions">
+          <GrimButton
+            type="button"
+            onClick={() => exportSingleCharacter(character)}
+          >
+            Akte exportieren
+          </GrimButton>
+
+          <GrimButton
+            type="button"
+            onClick={() => window.print()}
+          >
+            Charakter drucken
+          </GrimButton>
+        </div>
 
         <span className="sheet-toolbar__status">
           Status:{" "}
@@ -447,6 +558,13 @@ export function CharacterSheetPage({
               onLongRest={
                 handleLongRest
               }
+              rulesSection={
+                <CharacterRulesSection
+                  character={character}
+                  onSpendClassResource={handleSpendClassResource}
+                  onRestoreClassResource={handleRestoreClassResource}
+                />
+              }
             />
           )}
 
@@ -465,6 +583,7 @@ export function CharacterSheetPage({
               onSpellcastingChange={
                 updateSpellcasting
               }
+              includeSpellcasting={false}
             />
           )}
 
@@ -484,9 +603,38 @@ export function CharacterSheetPage({
               character={character}
             />
           )}
+
+          {activeSection ===
+            "magic" && (
+            <MagicPanel
+              character={character}
+              onSpellcastingChange={updateSpellcasting}
+            />
+          )}
+
+          {activeSection ===
+            "transformation" && (
+            <TransformationPanel
+              character={character}
+            />
+          )}
+
+          {activeSection ===
+            "journal" && (
+            <CharacterJournalPanel
+              journal={character.journal}
+              savedAt={character.updatedAt}
+              onChange={(journal) =>
+                updateCharacter({ journal })
+              }
+            />
+          )}
         </main>
       </div>
-    </PaperPage>
+      </PaperPage>
+
+      <CharacterPrintView character={character} />
+    </>
   );
 }
 
@@ -521,6 +669,8 @@ interface CharacterOverviewProps {
   onShortRest: () => void;
 
   onLongRest: () => void;
+
+  rulesSection: React.ReactNode;
 }
 
 function CharacterOverview({
@@ -533,6 +683,7 @@ function CharacterOverview({
   onVitalsChange,
   onShortRest,
   onLongRest,
+  rulesSection,
 }: CharacterOverviewProps) {
   const classLabel = [
     character.className,
@@ -669,6 +820,8 @@ function CharacterOverview({
           onLongRest
         }
       />
+
+      {rulesSection}
 
       {character
         .abilityScores && (

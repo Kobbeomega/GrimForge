@@ -1,50 +1,70 @@
-import type {
-  AbilityId,
-} from "../core";
+import type { AbilityId, AbilityScores } from "../core";
 
-import type {
-  CompendiumEntityBase,
+import type { CompendiumEntityBase, CompendiumSource } from "../shared";
+
+export type ClassSource = Extract<
   CompendiumSource,
-} from "../shared";
+  "core" | "srd-2024" | "grim-hollow-2025"
+>;
 
-export type ClassSource =
-  Extract<
-    CompendiumSource,
-    | "core"
-    | "srd-2024"
-    | "grim-hollow-2025"
-  >;
+export type ClassFeatureKind =
+  "passive" | "action" | "bonus-action" | "reaction" | "resource";
 
-export interface CharacterSubclass
-  extends Omit<
-    CompendiumEntityBase,
-    "source"
-  > {
-  source: ClassSource;
+export type ClassResourceRecharge = "turn" | "short-rest" | "long-rest";
+
+export type ClassResourceAmount =
+  number | "proficiency-bonus" | "class-level" | "ability-modifier";
+
+export type SpellcastingProgression = "full" | "half" | "third" | "pact";
+
+export type SpellPreparationMode = "known" | "prepared" | "spellbook";
+
+export interface ClassFeatureResource {
+  id: string;
+  name: string;
+  amount: ClassResourceAmount;
+  recharge: ClassResourceRecharge;
 }
 
-export interface CharacterClass
-  extends Omit<
-    CompendiumEntityBase,
-    "source"
-  > {
-  source: ClassSource;
+export interface ClassFeature {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  kind: ClassFeatureKind;
+  resource?: ClassFeatureResource;
+  prerequisites?: string[];
+}
 
+export interface ClassSpellcastingRules {
+  ability: AbilityId;
+  progression: SpellcastingProgression;
+  preparation: SpellPreparationMode;
+  ritualCasting?: boolean;
+  startsAtLevel: number;
+}
+
+export interface CharacterSubclass extends Omit<
+  CompendiumEntityBase,
+  "source"
+> {
+  source?: ClassSource;
+  features?: ClassFeature[];
+}
+
+export interface CharacterClass extends Omit<CompendiumEntityBase, "source"> {
+  source?: ClassSource;
   hitDie: 6 | 8 | 10 | 12;
-
   primaryAbilities: AbilityId[];
-
   savingThrows: AbilityId[];
-
   armorProficiencies: string[];
-
   weaponProficiencies: string[];
-
   toolProficiencies: string[];
-
   spellcasting: boolean;
-
+  spellcastingRules?: ClassSpellcastingRules;
+  features?: ClassFeature[];
   subclasses: CharacterSubclass[];
+  startingEquipment: string[];
 }
 
 export const classes: CharacterClass[] = [
@@ -58,117 +78,81 @@ export const classes: CharacterClass[] = [
 
     hitDie: 12,
 
-    primaryAbilities: [
-      "strength",
-      "constitution",
-    ],
+    primaryAbilities: ["strength", "constitution"],
 
-    savingThrows: [
-      "strength",
-      "constitution",
-    ],
+    savingThrows: ["strength", "constitution"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-      "Mittlere Rüstung",
-      "Schilde",
-    ],
+    armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kriegswaffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
     toolProficiencies: [],
 
     spellcasting: false,
 
-    source: "core",
+    features: [
+      {
+        id: "barbarian-rage",
+        name: "Kampfrausch",
+        description:
+          "Du verfällst in einen Kampfrausch, der deine körperliche Kampfkraft und Widerstandsfähigkeit erhöht.",
+        level: 1,
+        kind: "bonus-action",
+        resource: {
+          id: "barbarian-rage-uses",
+          name: "Kampfrausch",
+          amount: 2,
+          recharge: "long-rest",
+        },
+      },
+      {
+        id: "barbarian-unarmored-defense",
+        name: "Ungepanzerte Verteidigung",
+        description:
+          "Ohne Rüstung berechnet sich deine Rüstungsklasse aus Geschicklichkeit und Konstitution.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "berserker",
-
         name: "Berserker",
-
         description:
           "Ein Pfad der ungezügelten Gewalt und völligen Hingabe an den Kampfrausch.",
-
-        source: "core",
       },
       {
         id: "totem-warrior",
-
         name: "Totemkrieger",
-
         description:
           "Ein spiritueller Pfad, der tierische Vorbilder und Ahnenkräfte vereint.",
-
-        source: "core",
       },
       {
         id: "ancestral-guardian",
-
         name: "Ahnenwächter",
-
         description:
           "Ein Krieger, der im Kampf von den Geistern seiner Vorfahren begleitet wird.",
-
-        source: "core",
       },
       {
         id: "beast",
-
         name: "Bestie",
-
         description:
           "Ein Pfad, auf dem sich der eigene Körper in eine natürliche Waffe verwandelt.",
-
-        source: "core",
       },
       {
         id: "storm-herald",
-
         name: "Sturmbote",
-
         description:
           "Ein Barbar, dessen Zorn die Kraft extremer Landschaften entfesselt.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "path-of-the-fractured",
-
-        name: "Pfad des Zersplitterten",
-
-        description:
-          "Ein Barbar mit gespaltener Persönlichkeit und wechselnden Kampfaspekten.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "path-of-the-primal-spirit",
-
-        name: "Pfad des Urgeistes",
-
-        description:
-          "Ein Barbar, der einen spektralen Verbündeten beschwört und gemeinsam mit ihm kämpft.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "path-of-the-wrathful-dead",
-
-        name: "Pfad der zornigen Toten",
-
-        description:
-          "Ein Barbar, der die Macht ruheloser Toter durch seinen Kampfrausch kanalisiert.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Große Axt",
+      "Zwei Handäxte",
+      "Entdeckerpaket",
+      "Vier Wurfspeere",
     ],
   },
 
@@ -182,18 +166,11 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "charisma",
-    ],
+    primaryAbilities: ["charisma"],
 
-    savingThrows: [
-      "dexterity",
-      "charisma",
-    ],
+    savingThrows: ["dexterity", "charisma"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-    ],
+    armorProficiencies: ["Leichte Rüstung"],
 
     weaponProficiencies: [
       "Einfache Waffen",
@@ -203,78 +180,69 @@ export const classes: CharacterClass[] = [
       "Kurzschwerter",
     ],
 
-    toolProficiencies: [
-      "Drei Musikinstrumente nach Wahl",
-    ],
+    toolProficiencies: ["Drei Musikinstrumente nach Wahl"],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "charisma",
+      progression: "full",
+      preparation: "prepared",
+      ritualCasting: true,
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "bard-bardic-inspiration",
+        name: "Bardische Inspiration",
+        description:
+          "Du inspirierst eine Kreatur mit Worten oder Musik und verleihst ihr einen Inspirationswürfel.",
+        level: 1,
+        kind: "bonus-action",
+        resource: {
+          id: "bard-bardic-inspiration-uses",
+          name: "Bardische Inspiration",
+          amount: "ability-modifier",
+          recharge: "long-rest",
+        },
+      },
+      {
+        id: "bard-spellcasting",
+        name: "Zauberwirken",
+        description: "Du wirkst Bardenzauber mit Charisma als Zauberattribut.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "college-of-lore",
-
         name: "Kolleg des Wissens",
-
         description:
           "Ein Pfad für Gelehrte, Redner und Sammler vergessener Geheimnisse.",
-
-        source: "core",
       },
       {
         id: "college-of-valor",
-
         name: "Kolleg der Tapferkeit",
-
         description:
           "Ein kriegerischer Barde, der Verbündete mit Taten und Liedern antreibt.",
-
-        source: "core",
       },
       {
         id: "college-of-whispers",
-
         name: "Kolleg des Flüsterns",
-
         description:
           "Ein düsterer Pfad aus Geheimnissen, Furcht und gezielter Manipulation.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "college-of-adventurers",
-
-        name: "Kolleg der Abenteurer",
-
-        description:
-          "Ein vielseitiges Kolleg, das praktisches Abenteuerwissen und Anpassungsfähigkeit lehrt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "college-of-fools",
-
-        name: "Kolleg der Narren",
-
-        description:
-          "Ein Kolleg für Spott, Ablenkung und tödliches Gelächter.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "college-of-dirges",
-
-        name: "Kolleg der Totenklagen",
-
-        description:
-          "Ein düsteres Kolleg der Totenlieder und der Verbindung zu Verstorbenen.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Rapier oder Langschwert",
+      "Diplomatenpaket oder Unterhalterpaket",
+      "Laute oder anderes Musikinstrument",
+      "Lederrüstung",
+      "Dolch",
     ],
   },
 
@@ -288,105 +256,79 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "wisdom",
-    ],
+    primaryAbilities: ["wisdom"],
 
-    savingThrows: [
-      "wisdom",
-      "charisma",
-    ],
+    savingThrows: ["wisdom", "charisma"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-      "Mittlere Rüstung",
-      "Schilde",
-    ],
+    armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen"],
 
     toolProficiencies: [],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "wisdom",
+      progression: "full",
+      preparation: "prepared",
+      ritualCasting: true,
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "cleric-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du bereitest Klerikerzauber vor und wirkst sie mit Weisheit.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "cleric-divine-order",
+        name: "Göttliche Ordnung",
+        description:
+          "Du wählst eine göttliche Ausrichtung, die deine Ausbildung und Rolle prägt.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "life-domain",
-
         name: "Domäne des Lebens",
-
         description:
           "Eine göttliche Ausrichtung auf Heilung, Schutz und die Bewahrung des Lebens.",
-
-        source: "core",
       },
       {
         id: "light-domain",
-
         name: "Domäne des Lichts",
-
         description:
           "Eine strahlende Tradition, die Dunkelheit und Verderbnis bekämpft.",
-
-        source: "core",
       },
       {
         id: "war-domain",
-
         name: "Domäne des Krieges",
-
         description:
           "Eine kämpferische Ausrichtung für Priester, die ihren Glauben mit Waffen verteidigen.",
-
-        source: "core",
       },
       {
         id: "grave-domain",
-
         name: "Domäne des Grabes",
-
         description:
           "Eine düstere Lehre über Tod, Übergang und das Gleichgewicht zwischen Leben und Sterben.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "eldritch-domain",
-
-        name: "Unheimliche Domäne",
-
-        description:
-          "Eine Domäne unheimlicher und gottestötender Mächte.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "inquisition-domain",
-
-        name: "Domäne der Inquisition",
-
-        description:
-          "Eine Domäne für das Aufspüren und Vernichten von Magie und Häresie.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "purification-domain",
-
-        name: "Domäne der Läuterung",
-
-        description:
-          "Eine Domäne der Heilung und Läuterung durch Schmerz.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Streitkolben oder Kriegshammer",
+      "Schuppenpanzer oder Lederrüstung",
+      "Leichte Armbrust oder einfache Waffe",
+      "Priesterpaket oder Entdeckerpaket",
+      "Schild",
+      "Heiliges Symbol",
     ],
   },
 
@@ -400,20 +342,11 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "wisdom",
-    ],
+    primaryAbilities: ["wisdom"],
 
-    savingThrows: [
-      "intelligence",
-      "wisdom",
-    ],
+    savingThrows: ["intelligence", "wisdom"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-      "Mittlere Rüstung",
-      "Schilde",
-    ],
+    armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
     weaponProficiencies: [
       "Knüppel",
@@ -428,78 +361,71 @@ export const classes: CharacterClass[] = [
       "Speere",
     ],
 
-    toolProficiencies: [
-      "Kräuterkundeausrüstung",
-    ],
+    toolProficiencies: ["Kräuterkundeausrüstung"],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "wisdom",
+      progression: "full",
+      preparation: "prepared",
+      ritualCasting: true,
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "druid-druidic",
+        name: "Druidisch",
+        description: "Du beherrschst die geheime Sprache der Druiden.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "druid-primal-order",
+        name: "Ursprüngliche Ordnung",
+        description:
+          "Du wählst eine Ausrichtung deiner druidischen Ausbildung.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "druid-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du bereitest Druidenzauber vor und wirkst sie mit Weisheit.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "circle-of-the-land",
-
         name: "Zirkel des Landes",
-
         description:
           "Ein naturverbundener Pfad mit starker Bindung an eine bestimmte Region.",
-
-        source: "core",
       },
       {
         id: "circle-of-the-moon",
-
         name: "Zirkel des Mondes",
-
         description:
           "Ein kämpferischer Zirkel, der die Tiergestalt in den Mittelpunkt stellt.",
-
-        source: "core",
       },
       {
         id: "circle-of-spores",
-
         name: "Zirkel der Sporen",
-
         description:
           "Eine düstere Tradition über Verfall, Pilze und den Kreislauf des Lebens.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "circle-of-blood",
-
-        name: "Zirkel des Blutes",
-
-        description:
-          "Ein Druidenzirkel, der Blut als Quelle naturmagischer Macht verwendet.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "circle-of-entropy",
-
-        name: "Zirkel der Entropie",
-
-        description:
-          "Ein Zirkel, der Verfall, Auflösung und Entropie kontrolliert.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "circle-of-mutation",
-
-        name: "Zirkel der Mutation",
-
-        description:
-          "Ein Zirkel kontrollierter körperlicher Veränderungen und Anpassungen.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Holzschild oder einfache Waffe",
+      "Krummsäbel oder einfache Nahkampfwaffe",
+      "Lederrüstung",
+      "Entdeckerpaket",
+      "Druidischer Fokus",
     ],
   },
 
@@ -513,106 +439,83 @@ export const classes: CharacterClass[] = [
 
     hitDie: 10,
 
-    primaryAbilities: [
-      "strength",
-      "dexterity",
-    ],
+    primaryAbilities: ["strength", "dexterity"],
 
-    savingThrows: [
-      "strength",
-      "constitution",
-    ],
+    savingThrows: ["strength", "constitution"],
 
-    armorProficiencies: [
-      "Alle Rüstungen",
-      "Schilde",
-    ],
+    armorProficiencies: ["Alle Rüstungen", "Schilde"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kriegswaffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
     toolProficiencies: [],
 
     spellcasting: false,
 
-    source: "core",
+    features: [
+      {
+        id: "fighter-fighting-style",
+        name: "Kampfstil",
+        description:
+          "Du wählst eine besondere Ausbildung im bewaffneten Kampf.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "fighter-second-wind",
+        name: "Zweiter Wind",
+        description:
+          "Du sammelst deine Kräfte und stellst eigene Trefferpunkte wieder her.",
+        level: 1,
+        kind: "bonus-action",
+        resource: {
+          id: "fighter-second-wind-uses",
+          name: "Zweiter Wind",
+          amount: 2,
+          recharge: "short-rest",
+        },
+      },
+      {
+        id: "fighter-weapon-mastery",
+        name: "Waffenmeisterschaft",
+        description:
+          "Du kannst die Meisterschaftseigenschaften ausgewählter Waffen einsetzen.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "champion",
-
         name: "Champion",
-
         description:
           "Ein körperlich überragender Kämpfer mit direktem und zuverlässigem Spielstil.",
-
-        source: "core",
       },
       {
         id: "battle-master",
-
         name: "Kampfmeister",
-
         description:
           "Ein taktischer Krieger, der Manöver und Kontrolle über rohe Gewalt stellt.",
-
-        source: "core",
       },
       {
         id: "eldritch-knight",
-
         name: "Arkaner Ritter",
-
         description:
           "Ein Kämpfer, der Waffenführung mit begrenzter arkaner Magie verbindet.",
-
-        source: "core",
       },
       {
         id: "samurai",
-
         name: "Samurai",
-
         description:
           "Ein entschlossener Duellant, der Disziplin und mentale Stärke verkörpert.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "bulwark-warrior",
-
-        name: "Bollwerk-Krieger",
-
-        description:
-          "Ein defensiver Kämpfer, der als Schutzwall dient und das Schlachtfeld kontrolliert.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "living-crucible",
-
-        name: "Lebender Schmelztiegel",
-
-        description:
-          "Ein Kämpfer, der seinen Körper durch alchemistische Mittel verbessert.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "night-watchman",
-
-        name: "Nachtwächter",
-
-        description:
-          "Ein spezialisierter Jäger von Kreaturen der Nacht.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Kettenrüstung oder Lederrüstung",
+      "Kriegswaffe und Schild oder zwei Kriegswaffen",
+      "Leichte Armbrust oder zwei Handäxte",
+      "Gewölbeforscherpaket oder Entdeckerpaket",
     ],
   },
 
@@ -626,95 +529,62 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "dexterity",
-      "wisdom",
-    ],
+    primaryAbilities: ["dexterity", "wisdom"],
 
-    savingThrows: [
-      "strength",
-      "dexterity",
-    ],
+    savingThrows: ["strength", "dexterity"],
 
     armorProficiencies: [],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kurzschwerter",
-    ],
+    weaponProficiencies: ["Einfache Waffen", "Kurzschwerter"],
 
-    toolProficiencies: [
-      "Ein Handwerkszeug oder Musikinstrument nach Wahl",
-    ],
+    toolProficiencies: ["Ein Handwerkszeug oder Musikinstrument nach Wahl"],
 
     spellcasting: false,
 
-    source: "core",
+    features: [
+      {
+        id: "monk-martial-arts",
+        name: "Kampfkünste",
+        description:
+          "Deine Ausbildung verbessert waffenlose Angriffe und geeignete Mönchswaffen.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "monk-unarmored-defense",
+        name: "Ungepanzerte Verteidigung",
+        description:
+          "Ohne Rüstung berechnet sich deine Rüstungsklasse aus Geschicklichkeit und Weisheit.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "way-of-the-open-hand",
-
         name: "Weg der offenen Hand",
-
         description:
           "Ein klassischer Pfad für Kontrolle, Bewegung und waffenlosen Kampf.",
-
-        source: "core",
       },
       {
         id: "way-of-shadow",
-
         name: "Weg des Schattens",
-
         description:
           "Ein heimlicher Pfad aus Dunkelheit, Täuschung und lautloser Bewegung.",
-
-        source: "core",
       },
       {
         id: "way-of-the-long-death",
-
         name: "Weg des langen Todes",
-
         description:
           "Eine düstere Schule über Furcht, Sterblichkeit und die Grenzen des Körpers.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "way-of-the-leaden-crown",
-
-        name: "Krieger der bleiernen Krone",
-
-        description:
-          "Ein Mönch, der Beherrschung und Tyrannei mit eiserner Willenskraft bekämpft.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "way-of-pride",
-
-        name: "Krieger des Stolzes",
-
-        description:
-          "Ein Mönch, dessen Weg auf kompromissloser Selbstvervollkommnung beruht.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "way-of-remorse",
-
-        name: "Krieger der Reue",
-
-        description:
-          "Ein Mönch auf einem Weg der Sühne und Wiedergutmachung.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Kurzschwert oder einfache Waffe",
+      "Gewölbeforscherpaket oder Entdeckerpaket",
+      "Zehn Wurfpfeile",
     ],
   },
 
@@ -728,106 +598,91 @@ export const classes: CharacterClass[] = [
 
     hitDie: 10,
 
-    primaryAbilities: [
-      "strength",
-      "charisma",
-    ],
+    primaryAbilities: ["strength", "charisma"],
 
-    savingThrows: [
-      "wisdom",
-      "charisma",
-    ],
+    savingThrows: ["wisdom", "charisma"],
 
-    armorProficiencies: [
-      "Alle Rüstungen",
-      "Schilde",
-    ],
+    armorProficiencies: ["Alle Rüstungen", "Schilde"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kriegswaffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
     toolProficiencies: [],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "charisma",
+      progression: "half",
+      preparation: "prepared",
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "paladin-lay-on-hands",
+        name: "Handauflegen",
+        description:
+          "Du besitzt einen Vorrat heilender Macht, mit dem du Trefferpunkte wiederherstellen kannst.",
+        level: 1,
+        kind: "action",
+        resource: {
+          id: "paladin-lay-on-hands-pool",
+          name: "Handauflegen",
+          amount: "class-level",
+          recharge: "long-rest",
+        },
+      },
+      {
+        id: "paladin-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du bereitest Paladinzauber vor und wirkst sie mit Charisma.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "paladin-weapon-mastery",
+        name: "Waffenmeisterschaft",
+        description:
+          "Du kannst die Meisterschaftseigenschaften ausgewählter Waffen einsetzen.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "oath-of-devotion",
-
         name: "Eid der Hingabe",
-
         description:
           "Ein klassischer Eid über Ehre, Schutz und den Kampf gegen das Böse.",
-
-        source: "core",
       },
       {
         id: "oath-of-vengeance",
-
         name: "Eid der Vergeltung",
-
         description:
           "Ein unerbittlicher Schwur, Schuldige zu verfolgen und Unrecht zu vergelten.",
-
-        source: "core",
       },
       {
         id: "oath-of-the-ancients",
-
         name: "Eid der Uralten",
-
         description:
           "Ein Eid zum Schutz von Hoffnung, Natur und dem Licht des Lebens.",
-
-        source: "core",
       },
       {
         id: "oath-of-the-crown",
-
         name: "Eid der Krone",
-
         description:
           "Ein Schwur an Ordnung, Pflicht, Gemeinschaft und Herrschaft.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "oath-of-pestilence",
-
-        name: "Eid der Pestilenz",
-
-        description:
-          "Ein Paladin, der Macht aus Krankheit und Leiden gewinnt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "oath-of-slaughter",
-
-        name: "Eid des Schlachtens",
-
-        description:
-          "Ein Eid extremer Gewalt und kompromissloser Offensivkraft.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "oath-of-zeal",
-
-        name: "Eid des Eifers",
-
-        description:
-          "Ein fanatischer Eid ideologischer Reinheit und unerschütterlicher Überzeugung.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Kriegswaffe und Schild oder zwei Kriegswaffen",
+      "Fünf Wurfspeere oder einfache Nahkampfwaffe",
+      "Priesterpaket oder Entdeckerpaket",
+      "Kettenrüstung",
+      "Heiliges Symbol",
     ],
   },
 
@@ -841,97 +696,169 @@ export const classes: CharacterClass[] = [
 
     hitDie: 10,
 
-    primaryAbilities: [
-      "dexterity",
-      "wisdom",
-    ],
+    primaryAbilities: ["dexterity", "wisdom"],
 
-    savingThrows: [
-      "strength",
-      "dexterity",
-    ],
+    savingThrows: ["strength", "dexterity"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-      "Mittlere Rüstung",
-      "Schilde",
-    ],
+    armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kriegswaffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
     toolProficiencies: [],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "wisdom",
+      progression: "half",
+      preparation: "prepared",
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "ranger-favored-enemy",
+        name: "Erzfeind",
+        description:
+          "Du kannst eine ausgewählte Beute mit besonderer Jagdmagie verfolgen.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "ranger-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du bereitest Waldläuferzauber vor und wirkst sie mit Weisheit.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "ranger-weapon-mastery",
+        name: "Waffenmeisterschaft",
+        description:
+          "Du kannst die Meisterschaftseigenschaften ausgewählter Waffen einsetzen.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "hunter",
-
         name: "Jäger",
-
         description:
           "Ein vielseitiger Spezialist im Kampf gegen besonders gefährliche Beute.",
-
-        source: "core",
       },
       {
         id: "beast-master",
-
         name: "Tiermeister",
-
         description:
           "Ein Waldläufer, der an der Seite eines treuen Tiergefährten kämpft.",
-
-        source: "core",
       },
       {
         id: "gloom-stalker",
-
         name: "Düsterpirscher",
-
         description:
           "Ein Jäger der Finsternis, der in Höhlen, Ruinen und Schatten besonders gefährlich ist.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
+    startingEquipment: [
+      "Schuppenpanzer oder Lederrüstung",
+      "Zwei Kurzschwerter oder zwei einfache Nahkampfwaffen",
+      "Gewölbeforscherpaket oder Entdeckerpaket",
+      "Langbogen",
+      "Zwanzig Pfeile",
+    ],
+  },
 
+  {
+    id: "monster-hunter",
+
+    name: "Monsterjäger",
+
+    description:
+      "Ein gehärteter Spezialist, der übernatürliche Beute studiert, vorbereitet und mit Wissen, Werkzeugen und kompromissloser Präzision zur Strecke bringt.",
+
+    source: "grim-hollow-2025",
+
+    hitDie: 10,
+
+    primaryAbilities: ["dexterity", "wisdom"],
+
+    savingThrows: ["dexterity", "wisdom"],
+
+    armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
+
+    weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
+
+    toolProficiencies: ["Alchemistenbedarf"],
+
+    spellcasting: false,
+
+    features: [
       {
-        id: "green-reaper",
-
-        name: "Grüner Schnitter",
-
+        id: "monster-hunter-quarry",
+        name: "Gezeichnete Beute",
         description:
-          "Ein Waldläufer, der Gifte und natürliche Toxine meisterhaft einsetzt.",
+          "Als Bonusaktion erklärst du eine sichtbare Kreatur zu deiner Beute. Deine Ausbildung hilft dir, ihre Schwächen zu erkennen und sie unerbittlich zu verfolgen.",
+        level: 1,
+        kind: "bonus-action",
+        resource: {
+          id: "monster-hunter-quarry-uses",
+          name: "Gezeichnete Beute",
+          amount: "proficiency-bonus",
+          recharge: "long-rest",
+        },
+      },
+      {
+        id: "monster-hunter-lore",
+        name: "Monsterkunde",
+        description:
+          "Du bist im Erkennen übernatürlicher Kreaturen, ihrer Spuren und typischen Verwundbarkeiten ausgebildet.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "monster-hunter-prepared-hunter",
+        name: "Vorbereiteter Jäger",
+        description:
+          "Du beherrschst den sicheren Umgang mit Jagdwerkzeugen, Tinkturen und spezialisierten Waffen gegen gefährliche Beute.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
+    subclasses: [
+      {
+        id: "monster-hunter-beast-slayer",
+        name: "Bestienschlächter",
+        description:
+          "Ein Pfad für Jäger, die körperlich überlegene Ungeheuer durch Ausdauer, Fallen und präzise Gewalt bezwingen.",
         source: "grim-hollow-2025",
       },
       {
-        id: "primal-archer",
-
-        name: "Ursprünglicher Bogenschütze",
-
+        id: "monster-hunter-occult-warden",
+        name: "Okkulter Wächter",
         description:
-          "Ein Bogenschütze, der seine Geschosse mit elementarer Kraft verstärkt.",
-
+          "Ein Pfad gegen Flüche, Geister und fremdartige Mächte, der Wissen mit schützenden Ritualen verbindet.",
         source: "grim-hollow-2025",
       },
       {
-        id: "vermin-lord",
-
-        name: "Herr des Ungeziefers",
-
+        id: "monster-hunter-trophy-bearer",
+        name: "Trophäenträger",
         description:
-          "Ein Waldläufer, der Schwärme und Ungeziefer kontrolliert.",
-
+          "Ein Pfad, auf dem die Überreste besiegter Monster zu Werkzeugen, Warnzeichen und Quellen neuer Stärke werden.",
         source: "grim-hollow-2025",
       },
+    ],
+
+    startingEquipment: [
+      "Schuppenpanzer oder Lederrüstung",
+      "Langschwert, Rapier oder Großschwert",
+      "Schild, leichte Armbrust oder zwei Handäxte",
+      "Gewölbeforscherpaket oder Entdeckerpaket",
+      "Dolch",
     ],
   },
 
@@ -945,18 +872,11 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "dexterity",
-    ],
+    primaryAbilities: ["dexterity"],
 
-    savingThrows: [
-      "dexterity",
-      "intelligence",
-    ],
+    savingThrows: ["dexterity", "intelligence"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-    ],
+    armorProficiencies: ["Leichte Rüstung"],
 
     weaponProficiencies: [
       "Einfache Waffen",
@@ -966,88 +886,79 @@ export const classes: CharacterClass[] = [
       "Kurzschwerter",
     ],
 
-    toolProficiencies: [
-      "Diebeswerkzeug",
-    ],
+    toolProficiencies: ["Diebeswerkzeug"],
 
     spellcasting: false,
 
-    source: "core",
+    features: [
+      {
+        id: "rogue-expertise",
+        name: "Expertise",
+        description:
+          "Dein Übungsbonus wird bei ausgewählten Fertigkeiten oder Werkzeugen verdoppelt.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "rogue-sneak-attack",
+        name: "Hinterhältiger Angriff",
+        description:
+          "Einmal pro Zug kannst du unter passenden Umständen zusätzlichen Präzisionsschaden verursachen.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "rogue-thieves-cant",
+        name: "Diebessprache",
+        description:
+          "Du beherrschst geheime Zeichen und Redewendungen krimineller Kreise.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "rogue-weapon-mastery",
+        name: "Waffenmeisterschaft",
+        description:
+          "Du kannst die Meisterschaftseigenschaften ausgewählter Waffen einsetzen.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "thief",
-
         name: "Dieb",
-
         description:
           "Ein klassischer Spezialist für Einbruch, Bewegung und den Einsatz von Gegenständen.",
-
-        source: "core",
       },
       {
         id: "assassin",
-
         name: "Assassine",
-
         description:
           "Ein tödlicher Pfad aus Tarnung, Vorbereitung und gezielten Angriffen.",
-
-        source: "core",
       },
       {
         id: "arcane-trickster",
-
         name: "Arkaner Betrüger",
-
         description:
           "Ein Schurke, der Täuschung und Heimlichkeit mit begrenzter Magie verbindet.",
-
-        source: "core",
       },
       {
         id: "inquisitive",
-
         name: "Inquisitiv",
-
         description:
           "Ein Beobachter und Ermittler, der Lügen, Schwächen und verborgene Wahrheiten erkennt.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "highway-rider",
-
-        name: "Straßenreiter",
-
-        description:
-          "Ein berittener Bandit, der Geschwindigkeit und Überraschung nutzt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "misfortune-bringer",
-
-        name: "Unglücksbringer",
-
-        description:
-          "Ein Schurke, der Flüche und gezieltes Unglück gegen seine Feinde richtet.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "blood-thief",
-
-        name: "Blutdieb",
-
-        description:
-          "Ein Schurke, der Sangromantie und Lebensraub mit Präzisionsangriffen verbindet.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Rapier oder Kurzschwert",
+      "Kurzbogen oder Kurzschwert",
+      "Einbrecherpaket oder Gewölbeforscherpaket",
+      "Lederrüstung",
+      "Zwei Dolche",
+      "Diebeswerkzeug",
     ],
   },
 
@@ -1061,14 +972,9 @@ export const classes: CharacterClass[] = [
 
     hitDie: 6,
 
-    primaryAbilities: [
-      "charisma",
-    ],
+    primaryAbilities: ["charisma"],
 
-    savingThrows: [
-      "constitution",
-      "charisma",
-    ],
+    savingThrows: ["constitution", "charisma"],
 
     armorProficiencies: [],
 
@@ -1084,72 +990,64 @@ export const classes: CharacterClass[] = [
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "charisma",
+      progression: "full",
+      preparation: "prepared",
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "sorcerer-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du wirkst Zauber durch deine angeborene Magie und verwendest Charisma.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "sorcerer-innate-sorcery",
+        name: "Angeborene Zauberei",
+        description:
+          "Du entfesselst deine innere Magie, um deine Zauber vorübergehend zu verstärken.",
+        level: 1,
+        kind: "bonus-action",
+        resource: {
+          id: "sorcerer-innate-sorcery-uses",
+          name: "Angeborene Zauberei",
+          amount: 2,
+          recharge: "long-rest",
+        },
+      },
+    ],
 
     subclasses: [
       {
         id: "draconic-bloodline",
-
         name: "Drachenblutlinie",
-
         description:
           "Eine magische Herkunft, die auf drakonische Abstammung oder Einfluss zurückgeht.",
-
-        source: "core",
       },
       {
         id: "wild-magic",
-
         name: "Wilde Magie",
-
         description:
           "Eine unberechenbare Quelle, deren Kraft sich nicht vollständig kontrollieren lässt.",
-
-        source: "core",
       },
       {
         id: "shadow-magic",
-
         name: "Schattenmagie",
-
         description:
           "Eine düstere Verbindung zu Finsternis, Tod oder der Schattenwelt.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "apocalypse-sorcery",
-
-        name: "Apokalypse-Zauberei",
-
-        description:
-          "Eine magische Herkunft, die Kräfte apokalyptischer Katastrophen entfesselt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "haunted-sorcery",
-
-        name: "Heimgesuchte Zauberei",
-
-        description:
-          "Eine Herkunft, die den Zauberer mit Toten und rastlosen Geistern verbindet.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "cursed-bloodline",
-
-        name: "Verfluchte Blutlinie",
-
-        description:
-          "Eine Blutlinie, deren ererbter Fluch zur Quelle arkaner Macht wurde.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Leichte Armbrust oder einfache Waffe",
+      "Komponententasche oder arkaner Fokus",
+      "Gewölbeforscherpaket oder Entdeckerpaket",
+      "Zwei Dolche",
     ],
   },
 
@@ -1163,103 +1061,77 @@ export const classes: CharacterClass[] = [
 
     hitDie: 8,
 
-    primaryAbilities: [
-      "charisma",
-    ],
+    primaryAbilities: ["charisma"],
 
-    savingThrows: [
-      "wisdom",
-      "charisma",
-    ],
+    savingThrows: ["wisdom", "charisma"],
 
-    armorProficiencies: [
-      "Leichte Rüstung",
-    ],
+    armorProficiencies: ["Leichte Rüstung"],
 
-    weaponProficiencies: [
-      "Einfache Waffen",
-    ],
+    weaponProficiencies: ["Einfache Waffen"],
 
     toolProficiencies: [],
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "charisma",
+      progression: "pact",
+      preparation: "prepared",
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "warlock-eldritch-invocations",
+        name: "Unheimliche Anrufungen",
+        description:
+          "Du erhältst besondere übernatürliche Fähigkeiten aus deinem Pakt.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "warlock-pact-magic",
+        name: "Paktmagie",
+        description:
+          "Du wirkst Hexenmeisterzauber mit Charisma und regenerierst deine Paktplätze schneller als gewöhnliche Zauberplätze.",
+        level: 1,
+        kind: "passive",
+      },
+    ],
 
     subclasses: [
       {
         id: "the-fiend",
-
         name: "Der Unhold",
-
-        description:
-          "Ein Pakt mit infernalischen oder abyssalen Mächten.",
-
-        source: "core",
+        description: "Ein Pakt mit infernalischen oder abyssalen Mächten.",
       },
       {
         id: "the-archfey",
-
         name: "Der Erzfee",
-
         description:
           "Ein Pakt mit einer uralten und unberechenbaren Feenmacht.",
-
-        source: "core",
       },
       {
         id: "the-great-old-one",
-
         name: "Der Große Alte",
-
         description:
           "Ein Pakt mit einer fremdartigen Entität jenseits gewöhnlicher Vernunft.",
-
-        source: "core",
       },
       {
         id: "the-undead",
-
         name: "Der Untote",
-
         description:
           "Eine Bindung an eine mächtige untote oder todlose Wesenheit.",
-
-        source: "core",
       },
+    ],
 
-      // Grim Hollow
-
-      {
-        id: "the-coven",
-
-        name: "Der Hexenzirkel",
-
-        description:
-          "Ein Pakt, dessen Macht von einem Hexenzirkel und dessen gemeinsamer Magie stammt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "the-first-vampire",
-
-        name: "Der Erste Vampir",
-
-        description:
-          "Ein Pakt mit einer uralten vampirischen Macht.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "the-parasite",
-
-        name: "Der Parasit",
-
-        description:
-          "Ein kosmischer Parasit lebt im Wirt und verleiht ihm fremdartige Kräfte.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Leichte Armbrust oder einfache Waffe",
+      "Komponententasche oder arkaner Fokus",
+      "Gelehrtenpaket oder Gewölbeforscherpaket",
+      "Lederrüstung",
+      "Einfache Waffe",
+      "Zwei Dolche",
     ],
   },
 
@@ -1273,14 +1145,9 @@ export const classes: CharacterClass[] = [
 
     hitDie: 6,
 
-    primaryAbilities: [
-      "intelligence",
-    ],
+    primaryAbilities: ["intelligence"],
 
-    savingThrows: [
-      "intelligence",
-      "wisdom",
-    ],
+    savingThrows: ["intelligence", "wisdom"],
 
     armorProficiencies: [],
 
@@ -1296,168 +1163,240 @@ export const classes: CharacterClass[] = [
 
     spellcasting: true,
 
-    source: "core",
+    spellcastingRules: {
+      ability: "intelligence",
+      progression: "full",
+      preparation: "spellbook",
+      ritualCasting: true,
+      startsAtLevel: 1,
+    },
+
+    features: [
+      {
+        id: "wizard-spellcasting",
+        name: "Zauberwirken",
+        description:
+          "Du bereitest Zauber aus deinem Zauberbuch vor und wirkst sie mit Intelligenz.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "wizard-ritual-adept",
+        name: "Ritualkundiger",
+        description:
+          "Du kannst geeignete Magierzauber als Rituale direkt aus deinem Zauberbuch wirken.",
+        level: 1,
+        kind: "passive",
+      },
+      {
+        id: "wizard-arcane-recovery",
+        name: "Arkane Erholung",
+        description:
+          "Während einer kurzen Rast kannst du einen Teil deiner verbrauchten Zauberplätze zurückerlangen.",
+        level: 1,
+        kind: "resource",
+        resource: {
+          id: "wizard-arcane-recovery-uses",
+          name: "Arkane Erholung",
+          amount: 1,
+          recharge: "long-rest",
+        },
+      },
+    ],
 
     subclasses: [
       {
         id: "school-of-abjuration",
-
         name: "Schule der Bannmagie",
-
         description:
           "Eine Schule für Schutz, Gegenzauber und die Kontrolle magischer Gefahren.",
-
-        source: "core",
       },
       {
         id: "school-of-evocation",
-
         name: "Schule der Hervorrufung",
-
         description:
           "Eine Schule für direkte, zerstörerische und elementare Magie.",
-
-        source: "core",
       },
       {
         id: "school-of-necromancy",
-
         name: "Schule der Nekromantie",
-
         description:
           "Eine dunkle Schule über Tod, Lebensenergie und untote Wesen.",
-
-        source: "core",
       },
       {
         id: "school-of-illusion",
-
         name: "Schule der Illusion",
-
         description:
           "Eine Schule für Täuschung, Sinnesbilder und die Manipulation von Wahrnehmung.",
-
-        source: "core",
-      },
-
-      // Grim Hollow
-
-      {
-        id: "demonologist",
-
-        name: "Dämonologe",
-
-        description:
-          "Ein Magier, der Macht von Dämonen und Seraphen stiehlt.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "plague-doctor",
-
-        name: "Pestarzt",
-
-        description:
-          "Ein Magier, der Krankheit, Medizin und Seuchenmagie miteinander verbindet.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "sangromancer",
-
-        name: "Sangromant",
-
-        description:
-          "Ein Magier, der Blut und körperliche Reserven als magische Ressource verwendet.",
-
-        source: "grim-hollow-2025",
       },
     ],
-  },
 
-  {
-    id: "monster-hunter",
-
-    name: "Monsterjäger",
-
-    description:
-      "Ein gelehrter Jäger übernatürlicher Kreaturen, der Waffenbeherrschung, Monsterwissen und taktische Reaktionen verbindet.",
-
-    hitDie: 10,
-
-    /**
-     * Die Klasse verwendet Stärke oder
-     * Geschicklichkeit sowie Intelligenz.
-     */
-    primaryAbilities: [
-      "strength",
-      "dexterity",
-      "intelligence",
-    ],
-
-    savingThrows: [
-      "dexterity",
-      "intelligence",
-    ],
-
-    armorProficiencies: [
-      "Leichte Rüstung",
-      "Mittlere Rüstung",
-      "Schilde",
-    ],
-
-    weaponProficiencies: [
-      "Einfache Waffen",
-      "Kriegswaffen",
-    ],
-
-    toolProficiencies: [],
-
-    spellcasting: false,
-
-    source: "grim-hollow-2025",
-
-    subclasses: [
-      {
-        id: "slayers-guild",
-
-        name: "Schlächtergilde",
-
-        description:
-          "Eine Gilde widerstandsfähiger Nahkämpfer, die auf Reaktionen, Umlenkung und den Kampf auf engstem Raum spezialisiert ist.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "devourers-guild",
-
-        name: "Verschlingergilde",
-
-        description:
-          "Eine Gilde, deren Mitglieder Monsterteile verzehren und daraus Mutationen sowie temporäre Trefferpunkte gewinnen.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "occultists-guild",
-
-        name: "Okkultistengilde",
-
-        description:
-          "Eine Gilde mit begrenzter Magierzauberei, arkanem Wissen und Fähigkeiten gegen Magie.",
-
-        source: "grim-hollow-2025",
-      },
-      {
-        id: "trappers-guild",
-
-        name: "Fallenstellergilde",
-
-        description:
-          "Eine Gilde für Fallen, Hinterhalte und hergestellte Spezialausrüstung.",
-
-        source: "grim-hollow-2025",
-      },
+    startingEquipment: [
+      "Kampfstab oder Dolch",
+      "Komponententasche oder arkaner Fokus",
+      "Gelehrtenpaket oder Entdeckerpaket",
+      "Zauberbuch",
     ],
   },
 ];
+
+export function getClassById(classId: string): CharacterClass | undefined {
+  return classes.find((entry) => entry.id === classId);
+}
+
+export function getSubclassById(
+  classId: string,
+  subclassId: string,
+): CharacterSubclass | undefined {
+  return getClassById(classId)?.subclasses.find(
+    (entry) => entry.id === subclassId,
+  );
+}
+
+export function getClassFeatures(
+  classId: string,
+  level: number,
+): ClassFeature[] {
+  return (
+    getClassById(classId)?.features?.filter(
+      (feature) => feature.level <= level,
+    ) ?? []
+  );
+}
+
+export function getSubclassFeatures(
+  classId: string,
+  subclassId: string,
+  level: number,
+): ClassFeature[] {
+  return (
+    getSubclassById(classId, subclassId)?.features?.filter(
+      (feature) => feature.level <= level,
+    ) ?? []
+  );
+}
+
+export function getCharacterClassFeatures({
+  classId,
+  subclassId,
+  level,
+}: {
+  classId: string;
+  subclassId?: string;
+  level: number;
+}): ClassFeature[] {
+  return [
+    ...getClassFeatures(classId, level),
+
+    ...(subclassId ? getSubclassFeatures(classId, subclassId, level) : []),
+  ];
+}
+
+export function getClassSpellcastingRules(
+  classId: string,
+): ClassSpellcastingRules | undefined {
+  return getClassById(classId)?.spellcastingRules;
+}
+
+export function getClassSpellcastingAbility(
+  classId: string,
+): AbilityId | undefined {
+  return getClassSpellcastingRules(classId)?.ability;
+}
+
+export function calculateClassMaximumHitPoints({
+  classId,
+  level,
+  constitution,
+}: {
+  classId: string;
+  level: number;
+  constitution: number;
+}): number {
+  const classDefinition = getClassById(classId);
+
+  if (!classDefinition) {
+    return 0;
+  }
+
+  const safeLevel = Math.max(1, Math.floor(level));
+
+  const constitutionModifier = Math.floor((constitution - 10) / 2);
+
+  const firstLevelHitPoints = classDefinition.hitDie + constitutionModifier;
+
+  const averageHitPointsPerLevel =
+    Math.floor(classDefinition.hitDie / 2) + 1 + constitutionModifier;
+
+  return Math.max(
+    safeLevel,
+
+    firstLevelHitPoints +
+      (safeLevel - 1) * Math.max(1, averageHitPointsPerLevel),
+  );
+}
+
+export function calculateSpellSaveDifficultyClass({
+  classId,
+  proficiencyBonus,
+  abilityScores,
+}: {
+  classId: string;
+  proficiencyBonus: number;
+  abilityScores: AbilityScores;
+}): number | undefined {
+  const ability = getClassSpellcastingAbility(classId);
+
+  if (!ability) {
+    return undefined;
+  }
+
+  const abilityModifier = Math.floor((abilityScores[ability] - 10) / 2);
+
+  return 8 + proficiencyBonus + abilityModifier;
+}
+
+export function calculateSpellAttackBonus({
+  classId,
+  proficiencyBonus,
+  abilityScores,
+}: {
+  classId: string;
+  proficiencyBonus: number;
+  abilityScores: AbilityScores;
+}): number | undefined {
+  const ability = getClassSpellcastingAbility(classId);
+
+  if (!ability) {
+    return undefined;
+  }
+
+  return proficiencyBonus + Math.floor((abilityScores[ability] - 10) / 2);
+}
+
+export function resolveClassResourceAmount({
+  amount,
+  classLevel,
+  proficiencyBonus,
+  abilityModifier,
+}: {
+  amount: ClassResourceAmount;
+  classLevel: number;
+  proficiencyBonus: number;
+  abilityModifier: number;
+}): number {
+  if (typeof amount === "number") {
+    return amount;
+  }
+
+  switch (amount) {
+    case "class-level":
+      return Math.max(1, classLevel);
+
+    case "proficiency-bonus":
+      return Math.max(1, proficiencyBonus);
+
+    case "ability-modifier":
+      return Math.max(1, abilityModifier);
+  }
+}

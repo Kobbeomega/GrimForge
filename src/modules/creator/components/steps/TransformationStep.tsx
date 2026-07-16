@@ -1,3 +1,7 @@
+import { useMemo, useState } from "react";
+
+import { ArtworkHero } from "../../../../components/artwork";
+
 import {
   canSelectTransformationFeature,
   getTransformationById,
@@ -39,6 +43,16 @@ interface TransformationStepProps {
   ) => void;
 }
 
+const transformationSigils: Record<string, string> = {
+  "aberrant-horror": "✦",
+  fey: "❧",
+  fiend: "♠",
+  lich: "☠",
+  lycanthrope: "☾",
+  seraph: "✧",
+  vampire: "◆",
+};
+
 const transformationStages = [
   1,
   2,
@@ -54,6 +68,29 @@ export function TransformationStep({
   onStageChange,
   onFeatureIdsChange,
 }: TransformationStepProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredTransformations = useMemo(() => {
+    const normalized = searchTerm.trim().toLocaleLowerCase("de");
+
+    if (!normalized) {
+      return transformations;
+    }
+
+    return transformations.filter((transformation) =>
+      [
+        transformation.name,
+        transformation.description,
+        transformation.theme,
+        transformation.origin,
+        ...(transformation.tags ?? []),
+      ]
+        .join(" ")
+        .toLocaleLowerCase("de")
+        .includes(normalized),
+    );
+  }, [searchTerm]);
+
   const selectedTransformation =
     getTransformationById(
       selectedId,
@@ -229,6 +266,23 @@ export function TransformationStep({
         </p>
       </header>
 
+      <div className="transformation-codex-toolbar">
+        <label className="transformation-codex-search">
+          <span>Wandlungen durchsuchen</span>
+          <input
+            type="search"
+            value={searchTerm}
+            placeholder="Name, Thema oder Ursprung …"
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </label>
+
+        <div className="transformation-codex-count" aria-live="polite">
+          <strong>{filteredTransformations.length}</strong>
+          <span>Wandlungen sichtbar</span>
+        </div>
+      </div>
+
       <button
         type="button"
         className={[
@@ -265,7 +319,7 @@ export function TransformationStep({
       </button>
 
       <div className="transformation-grid">
-        {transformations.map(
+        {filteredTransformations.map(
           (transformation) => {
             const selected =
               transformation.id ===
@@ -304,6 +358,10 @@ export function TransformationStep({
                   )
                 }
               >
+                <div className="transformation-card__sigil" aria-hidden="true">
+                  {transformationSigils[transformation.id] ?? "◇"}
+                </div>
+
                 <header>
                   <div>
                     <span>Wandlung</span>
@@ -353,8 +411,49 @@ export function TransformationStep({
         )}
       </div>
 
+      {filteredTransformations.length === 0 && (
+        <div className="transformation-codex-empty">
+          <strong>Keine Wandlung gefunden</strong>
+          <span>Versuche einen anderen Suchbegriff.</span>
+        </div>
+      )}
+
       {selectedTransformation && (
         <>
+          <section className="transformation-dossier transformation-dossier--artwork">
+            <ArtworkHero
+              category="transformation"
+              entryId={selectedTransformation.id}
+              eyebrow="Aktive Wandlung"
+              title={selectedTransformation.name}
+              subtitle={selectedTransformation.theme}
+              description={selectedTransformation.description}
+              className="transformation-dossier__artwork"
+              badge={
+                <span className="transformation-dossier__artwork-stage">
+                  <small>Aktueller Stand</small>
+                  <strong>{activeStage}</strong>
+                  <span>von 4 Stufen</span>
+                </span>
+              }
+            />
+
+            <dl className="transformation-dossier__metadata">
+              <div>
+                <dt>Ursprung</dt>
+                <dd>{selectedTransformation.origin}</dd>
+              </div>
+              <div>
+                <dt>Quelle</dt>
+                <dd>Grim Hollow · S. {selectedTransformation.sourcePage ?? "–"}</dd>
+              </div>
+              <div>
+                <dt>Schlagworte</dt>
+                <dd>{(selectedTransformation.tags ?? []).join(" · ") || "Keine"}</dd>
+              </div>
+            </dl>
+          </section>
+
           <section className="transformation-stage-section">
             <header className="transformation-stage-section__header">
               <div>

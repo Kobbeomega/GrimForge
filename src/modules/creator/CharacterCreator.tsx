@@ -150,28 +150,6 @@ export function CharacterCreator({
       return;
     }
 
-    const maximumAncestryTraits =
-      creator.draft
-        .ancestryUsesReducedSpeed
-        ? 9
-        : 8;
-
-    if (
-      creator.draft
-        .ancestryTraitIds
-        .length !==
-      maximumAncestryTraits
-    ) {
-      window.alert(
-        `Wähle genau ${maximumAncestryTraits} Herkunftseigenschaften.`,
-      );
-
-      creator.setCurrentStep(
-        "ancestry",
-      );
-
-      return;
-    }
 
     if (!creator.draft.backgroundId) {
       window.alert(
@@ -546,6 +524,7 @@ export function CharacterCreator({
       case "abilities":
         return (
           <AbilitiesStep
+            classId={creator.draft.classId}
             values={
               creator.draft
                 .baseAbilities
@@ -898,44 +877,10 @@ export function CharacterCreator({
         }
         preview={
           <CharacterRecordPreview
-            fileNumber={
-              previewCharacter
-                .fileNumber
-            }
-            name={
-              previewCharacter.name
-            }
-            title={
-              creator.draft
-                .identity.title
-            }
-            pronouns={
-              creator.draft
-                .identity.pronouns
-            }
-            alignment={
-              creator.draft
-                .identity.alignment
-            }
-            ancestry={
-              previewCharacter
-                .ancestry
-            }
-            className={
-              previewCharacter
-                .className
-            }
-            subclass={
-              previewCharacter
-                .subclass
-            }
-            level={
-              previewCharacter.level
-            }
-            summary={
-              previewCharacter
-                .summary
-            }
+            character={previewCharacter}
+            title={creator.draft.identity.title}
+            pronouns={creator.draft.identity.pronouns}
+            alignment={creator.draft.identity.alignment}
             status={
               isEditing
                 ? "In Überarbeitung"

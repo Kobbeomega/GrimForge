@@ -27,8 +27,13 @@ const navigationItems: NavigationItem[] = [
     title: "Journal",
   },
   {
-    id: "archive",
+    id: "compendium",
     chapter: "IV",
+    title: "Codex",
+  },
+  {
+    id: "archive",
+    chapter: "V",
     title: "Archiv",
   },
 ];

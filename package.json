@@ -1,7 +1,7 @@
 {
-  "name": "ultra",
+  "name": "grimforge",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.9.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,5 +22,9 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vite-plugin-pwa": "^1.3.0"
+  },
+  "description": "Dark-Fantasy-Charaktermanager mit Creator, Journal, Compendium und Drucksystem.",
+  "engines": {
+    "node": ">=22"
   }
 }

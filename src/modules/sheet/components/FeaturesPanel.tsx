@@ -6,10 +6,6 @@ import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
 
-import {
-  TransformationPanel,
-} from "./TransformationPanel";
-
 interface FeaturesPanelProps {
   character: CharacterArchiveEntry;
 }
@@ -189,12 +185,8 @@ export function FeaturesPanel({
           )}
         </FeatureRecord>
 
-        
-        
       </div>
-<TransformationPanel
-  character={character}
-/>
+
       {classDefinition && (
         <section className="features-proficiencies">
           <header>

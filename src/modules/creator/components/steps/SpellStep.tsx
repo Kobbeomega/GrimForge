@@ -1,4 +1,8 @@
 import {
+  useState,
+} from "react";
+
+import {
   abilityLabels,
   getAbilityModifier,
 } from "../../../../compendium/core";
@@ -26,6 +30,21 @@ import {
   getSpellSelectionRules,
 } from "../../utils/getSpellSelectionRules";
 
+const spellSchoolLabels = {
+  abjuration: "Bannmagie",
+  conjuration: "Beschwörung",
+  divination: "Erkenntnismagie",
+  enchantment: "Verzauberung",
+  evocation: "Hervorrufung",
+  illusion: "Illusion",
+  necromancy: "Nekromantie",
+  transmutation: "Verwandlung",
+} as const;
+
+type SpellSchoolFilter =
+  | "all"
+  | keyof typeof spellSchoolLabels;
+
 interface SpellsStepProps {
   classId: string;
   level: number;
@@ -47,6 +66,15 @@ export function SpellsStep({
   value,
   onChange,
 }: SpellsStepProps) {
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  const [schoolFilter, setSchoolFilter] =
+    useState<SpellSchoolFilter>("all");
+
+  const [selectedOnly, setSelectedOnly] =
+    useState(false);
+
   const definition =
     getClassSpellcasting(
       classId,
@@ -107,14 +135,46 @@ export function SpellsStep({
           rules.maximumSpellLevel,
     );
 
+  const normalizedSearch =
+    searchQuery.trim().toLocaleLowerCase("de");
+
+  const filteredSpells =
+    availableSpells.filter((spell) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        spell.name
+          .toLocaleLowerCase("de")
+          .includes(normalizedSearch) ||
+        spell.description
+          .toLocaleLowerCase("de")
+          .includes(normalizedSearch);
+
+      const matchesSchool =
+        schoolFilter === "all" ||
+        spell.school === schoolFilter;
+
+      const matchesSelection =
+        !selectedOnly ||
+        value.spellIds.some(
+          (selection) =>
+            selection.spellId === spell.id,
+        );
+
+      return (
+        matchesSearch &&
+        matchesSchool &&
+        matchesSelection
+      );
+    });
+
   const cantrips =
-    availableSpells.filter(
+    filteredSpells.filter(
       (spell) =>
         spell.level === 0,
     );
 
   const levelledSpells =
-    availableSpells.filter(
+    filteredSpells.filter(
       (spell) =>
         spell.level > 0,
     );
@@ -320,6 +380,63 @@ export function SpellsStep({
         )}
       </dl>
 
+      <section className="creator-spell-toolbar" aria-label="Zauber filtern">
+        <label className="creator-spell-toolbar__search">
+          <span>Zauber durchsuchen</span>
+          <input
+            type="search"
+            value={searchQuery}
+            placeholder="Name oder Beschreibung …"
+            onChange={(event) =>
+              setSearchQuery(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          <span>Schule</span>
+          <select
+            value={schoolFilter}
+            onChange={(event) =>
+              setSchoolFilter(
+                event.target.value as SpellSchoolFilter,
+              )
+            }
+          >
+            <option value="all">Alle Schulen</option>
+            {Object.entries(spellSchoolLabels).map(
+              ([school, label]) => (
+                <option key={school} value={school}>
+                  {label}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
+
+        <button
+          type="button"
+          className={[
+            "creator-spell-toolbar__toggle",
+            selectedOnly
+              ? "creator-spell-toolbar__toggle--active"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-pressed={selectedOnly}
+          onClick={() =>
+            setSelectedOnly((current) => !current)
+          }
+        >
+          Nur gewählte
+        </button>
+
+        <span className="creator-spell-toolbar__result">
+          {filteredSpells.length} von {availableSpells.length}
+        </span>
+      </section>
+
       <CompactSpellSection
         title="Zaubertricks"
         counter={`${selectedCantrips} von ${rules.cantripsRequired}`}
@@ -523,10 +640,11 @@ function CompactSpellSection({
                   <header>
                     <div>
                       <span>
-                        {spell.level ===
-                        0
+                        {spell.level === 0
                           ? "Zaubertrick"
                           : `Grad ${spell.level}`}
+                        {" · "}
+                        {spellSchoolLabels[spell.school]}
                       </span>
 
                       <h4>

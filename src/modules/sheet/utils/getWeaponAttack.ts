@@ -3,8 +3,7 @@ import {
 } from "../../../compendium/classes";
 
 import {
-  formatAbilityModifier,
-  getAbilityModifier,
+  defaultAbilityScores,
   getProficiencyBonus,
 } from "../../../compendium/core";
 
@@ -20,6 +19,10 @@ import type {
   WeaponItem,
 } from "../../../compendium/equipment";
 
+import {
+  calculateWeaponAttack,
+} from "../../../rules/attacks";
+
 import type {
   CharacterArchiveEntry,
   CharacterInventory,
@@ -29,29 +32,20 @@ export interface WeaponAttackSummary {
   id: string;
   name: string;
   quantity: number;
-
   abilityId: AbilityId;
   abilityLabel: string;
-
   proficient: boolean;
-
   attackBonus: number;
   attackBonusLabel: string;
-
   damage: string;
   versatileDamage?: string;
-
   damageType: string;
-
   range?: string;
-
   properties: string[];
+  details: string;
 }
 
-const abilityLabels: Record<
-  AbilityId,
-  string
-> = {
+const abilityLabels: Record<AbilityId, string> = {
   strength: "Stärke",
   dexterity: "Geschicklichkeit",
   constitution: "Konstitution",
@@ -78,29 +72,17 @@ const weaponPropertyLabels = {
   ammunition: "Munition",
 } as const;
 
-/**
- * Zuordnung der Compendium-IDs zu den in
- * classes.ts verwendeten deutschen Namen.
- */
-const weaponProficiencyAliases: Record<
-  string,
-  string[]
-> = {
+const weaponProficiencyAliases: Record<string, string[]> = {
   club: ["Keulen", "Knüppel"],
   dagger: ["Dolche"],
   dart: ["Wurfpfeile"],
-  greatclub: [
-    "Zweihändige Keulen",
-    "Einfache Waffen",
-  ],
+  greatclub: ["Zweihändige Keulen", "Einfache Waffen"],
   handaxe: ["Handäxte"],
   javelin: ["Wurfspeere"],
   mace: ["Streitkolben"],
   quarterstaff: ["Kampfstäbe"],
   spear: ["Speere"],
-  "light-crossbow": [
-    "Leichte Armbrüste",
-  ],
+  "light-crossbow": ["Leichte Armbrüste"],
   shortbow: ["Kurzbögen"],
   battleaxe: ["Streitäxte"],
   greataxe: ["Große Äxte"],
@@ -122,21 +104,17 @@ export function getEquippedWeaponAttacks(
       if (
         !inventoryItem.equipped ||
         inventoryItem.quantity <= 0 ||
-        inventoryItem.category !==
-          "weapon"
+        inventoryItem.category !== "weapon"
       ) {
         return [];
       }
 
       const definition =
-        getEquipmentById(
-          inventoryItem.id,
-        );
+        getEquipmentById(inventoryItem.id);
 
       if (
         !definition ||
-        definition.category !==
-          "weapon"
+        definition.category !== "weapon"
       ) {
         return [];
       }
@@ -157,126 +135,80 @@ function createWeaponAttackSummary(
   weapon: WeaponItem,
   quantity: number,
 ): WeaponAttackSummary {
-  const abilityId =
-    getWeaponAbility(
-      character,
-      weapon,
-    );
-
-  const abilityScore =
-    character.abilityScores?.[
-      abilityId
-    ] ?? 10;
-
-  const abilityModifier =
-    getAbilityModifier(
-      abilityScore,
-    );
-
   const proficient =
     isProficientWithWeapon(
       character,
       weapon,
     );
 
-  const proficiencyBonus =
-    getProficiencyBonus(
-      character.level,
+  const calculation =
+    calculateWeaponAttack({
+      weapon,
+      abilityScores: {
+        ...defaultAbilityScores,
+        ...character.abilityScores,
+      },
+      proficiencyBonus:
+        getProficiencyBonus(
+          character.level,
+        ),
+      proficient,
+    });
+
+  const damageType =
+    damageTypeLabels[
+      weapon.damage.type
+    ];
+
+  const range = weapon.range
+    ? weapon.range.long
+      ? `${weapon.range.normal}/${weapon.range.long} ft`
+      : `${weapon.range.normal} ft`
+    : undefined;
+
+  const properties =
+    weapon.properties.map(
+      (property) =>
+        weaponPropertyLabels[property],
     );
 
-  const attackBonus =
-    abilityModifier +
-    (proficient
-      ? proficiencyBonus
-      : 0);
+  const details = [
+    calculation.versatileDamage
+      ? `Vielseitig ${calculation.versatileDamage}`
+      : undefined,
+    range
+      ? `Reichweite ${range}`
+      : undefined,
+    ...properties.filter(
+      (property) =>
+        property !== "Vielseitig",
+    ),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return {
     id: weapon.id,
     name: weapon.name,
     quantity,
-
-    abilityId,
+    abilityId: calculation.abilityId,
     abilityLabel:
-      abilityLabels[abilityId],
-
-    proficient,
-
-    attackBonus,
-
-    attackBonusLabel:
-      formatAbilityModifier(
-        attackBonus,
-      ),
-
-    damage:
-      formatDamage(
-        weapon.damage.dice,
-        weapon.damage.die,
-        abilityModifier,
-      ),
-
-    versatileDamage:
-      weapon.versatile
-        ? formatDamage(
-            weapon.versatile.dice,
-            weapon.versatile.die,
-            abilityModifier,
-          )
-        : undefined,
-
-    damageType:
-      damageTypeLabels[
-        weapon.damage.type
+      abilityLabels[
+        calculation.abilityId
       ],
-
-    range: weapon.range
-      ? weapon.range.long
-        ? `${weapon.range.normal}/${weapon.range.long} ft`
-        : `${weapon.range.normal} ft`
-      : undefined,
-
-    properties:
-      weapon.properties.map(
-        (property) =>
-          weaponPropertyLabels[
-            property
-          ],
-      ),
+    proficient,
+    attackBonus:
+      calculation.attackBonus,
+    attackBonusLabel:
+      calculation.attackBonusLabel,
+    damage: calculation.damage,
+    versatileDamage:
+      calculation.versatileDamage,
+    damageType,
+    range,
+    properties,
+    details,
   };
-}
-
-function getWeaponAbility(
-  character: CharacterArchiveEntry,
-  weapon: WeaponItem,
-): AbilityId {
-  const strength =
-    character.abilityScores
-      ?.strength ?? 10;
-
-  const dexterity =
-    character.abilityScores
-      ?.dexterity ?? 10;
-
-  const usesAmmunition =
-    weapon.properties.includes(
-      "ammunition",
-    );
-
-  if (usesAmmunition) {
-    return "dexterity";
-  }
-
-  if (
-    weapon.properties.includes(
-      "finesse",
-    )
-  ) {
-    return dexterity > strength
-      ? "dexterity"
-      : "strength";
-  }
-
-  return "strength";
 }
 
 function isProficientWithWeapon(
@@ -286,8 +218,7 @@ function isProficientWithWeapon(
   const classDefinition =
     classes.find(
       (entry) =>
-        entry.id ===
-        character.classId,
+        entry.id === character.classId,
     );
 
   if (!classDefinition) {
@@ -295,52 +226,26 @@ function isProficientWithWeapon(
   }
 
   const proficiencies =
-    classDefinition
-      .weaponProficiencies;
+    classDefinition.weaponProficiencies;
 
   if (
-    weapon.weaponCategory ===
-      "simple" &&
-    proficiencies.includes(
-      "Einfache Waffen",
-    )
+    weapon.weaponCategory === "simple" &&
+    proficiencies.includes("Einfache Waffen")
   ) {
     return true;
   }
 
   if (
-    weapon.weaponCategory ===
-      "martial" &&
-    proficiencies.includes(
-      "Kriegswaffen",
-    )
+    weapon.weaponCategory === "martial" &&
+    proficiencies.includes("Kriegswaffen")
   ) {
     return true;
   }
 
   const aliases =
-    weaponProficiencyAliases[
-      weapon.id
-    ] ?? [];
+    weaponProficiencyAliases[weapon.id] ?? [];
 
-  return aliases.some(
-    (alias) =>
-      proficiencies.includes(alias),
+  return aliases.some((alias) =>
+    proficiencies.includes(alias),
   );
-}
-
-function formatDamage(
-  dice: number,
-  die: number,
-  modifier: number,
-): string {
-  const base = `${dice}W${die}`;
-
-  if (modifier === 0) {
-    return base;
-  }
-
-  return modifier > 0
-    ? `${base} +${modifier}`
-    : `${base} ${modifier}`;
 }

@@ -1,32 +1,57 @@
-# React + TypeScript + Vite
+# GrimForge
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+GrimForge ist ein lokaler Dark-Fantasy-Charaktermanager mit Character Creator, Charakterbogen, Journal, Compendium, Import/Export und druckoptimierten Bögen.
 
-Currently, two official plugins are available:
+## Funktionen
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- geführte Charaktererschaffung
+- Abstammungen, Klassen und Transformationen
+- regelbasierte Werteberechnung
+- Ausrüstung, Angriffe, Ressourcen und Zauber
+- Character Journal und Sitzungsnotizen
+- durchsuchbares Compendium mit Favoriten und Vergleichen
+- JSON-Import und -Export
+- druckoptimierte Charakter- und Statbögen
+- installierbare PWA mit Offline-Cache
 
-## React Compiler
+## Lokale Entwicklung
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Voraussetzungen:
 
-## Expanding the Oxlint configuration
+- Node.js 22
+- npm
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Die Entwicklungsseite läuft anschließend unter der von Vite angezeigten lokalen Adresse.
+
+## Qualitätsprüfung
+
+```powershell
+npm run lint
+npm run build
+npm run preview
+```
+
+Der Produktions-Build wird in `dist/` erzeugt.
+
+## Deployment
+
+Das Repository ist für GitHub Actions und Vercel vorbereitet:
+
+- `.github/workflows/ci.yml` prüft Lint und Build.
+- `vercel.json` konfiguriert Vite, SPA-Rewrites und Cache-Header.
+- `DEPLOYMENT.md` enthält die vollständige Schritt-für-Schritt-Anleitung.
+
+Nach der einmaligen Verbindung des GitHub-Repositories mit Vercel löst jeder Push auf den Production-Branch automatisch ein neues Deployment aus.
+
+## Datenspeicherung
+
+Charaktere, Favoriten und Journalinformationen werden lokal im Browser gespeichert. Vor größeren Browser- oder Gerätewechseln sollte das Archiv über die integrierte Exportfunktion gesichert werden.
+
+## Version
+
+Aktueller Projektstand: **0.9.8**

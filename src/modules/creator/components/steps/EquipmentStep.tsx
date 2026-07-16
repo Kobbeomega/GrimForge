@@ -7,6 +7,7 @@ import {
 import { CodexCard } from "../../../../components/ui/CodexCard";
 
 import type {
+  EquipmentDefinition,
   StartingEquipmentOption,
 } from "../../../../compendium/equipment";
 
@@ -245,18 +246,22 @@ function EquipmentOptionCard({
   selected,
   onSelect,
 }: EquipmentOptionCardProps) {
-  const equipmentLabels =
-    option.equipment?.map((entry) => {
-      const definition =
-        getEquipmentById(
-          entry.equipmentId,
-        );
+  const equipmentDefinitions =
+    option.equipment?.map((entry) => ({
+      quantity: entry.quantity,
+      definition: getEquipmentById(
+        entry.equipmentId,
+      ),
+      fallbackId: entry.equipmentId,
+    })) ?? [];
 
-      return `${entry.quantity}× ${
-        definition?.name ??
-        entry.equipmentId
-      }`;
-    }) ?? [];
+  const equipmentLabels =
+    equipmentDefinitions.map((entry) =>
+      `${entry.quantity}× ${
+        entry.definition?.name ??
+        entry.fallbackId
+      }`,
+    );
 
   const packLabels =
     option.packIds?.map((packId) => {
@@ -275,35 +280,148 @@ function EquipmentOptionCard({
   ];
 
   return (
-    <CodexCard
-      eyebrow={
-        selected
-          ? "Ausgewählt"
-          : "Startausrüstung"
-      }
-      title={option.title}
-      description={
-        option.description ??
-        "Diese Option wird vollständig in das Inventar übertragen."
-      }
-      metadata={labels}
-      selected={selected}
-      className="creator-equipment-card"
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (
-          event.key === "Enter" ||
-          event.key === " "
-        ) {
-          event.preventDefault();
-          onSelect();
+    <div className="creator-loadout-option">
+      <CodexCard
+        eyebrow={
+          selected
+            ? "Ausgewählt"
+            : "Startausrüstung"
         }
-      }}
-    />
+        title={option.title}
+        description={
+          option.description ??
+          "Diese Option wird vollständig in das Inventar übertragen."
+        }
+        metadata={labels}
+        selected={selected}
+        className="creator-equipment-card"
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={onSelect}
+        onKeyDown={(event) => {
+          if (
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            event.preventDefault();
+            onSelect();
+          }
+        }}
+      />
+
+      {equipmentDefinitions.length > 0 && (
+        <div className="creator-loadout-option__facts">
+          {equipmentDefinitions.map((entry) => (
+            <EquipmentFactLine
+              key={entry.fallbackId}
+              quantity={entry.quantity}
+              definition={entry.definition}
+              fallbackId={entry.fallbackId}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
+}
+
+function EquipmentFactLine({
+  quantity,
+  definition,
+  fallbackId,
+}: {
+  quantity: number;
+  definition?: EquipmentDefinition;
+  fallbackId: string;
+}) {
+  const facts = getEquipmentFacts(definition);
+
+  return (
+    <article className="creator-loadout-item">
+      <header>
+        <strong>
+          {definition?.name ?? fallbackId}
+        </strong>
+        <span>×{quantity}</span>
+      </header>
+
+      {facts.length > 0 && (
+        <p>{facts.join(" · ")}</p>
+      )}
+    </article>
+  );
+}
+
+function getEquipmentFacts(
+  definition?: EquipmentDefinition,
+): string[] {
+  if (!definition) {
+    return [];
+  }
+
+  const base = [
+    `${definition.weight} lb`,
+    `${definition.price} GM`,
+  ];
+
+  if (definition.category === "weapon") {
+    const damage = `${definition.damage.dice}W${definition.damage.die} ${formatDamageType(definition.damage.type)}`;
+    const range = definition.range
+      ? definition.range.long
+        ? `${definition.range.normal}/${definition.range.long} ft`
+        : `${definition.range.normal} ft`
+      : undefined;
+
+    return [
+      damage,
+      range,
+      ...definition.properties.map(formatWeaponProperty),
+      ...base,
+    ].filter((value): value is string => Boolean(value));
+  }
+
+  if (
+    definition.category === "armor" ||
+    definition.category === "shield"
+  ) {
+    return [
+      `RK ${definition.armorClass}`,
+      definition.dexterityModifier
+        ? definition.maximumDexterityBonus === undefined
+          ? "GE-Modifikator"
+          : `GE max. +${definition.maximumDexterityBonus}`
+        : undefined,
+      definition.stealthDisadvantage
+        ? "Nachteil auf Heimlichkeit"
+        : undefined,
+      ...base,
+    ].filter((value): value is string => Boolean(value));
+  }
+
+  return base;
+}
+
+function formatDamageType(type: string): string {
+  return ({
+    slashing: "Hieb",
+    piercing: "Stich",
+    bludgeoning: "Wucht",
+  } as Record<string, string>)[type] ?? type;
+}
+
+function formatWeaponProperty(property: string): string {
+  return ({
+    light: "Leicht",
+    heavy: "Schwer",
+    finesse: "Finesse",
+    "two-handed": "Zweihändig",
+    versatile: "Vielseitig",
+    reach: "Reichweite",
+    thrown: "Wurfwaffe",
+    loading: "Laden",
+    ammunition: "Munition",
+  } as Record<string, string>)[property] ?? property;
 }
 
 function EquipmentNotice({

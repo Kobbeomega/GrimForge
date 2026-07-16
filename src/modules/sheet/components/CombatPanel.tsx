@@ -30,12 +30,15 @@ interface CombatPanelProps {
   onSpellcastingChange: (
     spellcasting: CharacterSpellcasting,
   ) => void;
+
+  includeSpellcasting?: boolean;
 }
 
 export function CombatPanel({
   character,
   inventory,
   onSpellcastingChange,
+  includeSpellcasting = true,
 }: CombatPanelProps) {
   const weapons =
     getEquippedWeaponAttacks(
@@ -114,7 +117,7 @@ export function CombatPanel({
             {weapons.map((weapon) => (
               <article
                 key={weapon.id}
-                className="compact-weapon-row"
+                className="compact-weapon-row compact-weapon-card"
               >
                 <header className="compact-weapon-row__identity">
                   <div>
@@ -162,6 +165,10 @@ export function CombatPanel({
                   )}
                 </div>
 
+                <div className="compact-weapon-card__sigil" aria-hidden="true">
+                  {weapon.proficient ? "⚔" : "◇"}
+                </div>
+
                 <div className="compact-weapon-row__secondary">
                   <span>
                     Attribut:{" "}
@@ -184,7 +191,7 @@ export function CombatPanel({
         )}
       </section>
 
-      {spellcastingStats.enabled ? (
+      {includeSpellcasting && (spellcastingStats.enabled ? (
         <SpellcastingPanel
           character={character}
           stats={spellcastingStats}
@@ -203,7 +210,7 @@ export function CombatPanel({
             Zauberwirker-Konfiguration.
           </span>
         </div>
-      )}
+      ))}
     </section>
   );
 }

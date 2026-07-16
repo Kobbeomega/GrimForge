@@ -5,6 +5,12 @@ import App from "./App";
 
 import { CharacterProvider } from "./store/CharacterContext";
 
+if (import.meta.env.DEV) {
+  void import("./dev/contentAudit").then(({ runContentAudit }) => {
+    runContentAudit();
+  });
+}
+
 ReactDOM.createRoot(
   document.getElementById("root")!,
 ).render(

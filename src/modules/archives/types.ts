@@ -70,6 +70,56 @@ export interface CharacterInventory {
   currency: CharacterCurrency;
 }
 
+
+export type JournalGoalStatus =
+  | "active"
+  | "completed"
+  | "abandoned";
+
+export interface CharacterJournalGoal {
+  id: string;
+  title: string;
+  details: string;
+  status: JournalGoalStatus;
+}
+
+export interface CharacterJournalRelationship {
+  id: string;
+  name: string;
+  type: string;
+  notes: string;
+}
+
+export interface CharacterJournalFaction {
+  id: string;
+  name: string;
+  rank: string;
+  standing: string;
+  notes: string;
+}
+
+export interface CharacterSessionNote {
+  id: string;
+  title: string;
+  date: string;
+  notes: string;
+}
+
+export interface CharacterJournal {
+  background: string;
+  motivations: string;
+  personality: string;
+  ideals: string;
+  bonds: string;
+  flaws: string;
+  fears: string;
+  secrets: string;
+  goals: CharacterJournalGoal[];
+  relationships: CharacterJournalRelationship[];
+  factions: CharacterJournalFaction[];
+  sessionNotes: CharacterSessionNote[];
+}
+
 export interface CharacterArchiveEntry {
   id: string;
   fileNumber: string;
@@ -128,7 +178,13 @@ export interface CharacterArchiveEntry {
 
   equipmentIds?: string[];
 
+  /** Verbrauchte Klassenressourcen, nach Ressourcen-ID. */
+  spentClassResources?: Record<string, number>;
+
   sealId?: string;
+
+  /** Persönliche, regelunabhängige Charakteraufzeichnungen. */
+  journal?: CharacterJournal;
 
   transformation?: string;
 transformationId?: string;

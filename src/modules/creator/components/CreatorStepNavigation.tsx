@@ -9,52 +9,62 @@ interface CreatorStepNavigationProps {
   onStepChange: (stepId: CreatorStepId) => void;
 }
 
+const stepIcons: Record<CreatorStepId, string> = {
+  identity: "✦",
+  ancestry: "◈",
+  background: "▤",
+  class: "⚔",
+  abilities: "◆",
+  skills: "✧",
+  equipment: "◇",
+  spells: "✺",
+  transformation: "☾",
+  summary: "✵",
+};
+
 export function CreatorStepNavigation({
   activeStepId,
   completedStepIds,
   onStepChange,
 }: CreatorStepNavigationProps) {
+  const completedCount = completedStepIds.length;
+  const progress = Math.round((completedCount / creatorSteps.length) * 100);
+
   return (
-    <nav
-      className="creator-step-nav"
-      aria-label="Kapitel der Charaktererstellung"
-    >
+    <nav className="creator-step-nav" aria-label="Kapitel der Charaktererstellung">
+      <header className="creator-step-nav__header">
+        <p>Schicksalsfaden</p>
+        <strong>{progress}% vollendet</strong>
+        <div className="creator-step-nav__progress" aria-hidden="true">
+          <span style={{ width: `${progress}%` }} />
+        </div>
+      </header>
+
       <ol className="creator-step-nav__list">
         {creatorSteps.map((step, index) => {
           const isActive = step.id === activeStepId;
-          const isCompleted =
-            completedStepIds.includes(step.id);
+          const isCompleted = completedStepIds.includes(step.id);
 
           return (
-            <li
-              key={step.id}
-              className="creator-step-nav__entry"
-            >
+            <li key={step.id} className="creator-step-nav__entry">
               <button
                 type="button"
                 className={[
                   "creator-step-nav__button",
-                  isActive
-                    ? "creator-step-nav__button--active"
-                    : "",
-                  isCompleted
-                    ? "creator-step-nav__button--completed"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                aria-current={
-                  isActive ? "step" : undefined
-                }
+                  isActive ? "creator-step-nav__button--active" : "",
+                  isCompleted ? "creator-step-nav__button--completed" : "",
+                ].filter(Boolean).join(" ")}
+                aria-current={isActive ? "step" : undefined}
                 onClick={() => onStepChange(step.id)}
               >
-                <span className="creator-step-nav__chapter">
-                  {step.chapter}
+                <span className="creator-step-nav__icon" aria-hidden="true">
+                  {stepIcons[step.id]}
                 </span>
+
+                <span className="creator-step-nav__chapter">{step.chapter}</span>
 
                 <span className="creator-step-nav__copy">
                   <strong>{step.shortTitle}</strong>
-
                   <small>
                     {isCompleted
                       ? "Abgeschlossen"
@@ -64,19 +74,13 @@ export function CreatorStepNavigation({
                   </small>
                 </span>
 
-                <span
-                  className="creator-step-nav__seal"
-                  aria-hidden="true"
-                >
-                  {isCompleted ? "◆" : "◇"}
+                <span className="creator-step-nav__seal" aria-hidden="true">
+                  {isCompleted ? "◆" : isActive ? "●" : "◇"}
                 </span>
               </button>
 
               {index < creatorSteps.length - 1 && (
-                <span
-                  className="creator-step-nav__line"
-                  aria-hidden="true"
-                />
+                <span className="creator-step-nav__line" aria-hidden="true" />
               )}
             </li>
           );

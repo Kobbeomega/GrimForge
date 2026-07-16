@@ -10,6 +10,8 @@ import { ChapterHeader } from "./components/ui/ChapterHeader";
 import { PaperPage } from "./components/ui/PaperPage";
 
 import { CharacterPage } from "./pages/CharacterPage";
+import { ArchiveManagementPage } from "./pages/ArchiveManagementPage";
+import { CompendiumPage } from "./pages/CompendiumPage";
 
 import type { AppSectionId } from "./types/navigation";
 
@@ -45,8 +47,16 @@ const sectionContent: Record<AppSectionId, SectionContent> = {
       "Das Journal wird freie Sitzungsnotizen, wichtige Kontakte, offene Aufgaben und persönliche Aufzeichnungen aufnehmen.",
   },
 
+  compendium: {
+    chapter: "Kapitel IV · Das Nachschlagewerk",
+    title: "Compendium",
+    subtitle: "Regeln, Optionen und Ausrüstung auf einen Blick.",
+    introduction:
+      "Das Compendium bündelt Abstammungen, Klassen, Verwandlungen, Ausrüstung und Zauber in einer durchsuchbaren Bibliothek.",
+  },
+
   archive: {
-    chapter: "Kapitel IV · Das Archiv",
+    chapter: "Kapitel V · Das Archiv",
     title: "Archiv",
     subtitle: "Gespeicherte Charaktere, Exporte und Einstellungen.",
     introduction:
@@ -68,6 +78,10 @@ function App() {
       <CodexPageTransition pageKey={activeSection}>
         {activeSection === "character" ? (
           <CharacterPage />
+        ) : activeSection === "archive" ? (
+          <ArchiveManagementPage />
+        ) : activeSection === "compendium" ? (
+          <CompendiumPage />
         ) : (
           <PaperPage>
             <ChapterHeader
@@ -93,17 +107,6 @@ function App() {
                 </GrimButton>
               )}
 
-              {activeSection === "archive" && (
-                <>
-                  <GrimButton>
-                    Daten importieren
-                  </GrimButton>
-
-                  <GrimButton>
-                    Sicherung exportieren
-                  </GrimButton>
-                </>
-              )}
             </div>
           </PaperPage>
         )}

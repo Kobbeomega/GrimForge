@@ -1059,3 +1059,114 @@ body{
   }
 
 }
+/* =======================================================
+   CREATOR REFORGED 0.8.2 · DESKTOP LAYOUT POLISH
+======================================================= */
+
+/* The creator needs more horizontal room than archive/sheet pages. */
+.app-layout__content:has(.character-creator-layout) {
+  width: min(100%, 1640px);
+}
+
+.character-creator-layout {
+  grid-template-columns:
+    minmax(220px, 240px)
+    minmax(560px, 1fr)
+    minmax(340px, 380px);
+  gap: clamp(1rem, 1.4vw, 1.5rem);
+  align-items: start;
+}
+
+.character-creator-layout__navigation,
+.character-creator-layout__preview {
+  max-height: calc(100vh - 2 * var(--space-lg));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 105, 211, 0.4) transparent;
+}
+
+.character-creator-layout__navigation {
+  padding: 0.65rem;
+}
+
+.character-creator-layout__editor {
+  min-width: 0;
+  padding: clamp(1rem, 1.5vw, 1.45rem);
+}
+
+.character-creator-layout__preview {
+  width: 100%;
+}
+
+@media (max-width: 1380px) {
+  .app-layout__content:has(.character-creator-layout) {
+    width: min(100%, 1280px);
+  }
+
+  .character-creator-layout {
+    grid-template-columns:
+      minmax(205px, 225px)
+      minmax(520px, 1fr)
+      minmax(320px, 350px);
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-layout__content:has(.character-creator-layout) {
+    width: min(100%, 980px);
+  }
+
+  .character-creator-layout {
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  }
+
+  .character-creator-layout__preview {
+    position: static;
+    grid-column: 1 / -1;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-layout__content:has(.character-creator-layout) {
+    width: 100%;
+  }
+
+  .character-creator-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .character-creator-layout__navigation,
+  .character-creator-layout__preview {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* =======================================================
+   CREATOR REFORGED 0.8.3 · NAVIGATION LABEL FIX
+======================================================= */
+@media (min-width: 1181px) {
+  .character-creator-layout {
+    grid-template-columns:
+      minmax(260px, 280px)
+      minmax(560px, 1fr)
+      minmax(340px, 380px);
+  }
+
+  .character-creator-layout__navigation {
+    min-width: 0;
+    overflow-x: visible;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1380px) {
+  .character-creator-layout {
+    grid-template-columns:
+      minmax(245px, 260px)
+      minmax(500px, 1fr)
+      minmax(315px, 340px);
+  }
+}

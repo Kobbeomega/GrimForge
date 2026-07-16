@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" role="img" aria-labelledby="title desc">
+  <title id="title">Monsterjäger</title>
+  <desc id="desc">Ein düsterer Jäger vor einer mondbeschienenen Ruine.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#160f16"/>
+      <stop offset="0.52" stop-color="#432129"/>
+      <stop offset="1" stop-color="#0b1014"/>
+    </linearGradient>
+    <radialGradient id="moon">
+      <stop offset="0" stop-color="#e7d3b2" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#b68169" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#8d716c" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#171418" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="700" fill="url(#sky)"/>
+  <circle cx="1190" cy="180" r="210" fill="url(#moon)"/>
+  <path d="M0 470 180 390 330 425 500 330 690 410 860 310 1040 405 1240 300 1440 390 1600 330V700H0Z" fill="#121319"/>
+  <path d="M1110 410V165h105v245m-155 0h210l-22 42h-168Z" fill="#171419" opacity=".9"/>
+  <path d="M1118 210h89M1140 165v-65h43v65" stroke="#5b3a3d" stroke-width="16"/>
+  <path d="M0 510c320-100 580 80 870-15 235-77 440-5 730-75v280H0Z" fill="url(#fog)"/>
+  <g transform="translate(685 180)" fill="#090b0e" stroke="#7b4a48" stroke-width="8">
+    <path d="M155 78c55 22 82 91 60 145l-25 62 52 203H72l43-203-19-70c-16-58 8-114 59-137Z"/>
+    <circle cx="155" cy="52" r="48"/>
+    <path d="m78 258-85 116 28 22 102-78M218 254l112 83-20 32-117-60M105 480l-45 135M202 480l53 135"/>
+    <path d="M223 185 350 72M325 55l47 52M95 186-45-95"/>
+  </g>
+  <g fill="none" stroke="#9d5b50" stroke-width="7" opacity=".8">
+    <circle cx="840" cy="540" r="86"/>
+    <path d="m778 600 124-124M778 476l124 124"/>
+  </g>
+  <rect x="24" y="24" width="1552" height="652" rx="10" fill="none" stroke="#9d6a58" stroke-opacity=".35" stroke-width="3"/>
+</svg>

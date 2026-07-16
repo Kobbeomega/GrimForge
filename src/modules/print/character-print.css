@@ -1,0 +1,118 @@
+.character-print-root { display: none; }
+
+@media print {
+  @page { size: A4 portrait; margin: 8mm; }
+
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #root { display: none !important; }
+  body > *:not(#root):not(.character-print-root) { display: none !important; }
+  .character-print-root { display: block !important; position: static !important; width: auto !important; color: #17130f; font-family: Georgia, "Times New Roman", serif; }
+  .print-sheet { box-sizing: border-box; min-height: 277mm; page-break-after: always; break-after: page; padding: 5mm; border: 1.6px solid #221a13; position: relative; background: #fff; }
+  .print-sheet:last-child { page-break-after: auto; break-after: auto; }
+  .print-sheet::before, .print-sheet::after { content: ""; position: absolute; inset: 2mm; border: .5px solid #6e6258; pointer-events: none; }
+  .print-sheet::after { inset: 3.2mm; border-style: double; }
+
+  .print-banner { text-align: center; margin: 0 6mm 3mm; padding: 2.5mm 8mm 2mm; border: 1.5px solid #211a14; clip-path: polygon(4% 0,96% 0,100% 50%,96% 100%,4% 100%,0 50%); background: linear-gradient(#fff,#eee9e1,#fff); }
+  .print-banner span { display: block; font-size: 7pt; letter-spacing: .22em; }
+  .print-banner h1 { margin: .8mm 0 0; font-size: 18pt; text-transform: uppercase; letter-spacing: .06em; }
+
+  .print-identity-grid, .print-story-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; margin-bottom: 2.5mm; }
+  .print-field { min-height: 10mm; padding: 1.2mm 2mm; border: 1px solid #352a22; background: linear-gradient(#f8f6f1,#fff); }
+  .print-field span { display: block; font-size: 6.5pt; text-transform: uppercase; letter-spacing: .08em; }
+  .print-field strong { display: block; font-size: 10pt; margin-top: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  .print-core-grid { display: grid; grid-template-columns: 28mm 1fr 72mm; gap: 2.5mm; min-height: 185mm; }
+  .print-abilities-column { display: flex; flex-direction: column; gap: 1.5mm; }
+  .print-ability { height: 25mm; border: 1.3px solid #211a14; position: relative; text-align: center; padding-top: 2mm; background: linear-gradient(135deg,#fff 75%,#e7e1d8); }
+  .print-ability > span { font-size: 7pt; font-weight: 700; }
+  .print-ability strong { display: block; font-size: 20pt; line-height: 1; }
+  .print-ability em { position: absolute; right: 1.5mm; bottom: 1.5mm; width: 8mm; height: 8mm; border: 1px solid; border-radius: 50%; display: grid; place-items: center; font-size: 8pt; font-style: normal; background: white; }
+  .print-ability small { display: block; font-size: 5.5pt; text-transform: uppercase; margin-top: 1mm; }
+  .print-passive-box { border: 1.3px solid; text-align: center; padding: 2mm 1mm; margin-top: auto; }
+  .print-passive-box strong { font-size: 16pt; display: block; }
+  .print-passive-box span { font-size: 6pt; text-transform: uppercase; }
+
+  .print-core-center, .print-core-right { display: flex; flex-direction: column; gap: 2mm; position: relative; }
+  .print-skull-medallion { width: 22mm; height: 22mm; border: 1.5px solid; border-radius: 50%; margin: 0 auto -8mm; display: grid; place-items: center; font-size: 18pt; background: white; z-index: 1; }
+  .print-vitals-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5mm; padding-top: 7mm; }
+  .print-stat { min-height: 20mm; border: 1.3px solid; text-align: center; display: flex; flex-direction: column; justify-content: center; background: linear-gradient(#fff,#eee9e2); }
+  .print-stat strong { font-size: 16pt; line-height: 1; }
+  .print-stat span { font-size: 6pt; text-transform: uppercase; margin-top: 1mm; }
+  .print-stat--shield { clip-path: polygon(8% 0,92% 0,100% 12%,88% 83%,50% 100%,12% 83%,0 12%); padding-bottom: 2mm; }
+
+  .print-panel { border: 1.25px solid #211a14; min-height: 22mm; background: #fff; break-inside: avoid; }
+  .print-panel--grow { flex: 1; }
+  .print-panel h2 { margin: 0; padding: 1.2mm 2mm; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .09em; text-align: center; border-bottom: 1px solid #211a14; background: linear-gradient(90deg,#eee9e2,#fff,#eee9e2); }
+  .print-panel h3 { font-size: 8pt; margin: 1mm 0; text-transform: uppercase; }
+  .print-panel__body { padding: 1.5mm 2mm; font-size: 7.2pt; }
+  .print-panel--compact .print-panel__body { padding: 1mm 1.5mm; }
+
+  .print-hp-grid, .print-transformation-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 2mm; }
+  .print-number-line { border-bottom: .7px solid #3b3028; min-height: 8mm; }
+  .print-number-line span { display: block; font-size: 6pt; text-transform: uppercase; }
+  .print-number-line strong { font-size: 12pt; }
+  .print-death-saves { display: flex; justify-content: space-between; margin-top: 1.5mm; font-size: 6.5pt; }
+  .print-two-column-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 3mm; }
+  .print-two-column-list div { border-bottom: .4px solid #aaa; }
+  .print-two-column-list b { margin-right: 1mm; }
+  .print-two-column-list span { display: inline-block; min-width: 7mm; font-weight: 700; }
+
+  .print-skills-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 2mm; }
+  .print-skills-list div { display: grid; grid-template-columns: 4mm 8mm 1fr; align-items: center; min-height: 5mm; border-bottom: .35px solid #c2bbb2; font-size: 6.2pt; }
+  .print-skills-list em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .print-table { width: 100%; border-collapse: collapse; font-size: 6.5pt; }
+  .print-table th, .print-table td { border-bottom: .5px solid #696057; padding: 1.2mm .8mm; text-align: left; }
+  .print-table th { text-transform: uppercase; font-size: 5.7pt; }
+  .print-rule-line { min-height: 5.2mm; border-bottom: .45px solid #8a8178; padding-top: 1mm; }
+  .print-lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm; margin-top: 2.5mm; min-height: 48mm; }
+  .print-currency { margin-bottom: 1mm; font-weight: 700; }
+  .print-summary, .print-long-text { white-space: pre-wrap; margin: 0; line-height: 1.5; }
+
+  .print-story-columns { display: grid; grid-template-columns: 1fr 46mm 1fr; gap: 2.5mm; min-height: 115mm; margin-bottom: 2.5mm; }
+  .print-portrait-frame { border: 2px double #211a14; border-radius: 48% 48% 40% 40%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle,#fff,#ece7df); }
+  .print-portrait-symbol { font-size: 34pt; }
+  .print-portrait-frame span { font-size: 6pt; letter-spacing: .12em; margin-top: 3mm; }
+  .print-transformation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 2mm; }
+
+  .print-spell-header { display: grid; grid-template-columns: repeat(4,1fr); gap: 2mm; margin-bottom: 2.5mm; }
+  .print-spell-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2mm; align-items: start; }
+  .print-spell-grid .print-panel { min-height: 43mm; }
+  .print-slot-row { font-size: 7pt; margin-bottom: 1mm; border-bottom: .5px solid; padding-bottom: 1mm; }
+  .print-slot-row span { margin-left: 1mm; }
+}
+
+.print-attack-table td {
+  vertical-align: top;
+}
+
+.print-attack-table td:first-child {
+  width: 34%;
+}
+
+.print-attack-table td:nth-child(2) {
+  width: 16%;
+  text-align: center;
+  font-size: 1.08em;
+  font-weight: 800;
+}
+
+.print-attack-table td:last-child {
+  width: 50%;
+}
+
+.print-attack-table td strong,
+.print-attack-table td small {
+  display: block;
+}
+
+.print-attack-table td small {
+  margin-top: 1mm;
+  font-size: 0.72em;
+  line-height: 1.2;
+  color: #3b342d;
+}
+
+/* GrimForge 0.9.1 — printable character journal */
+.print-sheet--journal{display:flex;flex-direction:column;gap:4mm}.print-journal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3mm}.print-journal-text{min-height:26mm;padding:3mm;border:1px solid #3a332a;background:rgba(255,255,255,.72)}.print-journal-text--wide{grid-column:1/-1;min-height:34mm}.print-journal-text h2{margin:0 0 2mm;font-size:9pt;letter-spacing:.08em;text-transform:uppercase}.print-journal-text p{margin:0;white-space:pre-wrap;font-size:8.5pt;line-height:1.35}.print-journal-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3mm}.print-journal-session{break-inside:avoid;padding:0 0 3mm;margin:0 0 3mm;border-bottom:1px solid #aaa}.print-journal-session h3{display:flex;justify-content:space-between;gap:3mm;margin:0 0 1mm;font-size:9pt}.print-journal-session h3 span{font-weight:400;color:#555}.print-journal-session p{margin:0;white-space:pre-wrap;font-size:8pt;line-height:1.35}
