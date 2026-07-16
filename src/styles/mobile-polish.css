@@ -1,0 +1,367 @@
+/* =======================================================
+   GRIMFORGE 0.9.9 · MOBILE UI POLISH
+   Touch-first navigation, safer spacing and compact cards.
+======================================================= */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --mobile-edge: clamp(0.75rem, 3.5vw, 1rem);
+    --mobile-nav-height: 72px;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  #root {
+    width: 100%;
+    border-inline: 0;
+  }
+
+  .app-layout {
+    display: block;
+    min-height: 100svh;
+    padding:
+      max(0.75rem, env(safe-area-inset-top))
+      var(--mobile-edge)
+      calc(var(--mobile-nav-height) + max(1rem, env(safe-area-inset-bottom)));
+    overflow: visible;
+  }
+
+  .app-layout__content,
+  .app-layout__content:has(.character-creator-layout) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Primary navigation becomes a stable thumb-friendly bottom bar. */
+  .book-nav {
+    position: fixed;
+    z-index: 1000;
+    inset:
+      auto 0 0 0;
+    display: block;
+    width: 100%;
+    min-height: 0;
+    padding:
+      0.35rem
+      max(0.4rem, env(safe-area-inset-right))
+      max(0.35rem, env(safe-area-inset-bottom))
+      max(0.4rem, env(safe-area-inset-left));
+    background: rgba(9, 8, 12, 0.94);
+    border: 0;
+    border-top: 1px solid rgba(156, 105, 211, 0.3);
+    box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .book-nav::before,
+  .book-nav__logo {
+    display: none;
+  }
+
+  .book-nav__chapters {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    gap: 0.2rem;
+  }
+
+  .book-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    min-width: 0;
+    min-height: 58px;
+    padding: 0.35rem 0.15rem;
+    border-radius: 10px;
+    touch-action: manipulation;
+  }
+
+  .book-nav__chapter {
+    font-size: 0.68rem;
+    line-height: 1;
+    letter-spacing: 0.08em;
+  }
+
+  .book-nav__title {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: clamp(0.52rem, 2.4vw, 0.64rem);
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    writing-mode: initial;
+    transform: none;
+  }
+
+  .book-nav__marker {
+    width: 18px;
+    height: 2px;
+  }
+
+  .book-nav__item--active .book-nav__marker {
+    width: 30px;
+  }
+
+  /* Pages and paper surfaces use the full phone width. */
+  .paper-page,
+  .creator-editor,
+  .character-sheet,
+  .archive-management,
+  .compendium-page {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .paper-page__inner {
+    padding: clamp(1rem, 5vw, 1.35rem);
+  }
+
+  .chapter-header,
+  .creator-section__header,
+  .character-sheet-header {
+    min-width: 0;
+  }
+
+  .chapter-header h1,
+  .creator-section__header h1,
+  .character-sheet-header h1 {
+    overflow-wrap: anywhere;
+    font-size: clamp(1.65rem, 8vw, 2.35rem);
+    line-height: 1.03;
+    letter-spacing: 0.08em;
+  }
+
+  /* Creator: navigation first, editor second, preview collapses below. */
+  .character-creator-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.85rem;
+  }
+
+  .character-creator-layout__navigation,
+  .character-creator-layout__editor,
+  .character-creator-layout__preview {
+    width: 100%;
+    min-width: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .character-creator-layout__editor {
+    padding: 0.85rem;
+  }
+
+  .creator-step-nav {
+    padding: 0.75rem;
+  }
+
+  .creator-step-nav__list {
+    display: flex;
+    gap: 0.45rem;
+    margin: 0 -0.15rem;
+    padding: 0.15rem 0.15rem 0.5rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .creator-step-nav__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .creator-step-nav__entry {
+    flex: 0 0 min(78vw, 260px);
+    min-height: 64px;
+    scroll-snap-align: start;
+  }
+
+  .creator-step-nav__line {
+    display: none;
+  }
+
+  .record-preview {
+    max-height: 54svh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .creator-footer {
+    position: sticky;
+    z-index: 20;
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    margin-inline: -0.35rem;
+    padding: 0.7rem;
+    background: rgba(12, 10, 15, 0.94);
+    border: 1px solid rgba(156, 105, 211, 0.24);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(14px);
+  }
+
+  .creator-footer__group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* Common dense grids become readable single-column cards. */
+  .creator-dossier-grid,
+  .creator-class-dossier-grid,
+  .ancestry-reforged__selector,
+  .ancestry-feature-grid,
+  .point-buy-grid,
+  .record-preview__combat-grid,
+  .record-preview__abilities,
+  .sheet-grid,
+  .combat-grid,
+  .compendium-grid,
+  .compendium-category-grid,
+  .journal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .record-preview__abilities {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .creator-dossier-card,
+  .ancestry-choice-card,
+  .point-buy-card,
+  .compendium-card,
+  .sheet-panel,
+  .journal-card {
+    min-width: 0;
+  }
+
+  /* Touch targets and iOS-safe form sizing. */
+  button,
+  .grim-button,
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  textarea {
+    min-height: 128px;
+  }
+
+  .grim-button,
+  .creator-footer button,
+  .compendium-toolbar button {
+    width: 100%;
+  }
+
+  /* Toolbars scroll instead of crushing controls. */
+  .compendium-toolbar,
+  .archive-toolbar,
+  .sheet-tabs,
+  .character-sheet__tabs {
+    display: flex;
+    gap: 0.45rem;
+    padding-bottom: 0.35rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .compendium-toolbar::-webkit-scrollbar,
+  .archive-toolbar::-webkit-scrollbar,
+  .sheet-tabs::-webkit-scrollbar,
+  .character-sheet__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sheet-tabs > *,
+  .character-sheet__tabs > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  /* Tables remain usable on narrow screens. */
+  .table-scroll,
+  .compendium-table-wrap,
+  .inventory-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  /* Prevent media and long strings from widening the viewport. */
+  img,
+  svg,
+  canvas {
+    max-width: 100%;
+  }
+
+  p,
+  li,
+  dd,
+  .creator-dossier-card__description,
+  .compendium-detail-panel {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 390px) {
+  .book-nav__title {
+    font-size: 0.5rem;
+  }
+
+  .book-nav__chapter {
+    font-size: 0.62rem;
+  }
+
+  .paper-page__inner,
+  .character-creator-layout__editor {
+    padding-inline: 0.72rem;
+  }
+
+  .record-preview__abilities {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .creator-footer__group {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .book-nav__item:hover,
+  .grim-button:hover,
+  .creator-dossier-card:hover,
+  .compendium-card:hover {
+    transform: none;
+  }
+}

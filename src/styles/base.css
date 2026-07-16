@@ -3,6 +3,7 @@
 @import "./components.css";
 @import "./layout.css";
 @import "./animations.css";
+@import "./mobile-polish.css";
 :root{
 
     background:#09090B;
