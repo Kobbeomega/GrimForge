@@ -60,6 +60,9 @@ export function formatCompendiumEntryText(entry: CompendiumEntry): string {
         entry.components.material ? "M" : null,
       ].filter(Boolean).join(", ") || "—"}`,
     );
+    if (entry.rulesText) lines.push("", "Kurzregel (EN):", entry.rulesText);
+    if (entry.higherLevels) lines.push("", "Hochstufung / Skalierung:", entry.higherLevels);
+    if (entry.sourceLabel) lines.push("", `Quelle: ${entry.sourceLabel}${entry.sourcePage ? ` · PDF-Seite ${entry.sourcePage}` : ""}`);
   } else if ("category" in entry) {
     lines.push("", `Gewicht: ${entry.weight} lb`, `Preis: ${formatPrice(entry.price)}`);
     if (entry.category === "weapon") {

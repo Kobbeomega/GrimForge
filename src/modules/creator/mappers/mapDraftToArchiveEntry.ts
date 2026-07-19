@@ -1,5 +1,7 @@
 import {
   ancestries,
+  applyAbilityBonuses,
+  getAncestryAbilityBonuses,
 } from "../../../compendium/ancestries";
 
 import {
@@ -35,6 +37,7 @@ import type {
 import type {
   CharacterCreatorDraft,
 } from "../types";
+import { CURRENT_CHARACTER_SCHEMA_VERSION } from "../../../migrations/characterSchema";
 
 export function mapDraftToArchiveEntry(
   draft: CharacterCreatorDraft,
@@ -51,6 +54,17 @@ export function mapDraftToArchiveEntry(
         entry.id ===
         draft.ancestryVariantId,
     );
+
+  const ancestryAbilityBonuses = getAncestryAbilityBonuses({
+    ancestryId: draft.ancestryId,
+    variantId: draft.ancestryVariantId,
+    choices: draft.ancestryBonusChoices,
+  });
+
+  const effectiveAbilityScores = applyAbilityBonuses(
+    draft.baseAbilities,
+    ancestryAbilityBonuses.total,
+  );
 
   const selectedBackground =
     getBackgroundById(
@@ -97,9 +111,12 @@ export function mapDraftToArchiveEntry(
     createStartingInventoryItems(
       draft,
       timestamp,
+      selectedBackground?.equipment ?? [],
     );
 
   return {
+    schemaVersion: CURRENT_CHARACTER_SCHEMA_VERSION,
+
     id:
       draft.id,
 
@@ -195,9 +212,11 @@ ancestryUsesReducedSpeed:
       ...draft.skillExpertise,
     ],
 
-    abilityScores: {
+    baseAbilityScores: {
       ...draft.baseAbilities,
     },
+
+    abilityScores: effectiveAbilityScores,
 
     vitals: {
       maximumHitPoints: 10,
@@ -208,16 +227,16 @@ ancestryUsesReducedSpeed:
       initiativeModifier:
         Math.floor(
           (
-            draft.baseAbilities
+            effectiveAbilityScores
               .dexterity -
             10
           ) / 2,
         ),
 
       speed:
-  draft.ancestryUsesReducedSpeed
-    ? 7.5
-    : selectedAncestry?.speed ?? 9,
+        draft.ancestryUsesReducedSpeed
+          ? 7.5
+          : (selectedAncestry?.speed ?? 9) + (selectedVariant?.speedBonus ?? 0),
     },
 
     inventory: {
@@ -314,6 +333,7 @@ interface InventorySourceEntry {
 function createStartingInventoryItems(
   draft: CharacterCreatorDraft,
   timestamp: string,
+  backgroundEquipment: string[],
 ): CharacterInventoryItem[] {
   const configuration =
     startingEquipment.find(
@@ -323,7 +343,7 @@ function createStartingInventoryItems(
     );
 
   if (!configuration) {
-    return [];
+    return createBackgroundInventoryItems(backgroundEquipment, timestamp);
   }
 
   const selectedEntries:
@@ -414,7 +434,7 @@ function createStartingInventoryItems(
       ...guaranteedPackEntries,
     ]);
 
-  return combinedEntries.flatMap(
+  const classItems = combinedEntries.flatMap(
     (entry) => {
       const definition =
         getEquipmentById(
@@ -434,6 +454,30 @@ function createStartingInventoryItems(
       ];
     },
   );
+
+  const backgroundItems = createBackgroundInventoryItems(backgroundEquipment, timestamp);
+  const existingIds = new Set(classItems.map((item) => item.id));
+  return [...classItems, ...backgroundItems.filter((item) => !existingIds.has(item.id))];
+}
+
+function createBackgroundInventoryItems(labels: string[], timestamp: string): CharacterInventoryItem[] {
+  return labels.map((label, index) => ({
+    id: `background-${toBackgroundItemId(label)}-${index + 1}`,
+    name: label,
+    category: "other",
+    quantity: 1,
+    weight: 0,
+    equipped: false,
+    notes: "Startausrüstung aus dem Hintergrund.",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }));
+}
+
+function toBackgroundItemId(value: string): string {
+  return value.toLocaleLowerCase("de")
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "item";
 }
 
 function mergeEquipmentEntries(

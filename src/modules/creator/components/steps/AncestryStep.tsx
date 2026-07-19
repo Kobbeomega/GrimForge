@@ -3,24 +3,39 @@ import {
   ancestryTraits,
 } from "../../../../compendium/ancestries";
 
+import {
+  getAncestryAbilityBonuses,
+} from "../../../../compendium/ancestries";
+
 import type {
   CharacterAncestry,
   CharacterSize,
 } from "../../../../compendium/ancestries";
+
+import {
+  abilityIds,
+  abilityShortLabels,
+  type AbilityId,
+} from "../../../../compendium/core";
 
 import { ArtworkHero } from "../../../../components/artwork";
 
 interface AncestryStepProps {
   selectedId: string;
   selectedSize: CharacterSize;
+  selectedVariantId: string;
+  selectedBonusChoices: AbilityId[];
   selectedTraitIds: string[];
   usesReducedSpeed: boolean;
   onSelect: (
     ancestryId: string,
     defaultSize: CharacterSize,
     traditionalTraitIds: string[],
+    defaultVariantId: string,
   ) => void;
   onSizeChange: (size: CharacterSize) => void;
+  onVariantChange: (variantId: string) => void;
+  onBonusChoicesChange: (choices: AbilityId[]) => void;
   onTraitIdsChange: (traitIds: string[]) => void;
   onReducedSpeedChange: (value: boolean) => void;
 }
@@ -36,18 +51,29 @@ const flexibleSizeAncestryIds = new Set([
 export function AncestryStep({
   selectedId,
   selectedSize,
+  selectedVariantId,
+  selectedBonusChoices,
   onSelect,
   onSizeChange,
+  onVariantChange,
+  onBonusChoicesChange,
 }: AncestryStepProps) {
   const selectedAncestry = ancestries.find(
     (entry) => entry.id === selectedId,
   );
+
+  const resolvedBonuses = getAncestryAbilityBonuses({
+    ancestryId: selectedId,
+    variantId: selectedVariantId,
+    choices: selectedBonusChoices,
+  });
 
   function selectAncestry(ancestry: CharacterAncestry) {
     onSelect(
       ancestry.id,
       ancestry.size,
       getTraditionalTraitIds(ancestry),
+      ancestry.variants[0]?.id ?? "",
     );
   }
 
@@ -124,6 +150,67 @@ export function AncestryStep({
               value={selectedAncestry.languages.length > 0 ? selectedAncestry.languages.join(", ") : "Durch Hintergrund und Spielwelt"}
             />
           </section>
+
+          <section className="ancestry-dossier__bonuses" aria-label="Attributsboni">
+            <div>
+              <small>Traditionelle Attributsboni</small>
+              <strong>{formatAbilityBonuses(resolvedBonuses.total)}</strong>
+            </div>
+            <p>Diese Werte werden auf deine Point-Buy-Basis addiert und fließen automatisch in alle abgeleiteten Werte ein.</p>
+          </section>
+
+          {selectedAncestry.variants.length > 0 && (
+            <section className="ancestry-dossier__size">
+              <div>
+                <small>Variante</small>
+                <strong>Wähle deine Unterart</strong>
+              </div>
+              <div>
+                {selectedAncestry.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    className={selectedVariantId === variant.id ? "ancestry-size-pill ancestry-size-pill--active" : "ancestry-size-pill"}
+                    onClick={() => onVariantChange(variant.id)}
+                  >
+                    {variant.name} · {formatAbilityBonuses(variant.abilityBonuses ?? {})}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {selectedAncestry.abilityBonusChoice && (
+            <section className="ancestry-dossier__size">
+              <div>
+                <small>Freie Boni</small>
+                <strong>Wähle {selectedAncestry.abilityBonusChoice.choose} verschiedene Attribute</strong>
+              </div>
+              <div>
+                {abilityIds
+                  .filter((abilityId) => !(selectedAncestry.abilityBonusChoice?.exclude ?? []).includes(abilityId))
+                  .map((abilityId) => {
+                    const active = selectedBonusChoices.includes(abilityId);
+                    const limitReached = selectedBonusChoices.length >= selectedAncestry.abilityBonusChoice!.choose;
+                    return (
+                      <button
+                        key={abilityId}
+                        type="button"
+                        disabled={!active && limitReached}
+                        className={active ? "ancestry-size-pill ancestry-size-pill--active" : "ancestry-size-pill"}
+                        onClick={() => onBonusChoicesChange(
+                          active
+                            ? selectedBonusChoices.filter((entry) => entry !== abilityId)
+                            : [...selectedBonusChoices, abilityId],
+                        )}
+                      >
+                        {abilityShortLabels[abilityId]} +{selectedAncestry.abilityBonusChoice!.bonus}
+                      </button>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
 
           {getAvailableSizes(selectedAncestry).length > 1 && (
             <section className="ancestry-dossier__size">
@@ -248,4 +335,12 @@ function getAncestrySigil(id: string) {
 
 function getFallbackTraitDescription(name: string) {
   return `${name} gehört zum festen Herkunftspaket und wird automatisch in deinen Charakterbogen übernommen.`;
+}
+
+function formatAbilityBonuses(bonuses: Partial<Record<AbilityId, number>>) {
+  const entries = abilityIds
+    .filter((abilityId) => (bonuses[abilityId] ?? 0) !== 0)
+    .map((abilityId) => `${abilityShortLabels[abilityId]} +${bonuses[abilityId]}`);
+
+  return entries.length > 0 ? entries.join(", ") : "Keine festen Boni";
 }

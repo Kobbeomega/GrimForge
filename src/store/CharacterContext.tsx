@@ -9,6 +9,7 @@ import {
 
 
 import type { CharacterArchiveEntry } from "../modules/archives/types";
+import { migrateCharacterArchiveEntries, migrateCharacterArchiveEntry } from "../migrations/characterSchema";
 
 interface CharacterContextValue {
   characters: CharacterArchiveEntry[];
@@ -56,23 +57,24 @@ export function CharacterProvider({
   function createCharacter(
     character: CharacterArchiveEntry,
   ) {
+    const migratedCharacter = migrateCharacterArchiveEntry(character).character;
     setCharacters((currentCharacters) => {
       const alreadyExists =
         currentCharacters.some(
-          (entry) => entry.id === character.id,
+          (entry) => entry.id === migratedCharacter.id,
         );
 
       if (alreadyExists) {
         return currentCharacters.map((entry) =>
-          entry.id === character.id
-            ? character
+          entry.id === migratedCharacter.id
+            ? migratedCharacter
             : entry,
         );
       }
 
       return [
         ...currentCharacters,
-        character,
+        migratedCharacter,
       ];
     });
   }
@@ -80,10 +82,11 @@ export function CharacterProvider({
   function updateCharacter(
     character: CharacterArchiveEntry,
   ) {
+    const migratedCharacter = migrateCharacterArchiveEntry(character).character;
     setCharacters((currentCharacters) =>
       currentCharacters.map((entry) =>
-        entry.id === character.id
-          ? character
+        entry.id === migratedCharacter.id
+          ? migratedCharacter
           : entry,
       ),
     );
@@ -103,7 +106,7 @@ export function CharacterProvider({
   function replaceCharacters(
     nextCharacters: CharacterArchiveEntry[],
   ) {
-    setCharacters(nextCharacters);
+    setCharacters(migrateCharacterArchiveEntries(nextCharacters).characters);
   }
 
   function resetCharacters() {
@@ -157,7 +160,7 @@ function loadCharacters(): CharacterArchiveEntry[] {
   return [];
 }
 
-    return parsedValue as CharacterArchiveEntry[];
+    return migrateCharacterArchiveEntries(parsedValue as CharacterArchiveEntry[]).characters;
   } catch {
   return [];
 }

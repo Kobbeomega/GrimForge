@@ -122,6 +122,8 @@ function matchesSearch(entry: CompendiumEntry, query: string) {
     "theme" in entry ? entry.theme : "",
     "origin" in entry ? entry.origin : "",
     "school" in entry ? entry.school : "",
+    "rulesText" in entry ? entry.rulesText ?? "" : "",
+    "effectTags" in entry ? entry.effectTags?.join(" ") ?? "" : "",
     "category" in entry ? entry.category : "",
     "tags" in entry ? entry.tags?.join(" ") ?? "" : "",
   ]
@@ -448,9 +450,24 @@ export function CompendiumPage() {
                 ★ Favoriten ({favoriteCount})
               </button>
 
-              <span className="compendium-result-count">
-                {entries.length} Treffer
-              </span>
+              <div className="compendium-result-summary" aria-live="polite">
+                <span className="compendium-result-count">
+                  {entries.length} Treffer
+                </span>
+                {query || showFavoritesOnly ? (
+                  <button
+                    type="button"
+                    className="compendium-reset"
+                    onClick={() => {
+                      setQuery("");
+                      setShowFavoritesOnly(false);
+                      searchInputRef.current?.focus();
+                    }}
+                  >
+                    Filter zurücksetzen
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className={`compendium-browser ${selectedEntry ? "compendium-browser--detail" : ""}`}>
@@ -489,9 +506,19 @@ export function CompendiumPage() {
                 ))}
 
                 {entries.length === 0 ? (
-                  <div className="compendium-empty">
+                  <div className="compendium-empty" role="status">
                     <strong>Kein Eintrag gefunden</strong>
-                    <p>Versuche einen allgemeineren Suchbegriff.</p>
+                    <p>Versuche einen allgemeineren Suchbegriff oder setze die Filter zurück.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuery("");
+                        setShowFavoritesOnly(false);
+                        searchInputRef.current?.focus();
+                      }}
+                    >
+                      Suche zurücksetzen
+                    </button>
                   </div>
                 ) : null}
               </section>
@@ -783,7 +810,25 @@ function SpellDetail({ entry, onClose, isFavorite, onToggleFavorite, onPrint, on
         <CompendiumStat label="Komponenten" value={components.join(", ") || "—"} />
       </div>
       <DetailList title="Besonderheiten" items={[entry.concentration ? "Konzentration" : "Keine Konzentration", entry.ritual ? "Ritual" : "Kein Ritual"]} />
+      {entry.rulesText ? (
+        <section className="compendium-detail-section">
+          <h3>Kurzregel (EN)</h3>
+          <p>{entry.rulesText}</p>
+        </section>
+      ) : null}
+      {entry.higherLevels ? (
+        <section className="compendium-detail-section">
+          <h3>Hochstufung / Skalierung</h3>
+          <p>{entry.higherLevels}</p>
+        </section>
+      ) : null}
+      {entry.effectTags?.length ? <DetailList title="Effekte" items={entry.effectTags} /> : null}
+      {entry.damageText?.length ? <DetailList title="Schaden" items={entry.damageText} /> : null}
+      {entry.healingText?.length ? <DetailList title="Heilung / Trefferpunkte" items={entry.healingText} /> : null}
+      {entry.savingThrows?.length ? <DetailList title="Rettungswürfe" items={entry.savingThrows} /> : null}
+      {entry.conditions?.length ? <DetailList title="Zustände" items={entry.conditions} /> : null}
       <DetailList title="Klassen" items={entry.classIds} />
+      {entry.sourceLabel ? <DetailList title="Quelle" items={[`${entry.sourceLabel}${entry.sourcePage ? ` · PDF-Seite ${entry.sourcePage}` : ""}`]} /> : null}
     </CompendiumDetailPanel>
   );
 }

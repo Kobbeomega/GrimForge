@@ -1,43 +1,51 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { useCharacters } from "../hooks/useCharacters";
 
 import { createFileNumber } from "../modules/archives/utils/createFileNumber";
-import { CharacterCreator } from "../modules/creator/CharacterCreator";
 import { mapArchiveEntryToDraft } from "../modules/creator/mappers/mapArchiveEntryToDraft";
-
-import { CharacterArchivePage } from "./CharacterArchivePage";
-import { CharacterSheetPage } from "./CharacterSheetPage";
 
 import type { CharacterArchiveEntry } from "../modules/archives/types";
 import type { CharacterCreatorDraft } from "../modules/creator/types";
 
-export type CharacterView =
-  | "archive"
-  | "creator"
-  | "sheet";
+const CharacterCreator = lazy(() =>
+  import("../modules/creator/CharacterCreator").then((module) => ({
+    default: module.CharacterCreator,
+  })),
+);
+const CharacterArchivePage = lazy(() =>
+  import("./CharacterArchivePage").then((module) => ({
+    default: module.CharacterArchivePage,
+  })),
+);
+const CharacterSheetPage = lazy(() =>
+  import("./CharacterSheetPage").then((module) => ({
+    default: module.CharacterSheetPage,
+  })),
+);
+
+function CharacterViewFallback() {
+  return (
+    <div className="view-loading" role="status">
+      Charakterakte wird geladen …
+    </div>
+  );
+}
+
+export type CharacterView = "archive" | "creator" | "sheet";
 
 export function CharacterPage() {
-  const [view, setView] =
-    useState<CharacterView>("archive");
+  const [view, setView] = useState<CharacterView>("archive");
 
-  const [
-    selectedCharacterId,
-    setSelectedCharacterId,
-  ] = useState<string | null>(null);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(
+    null,
+  );
 
-  const [
-    editingDraft,
-    setEditingDraft,
-  ] = useState<
+  const [editingDraft, setEditingDraft] = useState<
     CharacterCreatorDraft | undefined
   >(undefined);
 
-  const {
-    characters,
-    createCharacter,
-    updateCharacter,
-  } = useCharacters();
+  const { characters, createCharacter, updateCharacter } = useCharacters();
 
   const nextFileNumber = useMemo(
     () => createFileNumber(characters),
@@ -45,11 +53,8 @@ export function CharacterPage() {
   );
 
   const selectedCharacter =
-    characters.find(
-      (character) =>
-        character.id ===
-        selectedCharacterId,
-    ) ?? null;
+    characters.find((character) => character.id === selectedCharacterId) ??
+    null;
 
   function handleCreateRequest() {
     setEditingDraft(undefined);
@@ -57,20 +62,13 @@ export function CharacterPage() {
     setView("creator");
   }
 
-  function handleOpenCharacter(
-    characterId: string,
-  ) {
+  function handleOpenCharacter(characterId: string) {
     setSelectedCharacterId(characterId);
     setView("sheet");
   }
 
-  function handleEditCharacter(
-    characterId: string,
-  ) {
-    const character = characters.find(
-      (entry) =>
-        entry.id === characterId,
-    );
+  function handleEditCharacter(characterId: string) {
+    const character = characters.find((entry) => entry.id === characterId);
 
     if (!character) {
       return;
@@ -78,21 +76,13 @@ export function CharacterPage() {
 
     setSelectedCharacterId(character.id);
 
-    setEditingDraft(
-      mapArchiveEntryToDraft(character),
-    );
+    setEditingDraft(mapArchiveEntryToDraft(character));
 
     setView("creator");
   }
 
-  function handleCharacterFinished(
-    character: CharacterArchiveEntry,
-  ) {
-    const alreadyExists =
-      characters.some(
-        (entry) =>
-          entry.id === character.id,
-      );
+  function handleCharacterFinished(character: CharacterArchiveEntry) {
+    const alreadyExists = characters.some((entry) => entry.id === character.id);
 
     if (alreadyExists) {
       updateCharacter(character);
@@ -101,9 +91,7 @@ export function CharacterPage() {
     }
 
     setEditingDraft(undefined);
-    setSelectedCharacterId(
-      character.id,
-    );
+    setSelectedCharacterId(character.id);
     setView("sheet");
   }
 
@@ -119,46 +107,36 @@ export function CharacterPage() {
 
   if (view === "creator") {
     return (
-      <CharacterCreator
-        fileNumber={
-          editingDraft?.fileNumber ??
-          nextFileNumber
-        }
-        initialDraft={editingDraft}
-        onCancel={handleCancelCreator}
-        onFinished={
-          handleCharacterFinished
-        }
-      />
+      <Suspense fallback={<CharacterViewFallback />}>
+        <CharacterCreator
+          fileNumber={editingDraft?.fileNumber ?? nextFileNumber}
+          initialDraft={editingDraft}
+          onCancel={handleCancelCreator}
+          onFinished={handleCharacterFinished}
+        />
+      </Suspense>
     );
   }
 
-  if (
-    view === "sheet" &&
-    selectedCharacter
-  ) {
+  if (view === "sheet" && selectedCharacter) {
     return (
-      <CharacterSheetPage
-        character={selectedCharacter}
-        onBack={handleBackToArchive}
-        onUpdateCharacter={
-          updateCharacter
-        }
-      />
+      <Suspense fallback={<CharacterViewFallback />}>
+        <CharacterSheetPage
+          character={selectedCharacter}
+          onBack={handleBackToArchive}
+          onUpdateCharacter={updateCharacter}
+        />
+      </Suspense>
     );
   }
 
   return (
-    <CharacterArchivePage
-      onCreateRequest={
-        handleCreateRequest
-      }
-      onOpenCharacter={
-        handleOpenCharacter
-      }
-      onEditCharacter={
-        handleEditCharacter
-      }
-    />
+    <Suspense fallback={<CharacterViewFallback />}>
+      <CharacterArchivePage
+        onCreateRequest={handleCreateRequest}
+        onOpenCharacter={handleOpenCharacter}
+        onEditCharacter={handleEditCharacter}
+      />
+    </Suspense>
   );
 }

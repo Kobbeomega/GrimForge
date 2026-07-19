@@ -1,6 +1,9 @@
 import type {
   SpellDefinition,
+  SpellComponents,
 } from "./types";
+
+import { sourceSpellRulesLevel0To3 } from "../../content/phase1/spellRulesLevel0To3";
 
 const verbalSomatic = {
   verbal: true,
@@ -14,7 +17,7 @@ const verbalOnly = {
   material: false,
 } as const;
 
-export const spells: SpellDefinition[] = [
+const curatedSpells: SpellDefinition[] = [
   {
     id: "acid-splash",
     name: "Säurespritzer",
@@ -1315,13 +1318,82 @@ export const spells: SpellDefinition[] = [
   },
 ];
 
+
+function parseSourceComponents(value: string): SpellComponents {
+  const normalized = value.toUpperCase();
+  const materialMatch = value.match(/M\s*\((.+)\)/i);
+  return {
+    verbal: /(^|[,\s])V([,\s]|$)/.test(normalized),
+    somatic: /(^|[,\s])S([,\s]|$)/.test(normalized),
+    material: /(^|[,\s])M([,\s(]|$)/.test(normalized),
+    materialDescription: materialMatch?.[1],
+  };
+}
+
+const sourceRuleById = new Map<string, (typeof sourceSpellRulesLevel0To3)[number]>(
+  sourceSpellRulesLevel0To3.map((spell) => [spell.id, spell]),
+);
+
+const enrichedCuratedSpells: SpellDefinition[] = curatedSpells.map((spell) => {
+  const sourceRule = sourceRuleById.get(spell.id);
+  if (!sourceRule) return spell;
+
+  return {
+    ...spell,
+    mechanicsSummary: sourceRule.mechanicsSummaryGerman,
+    rulesText: sourceRule.rulesTextEnglish,
+    attackTypes: [...sourceRule.attackTypesGerman],
+    savingThrows: [...sourceRule.savingThrowsGerman],
+    damageText: [...sourceRule.damageGerman],
+    healingText: [...sourceRule.healingGerman],
+    conditions: [...sourceRule.conditionsGerman],
+    effectTags: [...sourceRule.effectTagsGerman],
+    sourceLabel: sourceRule.source,
+    sourcePage: sourceRule.sourcePage,
+    higherLevels: spell.higherLevels || sourceRule.scalingTextEnglish || undefined,
+  };
+});
+
+const curatedSpellIds = new Set(enrichedCuratedSpells.map((spell) => spell.id));
+
+const importedSpells: SpellDefinition[] = sourceSpellRulesLevel0To3
+  .filter((spell) => !curatedSpellIds.has(spell.id))
+  .map((spell) => ({
+    id: spell.id,
+    name: spell.name,
+    level: spell.level,
+    school: spell.school,
+    castingTime: spell.castingTime,
+    range: spell.range,
+    components: parseSourceComponents(spell.components),
+    duration: spell.duration,
+    concentration: spell.concentration,
+    ritual: spell.ritual,
+    description: spell.mechanicsSummaryGerman,
+    mechanicsSummary: spell.mechanicsSummaryGerman,
+    rulesText: spell.rulesTextEnglish,
+    attackTypes: [...spell.attackTypesGerman],
+    savingThrows: [...spell.savingThrowsGerman],
+    damageText: [...spell.damageGerman],
+    healingText: [...spell.healingGerman],
+    conditions: [...spell.conditionsGerman],
+    effectTags: [...spell.effectTagsGerman],
+    sourceLabel: spell.source,
+    sourcePage: spell.sourcePage,
+    higherLevels: spell.scalingTextEnglish || undefined,
+    classIds: [...spell.classIds],
+  }));
+
+/** Zentrale, deduplizierte Zauber-Registry für Creator, Sheet und Compendium. */
+export const spells: SpellDefinition[] = [...enrichedCuratedSpells, ...importedSpells]
+  .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, "de"));
+
+export const spellRegistry = new Map(spells.map((spell) => [spell.id, spell]));
+
 export function getSpellById(
   spellId: string,
 ): SpellDefinition | undefined {
-  return spells.find(
-    (spell) =>
-      spell.id === spellId,
-  );
+  return spellRegistry.get(spellId);
 }
 
 export function getSpellsForClass(

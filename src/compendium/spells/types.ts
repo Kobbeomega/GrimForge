@@ -112,6 +112,23 @@ export interface SpellDefinition {
 
   description: string;
 
+  /** Kompakte deutsche Mechanik-Zusammenfassung aus der bereitgestellten Quelle. */
+  mechanicsSummary?: string;
+
+  /** Maßgebliche englische Kurzregel für Sonderfälle und genaue Wirkung. */
+  rulesText?: string;
+
+  /** Strukturierte Such- und Darstellungsdaten aus dem Regelpaket. */
+  attackTypes?: string[];
+  savingThrows?: string[];
+  damageText?: string[];
+  healingText?: string[];
+  conditions?: string[];
+  effectTags?: string[];
+
+  sourceLabel?: string;
+  sourcePage?: number;
+
   higherLevels?: string;
 
   damage?: SpellDamageDefinition;

@@ -3,6 +3,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { ChapterHeader } from "../components/ui/ChapterHeader";
 import { GrimButton } from "../components/ui/GrimButton";
 import { PaperPage } from "../components/ui/PaperPage";
+import { ProjectHealthPanel } from "../components/dev/ProjectHealthPanel";
 import { useCharacters } from "../hooks/useCharacters";
 import {
   exportCharacterArchive,
@@ -109,6 +110,8 @@ export function ArchiveManagementPage() {
           <GrimButton type="button" onClick={handleReset} disabled={!characters.length}>Archiv leeren</GrimButton>
         </article>
       </section>
+
+      {import.meta.env.DEV && <ProjectHealthPanel />}
 
       {message && (
         <p className={`archive-management-message${isError ? " archive-management-message--error" : ""}`} role="status">

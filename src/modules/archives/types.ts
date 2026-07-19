@@ -121,6 +121,10 @@ export interface CharacterJournal {
 }
 
 export interface CharacterArchiveEntry {
+  /** Version des persistierten Charakter-Datenmodells. */
+  schemaVersion?: number;
+  migratedFromSchemaVersion?: number;
+
   id: string;
   fileNumber: string;
 
@@ -164,6 +168,10 @@ export interface CharacterArchiveEntry {
   createdAt?: string;
   updatedAt: string;
 
+  /** Point-Buy-/Basiswerte vor Abstammungsboni. */
+  baseAbilityScores?: AbilityScores;
+
+  /** Effektive Werte inklusive Abstammungsboni. */
   abilityScores?: AbilityScores;
 
   vitals?: CharacterVitals;

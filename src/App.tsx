@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { runProjectHealthAudit } from "./dev/projectHealth";
 
 import "./styles/base.css";
 
@@ -9,9 +10,9 @@ import { GrimButton } from "./components/ui/GrimButton";
 import { ChapterHeader } from "./components/ui/ChapterHeader";
 import { PaperPage } from "./components/ui/PaperPage";
 
-import { CharacterPage } from "./pages/CharacterPage";
-import { ArchiveManagementPage } from "./pages/ArchiveManagementPage";
-import { CompendiumPage } from "./pages/CompendiumPage";
+const CharacterPage = lazy(() => import("./pages/CharacterPage").then((module) => ({ default: module.CharacterPage })));
+const ArchiveManagementPage = lazy(() => import("./pages/ArchiveManagementPage").then((module) => ({ default: module.ArchiveManagementPage })));
+const CompendiumPage = lazy(() => import("./pages/CompendiumPage").then((module) => ({ default: module.CompendiumPage })));
 
 import type { AppSectionId } from "./types/navigation";
 
@@ -64,6 +65,10 @@ const sectionContent: Record<AppSectionId, SectionContent> = {
   },
 };
 
+if (import.meta.env.DEV) {
+  runProjectHealthAudit();
+}
+
 function App() {
   const [activeSection, setActiveSection] =
     useState<AppSectionId>("character");
@@ -76,6 +81,7 @@ function App() {
       onNavigate={setActiveSection}
     >
       <CodexPageTransition pageKey={activeSection}>
+        <Suspense fallback={<PaperPage><p className="intro-copy">Kapitel wird geladen …</p></PaperPage>}>
         {activeSection === "character" ? (
           <CharacterPage />
         ) : activeSection === "archive" ? (
@@ -110,6 +116,7 @@ function App() {
             </div>
           </PaperPage>
         )}
+        </Suspense>
       </CodexPageTransition>
     </AppLayout>
   );

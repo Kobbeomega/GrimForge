@@ -1,3 +1,6 @@
+import { sourceWeapons2014 } from "../../content/phase1/weapons2014";
+import { sourceArmor2014 } from "../../content/phase1/armor2014";
+
 import type {
   ArmorItem,
   EquipmentDefinition,
@@ -5,7 +8,7 @@ import type {
   WeaponItem,
 } from "./types";
 
-export const weapons: WeaponItem[] = [
+const curatedWeapons: WeaponItem[] = [
   {
     id: "club",
     name: "Keule",
@@ -381,7 +384,7 @@ export const weapons: WeaponItem[] = [
   },
 ];
 
-export const armor: ArmorItem[] = [
+const curatedArmor: ArmorItem[] = [
   {
     id: "leather",
     name: "Lederrüstung",
@@ -423,6 +426,40 @@ export const armor: ArmorItem[] = [
     price: 10,
   },
 ];
+
+
+function normalizeEquipmentName(value: string): string {
+  return value.toLocaleLowerCase("de").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+}
+function parseDamage(value: string) {
+  const match = value.match(/(\d+)W(\d+)\s+(Hieb|Stich|Wucht)/);
+  return { dice: Number(match?.[1] ?? 1), die: Number(match?.[2] ?? 4), type: ({ Hieb: "slashing", Stich: "piercing", Wucht: "bludgeoning" } as const)[match?.[3] as "Hieb"|"Stich"|"Wucht"] ?? "bludgeoning" };
+}
+function parseWeaponProperties(value: string): WeaponItem["properties"] {
+  const map: Array<[RegExp, WeaponItem["properties"][number]]> = [[/Leicht/i,"light"],[/Schwer/i,"heavy"],[/Finesse/i,"finesse"],[/Zweihändig/i,"two-handed"],[/Vielseitig/i,"versatile"],[/Reichweite/i,"reach"],[/Wurf/i,"thrown"],[/Laden/i,"loading"],[/Munition/i,"ammunition"]];
+  return map.filter(([pattern]) => pattern.test(value)).map(([, property]) => property);
+}
+function parseRange(value: string): WeaponItem["range"] | undefined {
+  const match = value.match(/(?:Wurf|Munition)\s+(\d+)\/(\d+)/i);
+  return match ? { normal: Number(match[1]), long: Number(match[2]) } : undefined;
+}
+const curatedWeaponNames = new Set(curatedWeapons.map((item) => normalizeEquipmentName(item.name)));
+const importedWeapons: WeaponItem[] = sourceWeapons2014.filter((source) => !curatedWeaponNames.has(normalizeEquipmentName(source.name_de))).map((source) => ({
+  id: source.app_id, name: source.name_de, category: "weapon", weaponCategory: source.category.startsWith("Kriegswaffe") ? "martial" : "simple",
+  damage: parseDamage(source.damage), properties: parseWeaponProperties(source.properties), range: parseRange(source.properties), weight: source.weight_lb, price: source.cost_gp,
+  description: `2014-Referenz: ${source.properties === "-" ? "keine besonderen Eigenschaften" : source.properties}.`,
+}));
+export const weapons: WeaponItem[] = [...curatedWeapons, ...importedWeapons].sort((a,b)=>a.name.localeCompare(b.name,"de"));
+
+function parseArmorClass(value: string) { const match=value.match(/\d+/); return Number(match?.[0] ?? 10); }
+const curatedArmorNames = new Set(curatedArmor.map((item) => normalizeEquipmentName(item.name)));
+const importedArmor: ArmorItem[] = sourceArmor2014.filter((source) => !curatedArmorNames.has(normalizeEquipmentName(source.name_de))).map((source) => ({
+  id: source.app_id, name: source.name_de, category: source.category === "Schild" ? "shield" : "armor", weight: source.weight_lb, price: source.cost_gp,
+  armorClass: parseArmorClass(source.armor_class), dexterityModifier: source.armor_class.includes("GE"), maximumDexterityBonus: source.armor_class.includes("max. +2") ? 2 : undefined,
+  strengthRequirement: source.strength === "-" ? undefined : Number(source.strength.match(/\d+/)?.[0]), stealthDisadvantage: source.stealth === "Nachteil",
+  description: `Rüstungskategorie: ${source.category}.`,
+}));
+export const armor: ArmorItem[] = [...curatedArmor, ...importedArmor].sort((a,b)=>a.name.localeCompare(b.name,"de"));
 
 export const gear: GearItem[] = [
   {
@@ -587,10 +624,10 @@ export const equipment: EquipmentDefinition[] = [
   ...gear,
 ];
 
+export const equipmentRegistry = new Map(equipment.map((entry) => [entry.id, entry]));
+
 export function getEquipmentById(
   id: string,
 ): EquipmentDefinition | undefined {
-  return equipment.find(
-    (entry) => entry.id === id,
-  );
+  return equipmentRegistry.get(id);
 }

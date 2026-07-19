@@ -136,7 +136,7 @@ export function mapArchiveEntryToDraft(
 
     baseAbilities: {
       ...defaultAbilityScores,
-      ...character.abilityScores,
+      ...(character.baseAbilityScores ?? character.abilityScores),
     },
 
     /*

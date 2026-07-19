@@ -2,6 +2,8 @@ import type {
   SkillId,
 } from "../skills";
 
+import { sourceBackgrounds2014 } from "../../content/phase1/backgrounds2014";
+
 import type {
   CompendiumEntityBase,
   CompendiumSource,
@@ -50,7 +52,7 @@ export interface CharacterBackground
   feature: BackgroundFeature;
 }
 
-export const backgrounds:
+const curatedBackgrounds:
   CharacterBackground[] = [
     {
       id: "acolyte",
@@ -262,11 +264,53 @@ export const backgrounds:
     },
   ];
 
+
+const skillNameToId: Record<string, SkillId> = {
+  "Akrobatik": "acrobatics", "Tierkunde": "animal-handling", "Arkane Kunde": "arcana",
+  "Athletik": "athletics", "Täuschen": "deception", "Geschichte": "history",
+  "Motiv erkennen": "insight", "Einschüchtern": "intimidation", "Nachforschungen": "investigation",
+  "Heilkunde": "medicine", "Naturkunde": "nature", "Wahrnehmung": "perception",
+  "Auftreten": "performance", "Überzeugen": "persuasion", "Religion": "religion",
+  "Fingerfertigkeit": "sleight-of-hand", "Heimlichkeit": "stealth", "Überleben": "survival",
+};
+
+function parseList(value: string): string[] {
+  return value === "-" ? [] : value.split(",").map((entry) => entry.trim()).filter(Boolean);
+}
+
+function parseLanguageChoices(value: string): number {
+  const match = value.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+const curatedBackgroundIds = new Set(curatedBackgrounds.map((entry) => entry.id));
+const importedBackgrounds: CharacterBackground[] = sourceBackgrounds2014
+  .map((source) => ({ ...source, normalizedId: source.app_id.replaceAll("_", "-") }))
+  .filter((source) => !curatedBackgroundIds.has(source.normalizedId))
+  .map((source) => ({
+    id: source.normalizedId,
+    name: source.name_de,
+    description: `Klassischer Hintergrund mit dem Merkmal „${source.feature}“.`,
+    source: "core" as const,
+    skillProficiencies: parseList(source.skills).map((name) => skillNameToId[name]).filter((id): id is SkillId => Boolean(id)),
+    toolProficiencies: parseList(source.tools),
+    languageChoices: parseLanguageChoices(source.languages),
+    equipment: source.equipment.split(";").map((entry) => entry.trim()).filter(Boolean),
+    feature: {
+      id: `${source.normalizedId}-feature`,
+      name: source.feature,
+      description: "Das Datenpaket enthält den Namen dieses Merkmals, aber keinen vollständigen Regeltext.",
+      source: "core" as const,
+    },
+  }));
+
+/** Zentrale Hintergrund-Registry; bestehende kuratierte Texte haben Vorrang. */
+export const backgrounds: CharacterBackground[] = [...curatedBackgrounds, ...importedBackgrounds]
+  .sort((a, b) => a.name.localeCompare(b.name, "de"));
+export const backgroundRegistry = new Map(backgrounds.map((entry) => [entry.id, entry]));
+
 export function getBackgroundById(
   backgroundId: string,
 ): CharacterBackground | undefined {
-  return backgrounds.find(
-    (background) =>
-      background.id === backgroundId,
-  );
+  return backgroundRegistry.get(backgroundId);
 }

@@ -96,6 +96,10 @@ export function BackgroundStep({
                   }
                 />
                 <DossierReward
+                  label="Ausrüstung"
+                  values={background.equipment.length > 0 ? background.equipment : ["Keine automatische Startausrüstung"]}
+                />
+                <DossierReward
                   label="Sprachen"
                   values={[
                     background.languageChoices > 0

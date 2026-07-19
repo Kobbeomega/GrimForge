@@ -105,7 +105,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { strength: 2, charisma: 1 },
 
       traits: [
         "Atemwaffe",
@@ -137,7 +137,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { constitution: 2 },
 
       traits: [
         "Schwere Rüstung reduziert die Bewegung nicht",
@@ -151,7 +151,10 @@ export const ancestries:
         "Auge des Handwerkers",
       ],
 
-      variants: [],
+      variants: [
+        { id: "hill-dwarf", name: "Hügelzwerg", description: "Zäh und weise.", abilityBonuses: { wisdom: 1 }, traits: ["Zwergische Zähigkeit"] },
+        { id: "mountain-dwarf", name: "Gebirgszwerg", description: "Stark und rüstungsgeübt.", abilityBonuses: { strength: 2 }, traits: ["Rüstungstraining"] },
+      ],
     },
 
     {
@@ -170,7 +173,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { dexterity: 2 },
 
       traits: [
         "Erwachter Geist",
@@ -183,7 +186,11 @@ export const ancestries:
         "Magische Gewandtheit",
       ],
 
-      variants: [],
+      variants: [
+        { id: "high-elf", name: "Hochelf", description: "Magisch geschult und gelehrt.", abilityBonuses: { intelligence: 1 }, traits: ["Elfisches Waffentraining", "Magier-Zaubertrick"] },
+        { id: "wood-elf", name: "Waldelf", description: "Schnell und naturverbunden.", abilityBonuses: { wisdom: 1 }, speedBonus: 1.5, traits: ["Maske der Wildnis"] },
+        { id: "drow", name: "Drow", description: "Von der Tiefe und ihrer Magie geprägt.", abilityBonuses: { charisma: 1 }, darkvision: 36, traits: ["Drow-Magie", "Sonnenlichtempfindlichkeit"] },
+      ],
     },
 
     {
@@ -202,7 +209,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { intelligence: 2 },
 
       traits: [
         "Magische Befestigung",
@@ -215,7 +222,10 @@ export const ancestries:
         "Stimme der Natur",
       ],
 
-      variants: [],
+      variants: [
+        { id: "forest-gnome", name: "Waldgnom", description: "Verbunden mit Illusion und kleinen Tieren.", abilityBonuses: { dexterity: 1 }, traits: ["Kleine Illusion", "Mit kleinen Tieren sprechen"] },
+        { id: "rock-gnome", name: "Felsengnom", description: "Erfinderisch und widerstandsfähig.", abilityBonuses: { constitution: 1 }, traits: ["Handwerkerwissen", "Bastler"] },
+      ],
     },
 
     {
@@ -232,7 +242,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { dexterity: 2 },
 
       traits: [
         "Tapfer",
@@ -245,7 +255,10 @@ export const ancestries:
         "Die Vergangenheit annehmen",
       ],
 
-      variants: [],
+      variants: [
+        { id: "lightfoot-halfling", name: "Leichtfuß", description: "Unauffällig und gewinnend.", abilityBonuses: { charisma: 1 }, traits: ["Von Natur aus verstohlen"] },
+        { id: "stout-halfling", name: "Stämmiger Halbling", description: "Robust und giftzäh.", abilityBonuses: { constitution: 1 }, traits: ["Stämmige Zähigkeit"] },
+      ],
     },
 
     {
@@ -262,7 +275,7 @@ export const ancestries:
 
       languages: [],
 
-      abilityBonuses: {},
+      abilityBonuses: { strength: 1, dexterity: 1, constitution: 1, intelligence: 1, wisdom: 1, charisma: 1 },
 
       traits: [
         "Beeindruckender kritischer Treffer",
@@ -275,6 +288,46 @@ export const ancestries:
         "Fertigkeitskönnen",
       ],
 
+      variants: [],
+    },
+
+    {
+      id: "halfelf",
+      name: "Halbelf",
+      description: "Eine vielseitige Herkunft zwischen menschlichem Ehrgeiz und elfischem Erbe.",
+      size: "medium",
+      speed: 9,
+      darkvision: 18,
+      languages: ["Gemeinsprache", "Elfisch"],
+      abilityBonuses: { charisma: 2 },
+      abilityBonusChoice: { choose: 2, bonus: 1, exclude: ["charisma"] },
+      traits: ["Feenblut", "Vielseitige Fertigkeit"],
+      variants: [],
+    },
+
+    {
+      id: "halforc",
+      name: "Halbork",
+      description: "Eine kraftvolle und unbeugsame Herkunft mit orkischem Erbe.",
+      size: "medium",
+      speed: 9,
+      darkvision: 18,
+      languages: ["Gemeinsprache", "Orkisch"],
+      abilityBonuses: { strength: 2, constitution: 1 },
+      traits: ["Bedrohlich", "Unerbittliche Ausdauer", "Wilde Angriffe"],
+      variants: [],
+    },
+
+    {
+      id: "tiefling",
+      name: "Tiefling",
+      description: "Eine infernalisch geprägte Herkunft mit angeborener Magie und Feuerresistenz.",
+      size: "medium",
+      speed: 9,
+      darkvision: 18,
+      languages: ["Gemeinsprache", "Infernalisch"],
+      abilityBonuses: { intelligence: 1, charisma: 2 },
+      traits: ["Höllische Resistenz", "Höllisches Vermächtnis"],
       variants: [],
     },
 

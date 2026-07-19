@@ -26,3 +26,6 @@ export type {
   SpellcastingProgression,
   SpellPreparationMode,
 } from "./classes";
+
+export { classProgressionRegistry, getClassProgression } from "./progression";
+export type { ClassProgressionEntry } from "./progression";

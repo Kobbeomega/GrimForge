@@ -902,3 +902,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* RC2 · search feedback and denser responsive controls */
+.compendium-result-summary {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  padding-bottom: 7px;
+}
+
+.compendium-reset,
+.compendium-empty button {
+  min-height: 36px;
+  padding: 7px 11px;
+  color: var(--color-paper);
+  background: rgba(106, 60, 146, 0.16);
+  border: 1px solid rgba(156, 105, 211, 0.34);
+  cursor: pointer;
+}
+
+.compendium-empty {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 28px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px dashed rgba(156, 105, 211, 0.32);
+}
+
+@media (max-width: 760px) {
+  .compendium-toolbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .compendium-result-summary {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
+    padding-bottom: 0;
+  }
+
+  .compendium-browser--detail {
+    grid-template-columns: 1fr;
+  }
+
+  .compendium-detail {
+    position: fixed;
+    z-index: 80;
+    inset: max(12px, env(safe-area-inset-top)) 12px calc(78px + env(safe-area-inset-bottom));
+    max-height: none;
+    overscroll-behavior: contain;
+  }
+}

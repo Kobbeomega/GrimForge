@@ -21,3 +21,13 @@ export type {
   AncestryTraitCategory,
   AncestryTraitDefinition,
 } from "./ancestryTraits";
+export {
+  applyAbilityBonuses,
+  getAncestryAbilityBonuses,
+  mergeAbilityBonusMaps,
+} from "./abilityBonuses";
+
+export type {
+  AbilityBonusMap,
+  ResolvedAncestryAbilityBonuses,
+} from "./abilityBonuses";

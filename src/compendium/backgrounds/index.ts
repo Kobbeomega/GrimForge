@@ -1,5 +1,6 @@
 export {
   backgrounds,
+  backgroundRegistry,
   getBackgroundById,
 } from "./backgrounds";
 

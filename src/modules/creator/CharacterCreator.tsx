@@ -7,6 +7,10 @@ import {
 } from "../../compendium/classes/skillChoices";
 
 import {
+  getAncestryById,
+} from "../../compendium/ancestries";
+
+import {
   startingEquipment,
 } from "../../compendium/equipment";
 
@@ -150,6 +154,29 @@ export function CharacterCreator({
       return;
     }
 
+
+    const selectedAncestry = getAncestryById(creator.draft.ancestryId);
+
+    if (
+      selectedAncestry?.variants.length &&
+      !creator.draft.ancestryVariantId
+    ) {
+      window.alert("Wähle zuerst eine Abstammungsvariante.");
+      creator.setCurrentStep("ancestry");
+      return;
+    }
+
+    if (
+      selectedAncestry?.abilityBonusChoice &&
+      creator.draft.ancestryBonusChoices.length !==
+        selectedAncestry.abilityBonusChoice.choose
+    ) {
+      window.alert(
+        `Wähle genau ${selectedAncestry.abilityBonusChoice.choose} freie Attributsboni.`,
+      );
+      creator.setCurrentStep("ancestry");
+      return;
+    }
 
     if (!creator.draft.backgroundId) {
       window.alert(
@@ -382,6 +409,8 @@ export function CharacterCreator({
               creator.draft
                 .ancestrySize
             }
+            selectedVariantId={creator.draft.ancestryVariantId}
+            selectedBonusChoices={creator.draft.ancestryBonusChoices}
             selectedTraitIds={
               creator.draft
                 .ancestryTraitIds
@@ -394,6 +423,7 @@ export function CharacterCreator({
               ancestryId,
               ancestrySize,
               ancestryTraitIds,
+              ancestryVariantId,
             ) =>
               creator.updateDraft(
                 (draft) => ({
@@ -406,12 +436,25 @@ export function CharacterCreator({
                   ancestryUsesReducedSpeed:
                     false,
 
-                  ancestryVariantId: "",
+                  ancestryVariantId,
 
                   ancestryBonusChoices:
                     [],
                 }),
               )
+            }
+            onVariantChange={(ancestryVariantId) =>
+              creator.updateDraft((draft) => ({
+                ...draft,
+                ancestryVariantId,
+                ancestryBonusChoices: [],
+              }))
+            }
+            onBonusChoicesChange={(ancestryBonusChoices) =>
+              creator.updateDraft((draft) => ({
+                ...draft,
+                ancestryBonusChoices,
+              }))
             }
             onSizeChange={(
               ancestrySize,
@@ -525,6 +568,9 @@ export function CharacterCreator({
         return (
           <AbilitiesStep
             classId={creator.draft.classId}
+            ancestryId={creator.draft.ancestryId}
+            ancestryVariantId={creator.draft.ancestryVariantId}
+            ancestryBonusChoices={creator.draft.ancestryBonusChoices}
             values={
               creator.draft
                 .baseAbilities

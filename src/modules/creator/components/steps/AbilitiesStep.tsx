@@ -8,6 +8,10 @@ import {
 
 import { getClassById } from "../../../../compendium/classes";
 
+import {
+  getAncestryAbilityBonuses,
+} from "../../../../compendium/ancestries";
+
 import type {
   AbilityId,
   AbilityScores,
@@ -16,6 +20,9 @@ import type {
 interface AbilitiesStepProps {
   values: AbilityScores;
   classId?: string;
+  ancestryId?: string;
+  ancestryVariantId?: string;
+  ancestryBonusChoices?: AbilityId[];
 
   onChange: (
     values: AbilityScores,
@@ -56,12 +63,20 @@ const pointBuyStart: AbilityScores = {
 export function AbilitiesStep({
   values,
   classId,
+  ancestryId,
+  ancestryVariantId,
+  ancestryBonusChoices = [],
   onChange,
 }: AbilitiesStepProps) {
   const normalizedValues =
     normalizePointBuyScores(values);
 
   const classDefinition = classId ? getClassById(classId) : undefined;
+  const ancestryBonuses = getAncestryAbilityBonuses({
+    ancestryId,
+    variantId: ancestryVariantId,
+    choices: ancestryBonusChoices,
+  }).total;
   const recommendedAbilities = new Set(classDefinition?.primaryAbilities ?? []);
 
   const spentPoints =
@@ -210,9 +225,11 @@ export function AbilitiesStep({
                 abilityId
               ];
 
+            const ancestryBonus = ancestryBonuses[abilityId] ?? 0;
+            const finalValue = value + ancestryBonus;
             const modifier =
               getAbilityModifier(
-                value,
+                finalValue,
               );
 
             const cost =
@@ -263,6 +280,7 @@ export function AbilitiesStep({
 
                   <output>
                     {value}
+                    {ancestryBonus > 0 && <small> +{ancestryBonus} = {finalValue}</small>}
                   </output>
 
                   <button

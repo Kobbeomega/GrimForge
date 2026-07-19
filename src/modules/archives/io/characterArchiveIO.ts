@@ -1,7 +1,8 @@
 import type { CharacterArchiveEntry } from "../types";
+import { migrateCharacterArchiveEntries } from "../../../migrations/characterSchema";
 
 const FORMAT = "grimforge-character-archive";
-const VERSION = 1;
+const VERSION = 2;
 
 interface CharacterArchiveEnvelope {
   format: typeof FORMAT;
@@ -62,16 +63,20 @@ export async function readCharacterArchiveFile(
     throw new Error("Die Datei enthält keine gültigen GrimForge-Charakterakten.");
   }
 
-  return { characters, warnings };
+  const migration = migrateCharacterArchiveEntries(characters);
+  warnings.push(...migration.warnings);
+  return { characters: migration.characters, warnings };
 }
 
 export function mergeCharacterArchives(
   current: CharacterArchiveEntry[],
   incoming: CharacterArchiveEntry[],
 ): CharacterArchiveEntry[] {
-  const merged = new Map(current.map((character) => [character.id, character]));
+  const migratedCurrent = migrateCharacterArchiveEntries(current).characters;
+  const migratedIncoming = migrateCharacterArchiveEntries(incoming).characters;
+  const merged = new Map(migratedCurrent.map((character) => [character.id, character]));
 
-  incoming.forEach((character) => {
+  migratedIncoming.forEach((character) => {
     const existing = merged.get(character.id);
     if (!existing || getTimestamp(character.updatedAt) >= getTimestamp(existing.updatedAt)) {
       merged.set(character.id, character);

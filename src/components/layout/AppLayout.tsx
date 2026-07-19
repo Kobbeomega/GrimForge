@@ -16,7 +16,9 @@ export function AppLayout({
   onNavigate,
 }: AppLayoutProps) {
   return (
-    <main className="app-layout">
+    <>
+      <a className="skip-link" href="#main-content">Zum Inhalt springen</a>
+      <main className="app-layout">
       <div
         className="app-layout__texture"
         aria-hidden="true"
@@ -27,9 +29,10 @@ export function AppLayout({
         onNavigate={onNavigate}
       />
 
-      <div className="app-layout__content">
+      <div id="main-content" className="app-layout__content" tabIndex={-1}>
         {children}
       </div>
     </main>
+    </>
   );
 }
