@@ -1,10 +1,11 @@
 import { getAncestryAbilityBonuses, applyAbilityBonuses, getAncestryById } from "../compendium/ancestries";
 import { getBackgroundById } from "../compendium/backgrounds";
 import { defaultAbilityScores, type AbilityScores } from "../compendium/core";
+import { calculateMaximumHitPoints } from "../rules/hitPoints";
 import { getEquipmentById, equipment } from "../compendium/equipment";
 import type { CharacterArchiveEntry, CharacterInventoryItem, InventoryItemCategory } from "../modules/archives/types";
 
-export const CURRENT_CHARACTER_SCHEMA_VERSION = 2;
+export const CURRENT_CHARACTER_SCHEMA_VERSION = 3;
 
 export interface CharacterMigrationResult {
   character: CharacterArchiveEntry;
@@ -66,6 +67,34 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     ? 7.5
     : (ancestry?.speed ?? input.vitals?.speed ?? 9) + (variant?.speedBonus ?? 0);
 
+  const calculatedMaximumHitPoints = calculateMaximumHitPoints({
+    classId: input.classId ?? "",
+    level: input.level,
+    constitution: abilityScores.constitution,
+  });
+
+  const previousMaximumHitPoints = input.vitals?.maximumHitPoints ?? 10;
+  const previousCurrentHitPoints = input.vitals?.currentHitPoints ?? previousMaximumHitPoints;
+  const missingHitPoints = Math.max(0, previousMaximumHitPoints - previousCurrentHitPoints);
+
+  const shouldRecalculateHitPoints =
+    previousVersion < CURRENT_CHARACTER_SCHEMA_VERSION &&
+    calculatedMaximumHitPoints > 0;
+
+  const maximumHitPoints = shouldRecalculateHitPoints
+    ? calculatedMaximumHitPoints
+    : previousMaximumHitPoints;
+
+  const currentHitPoints = shouldRecalculateHitPoints
+    ? Math.max(0, maximumHitPoints - missingHitPoints)
+    : Math.min(previousCurrentHitPoints, maximumHitPoints);
+
+  if (shouldRecalculateHitPoints && maximumHitPoints !== previousMaximumHitPoints) {
+    notes.push(
+      `Maximale Trefferpunkte aus Klasse, Stufe und Konstitution neu berechnet (${previousMaximumHitPoints} → ${maximumHitPoints}).`,
+    );
+  }
+
   const migrated: CharacterArchiveEntry = {
     ...input,
     schemaVersion: CURRENT_CHARACTER_SCHEMA_VERSION,
@@ -90,8 +119,8 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     },
     spentClassResources: input.spentClassResources ?? {},
     vitals: {
-      maximumHitPoints: input.vitals?.maximumHitPoints ?? 10,
-      currentHitPoints: input.vitals?.currentHitPoints ?? input.vitals?.maximumHitPoints ?? 10,
+      maximumHitPoints,
+      currentHitPoints,
       temporaryHitPoints: input.vitals?.temporaryHitPoints ?? 0,
       armorClass: input.vitals?.armorClass ?? 10,
       initiativeModifier: Math.floor((abilityScores.dexterity - 10) / 2),

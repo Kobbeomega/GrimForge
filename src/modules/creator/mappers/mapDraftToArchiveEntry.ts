@@ -39,6 +39,10 @@ import type {
 } from "../types";
 import { CURRENT_CHARACTER_SCHEMA_VERSION } from "../../../migrations/characterSchema";
 
+import {
+  calculateMaximumHitPoints,
+} from "../../../rules/hitPoints";
+
 export function mapDraftToArchiveEntry(
   draft: CharacterCreatorDraft,
 ): CharacterArchiveEntry {
@@ -113,6 +117,14 @@ export function mapDraftToArchiveEntry(
       timestamp,
       selectedBackground?.equipment ?? [],
     );
+
+  const maximumHitPoints =
+    calculateMaximumHitPoints({
+      classId: draft.classId,
+      level: draft.level,
+      constitution:
+        effectiveAbilityScores.constitution,
+    });
 
   return {
     schemaVersion: CURRENT_CHARACTER_SCHEMA_VERSION,
@@ -219,8 +231,8 @@ ancestryUsesReducedSpeed:
     abilityScores: effectiveAbilityScores,
 
     vitals: {
-      maximumHitPoints: 10,
-      currentHitPoints: 10,
+      maximumHitPoints,
+      currentHitPoints: maximumHitPoints,
       temporaryHitPoints: 0,
       armorClass: 10,
 

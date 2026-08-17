@@ -1,3 +1,7 @@
+import {
+  calculateMaximumHitPoints,
+} from "../../../rules/hitPoints";
+
 import type {
   CharacterArchiveEntry,
   CharacterVitals,
@@ -6,19 +10,51 @@ import type {
 export function getCharacterVitals(
   character: CharacterArchiveEntry,
 ): CharacterVitals {
-  return (
-    character.vitals ?? {
-      maximumHitPoints: 10,
+  if (character.vitals) {
+    return character.vitals;
+  }
 
-      currentHitPoints: 10,
+  const maximumHitPoints =
+    calculateMaximumHitPoints({
+      classId: character.classId ?? "",
+      level: character.level,
+      constitution:
+        character.abilityScores?.constitution ??
+        character.baseAbilityScores?.constitution ??
+        10,
+    });
 
-      temporaryHitPoints: 0,
+  const safeMaximumHitPoints =
+    maximumHitPoints > 0
+      ? maximumHitPoints
+      : 10;
 
-      armorClass: 10,
+  return {
+    maximumHitPoints:
+      safeMaximumHitPoints,
 
-      initiativeModifier: 0,
+    currentHitPoints:
+      safeMaximumHitPoints,
 
-      speed: 9,
-    }
-  );
+    temporaryHitPoints: 0,
+
+    armorClass: 10,
+
+    initiativeModifier:
+      Math.floor(
+        (
+          (
+            character.abilityScores
+              ?.dexterity ??
+            character.baseAbilityScores
+              ?.dexterity ??
+            10
+          ) -
+          10
+        ) /
+          2,
+      ),
+
+    speed: 9,
+  };
 }
