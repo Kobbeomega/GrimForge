@@ -742,3 +742,66 @@
     padding: .5mm 1mm 1mm;
   }
 }
+
+/* PRINT FIX 1.0.1 — class features and resources on the gameplay page */
+@media print {
+  .print-class-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1mm 1.5mm;
+  }
+
+  .print-class-feature {
+    min-width: 0;
+    padding: .8mm 1mm;
+    border: .55px solid #8c837a;
+    break-inside: avoid;
+  }
+
+  .print-class-feature__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1mm;
+    border-bottom: .35px solid #b7afa7;
+    padding-bottom: .35mm;
+  }
+
+  .print-class-feature__head strong {
+    min-width: 0;
+    font-size: 5.8pt;
+    line-height: 1.1;
+  }
+
+  .print-class-feature__head span {
+    flex: 0 0 auto;
+    font-size: 4.3pt;
+    text-transform: uppercase;
+    letter-spacing: .025em;
+  }
+
+  .print-class-feature p {
+    margin: .55mm 0 0;
+    font-size: 4.8pt;
+    line-height: 1.18;
+  }
+
+  .print-class-feature__resource {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1mm;
+    margin-top: .55mm;
+    padding-top: .45mm;
+    border-top: .35px dashed #9f978f;
+    font-size: 4.6pt;
+  }
+
+  .print-class-feature__resource b {
+    font-size: 5.2pt;
+  }
+
+  .print-panel:has(.print-class-feature-grid) {
+    flex: 0 0 auto;
+  }
+}

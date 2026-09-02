@@ -112,6 +112,17 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
       };
     });
 
+  const classFeatureRows = rules.classFeatures.map((feature) => {
+    const resource = feature.resourceId
+      ? rules.classResources.find((entry) => entry.id === feature.resourceId)
+      : undefined;
+
+    return {
+      ...feature,
+      resource,
+    };
+  });
+
   const pageOneSlotSummary = Object.entries(derived.spellcasting.spellSlots)
     .filter(([, total]) => (total ?? 0) > 0)
     .map(([level, total]) => {
@@ -249,6 +260,27 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                 </div>
               </PrintPanel>
             )}
+
+            <PrintPanel title="Klassenmerkmale & Ressourcen" compact>
+              <div className="print-class-feature-grid">
+                {classFeatureRows.map((feature) => (
+                  <div className="print-class-feature" key={feature.id}>
+                    <div className="print-class-feature__head">
+                      <strong>{feature.name}</strong>
+                      <span>{formatPrintFeatureKind(feature.kind)}</span>
+                    </div>
+                    <p>{feature.description}</p>
+                    {feature.resource && (
+                      <div className="print-class-feature__resource">
+                        <b>{feature.resource.remaining}/{feature.resource.maximum}</b>
+                        <span>{formatPrintRecharge(feature.resource.recharge)}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {classFeatureRows.length === 0 && <PrintRuleLine text="Keine Klassenmerkmale für diese Stufe." />}
+              </div>
+            </PrintPanel>
 
             <PrintPanel title="Notizen" grow>
               <div className="print-notes-area" aria-label="Notizen">
@@ -499,6 +531,29 @@ function PrintBanner({ title, subtitle }: { title: string; subtitle: string }) {
 function PrintField({ label, value }: { label: string; value: string | number }) {
   return <div className="print-field"><span>{label}</span><strong>{value}</strong></div>;
 }
+
+const printFeatureKindLabels = {
+  passive: "Passiv",
+  action: "Aktion",
+  "bonus-action": "Bonusaktion",
+  reaction: "Reaktion",
+  resource: "Ressource",
+} as const;
+
+function formatPrintFeatureKind(kind: keyof typeof printFeatureKindLabels): string {
+  return printFeatureKindLabels[kind];
+}
+
+const printRechargeLabels = {
+  turn: "Pro Zug",
+  "short-rest": "Kurze Rast",
+  "long-rest": "Lange Rast",
+} as const;
+
+function formatPrintRecharge(recharge: keyof typeof printRechargeLabels): string {
+  return printRechargeLabels[recharge];
+}
+
 function PrintPanel({ title, children, grow = false, compact = false }: { title: string; children: React.ReactNode; grow?: boolean; compact?: boolean }) {
   return <section className={`print-panel${grow ? " print-panel--grow" : ""}${compact ? " print-panel--compact" : ""}`}><h2>{title}</h2><div className="print-panel__body">{children}</div></section>;
 }

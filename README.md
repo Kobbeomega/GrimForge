@@ -1,4 +1,4 @@
-# GrimForge 1.0.0
+# GrimForge 1.0.1
 
 GrimForge ist ein deutschsprachiger Dark-Fantasy-Charaktermanager für D&D 5e auf Basis der 2014-Regeln mit Grim-Hollow-Erweiterungen. Die Anwendung ist als installierbare PWA ausgelegt und unterstützt Charaktererstellung, Charakterarchiv, Spielzustand, Journal, Kompendium sowie Druck- und PDF-Ausgabe.
 
@@ -54,4 +54,4 @@ GrimForge 1.0.0 konzentriert sich bewusst auf die implementierten D&D-2014- und 
 
 ## Version
 
-**GrimForge 1.0.0**
+**GrimForge 1.0.1**

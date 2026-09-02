@@ -162,6 +162,92 @@ function drawListTopRect(
   page.ctx.restore();
 }
 
+
+function drawFeatureListTopRect(
+  page: PageContext,
+  rect: PdfRect,
+  features: Array<{ name: string; description: string; resourceText?: string }>,
+): void {
+  if (features.length === 0) return;
+
+  const [x0, y0, x1, y1] = rect;
+  const x = x0 * page.sx;
+  const y = y0 * page.sy;
+  const width = (x1 - x0) * page.sx;
+  const height = (y1 - y0) * page.sy;
+  const family = '"Arial Narrow", Arial, sans-serif';
+  const left = x + 3 * page.sx;
+  const targetWidth = Math.max(12, width - 6 * page.sx);
+  const bottom = y + height - 2 * page.sy;
+  let cursorY = y + 2 * page.sy;
+
+  page.ctx.save();
+  page.ctx.fillStyle = "#111";
+  page.ctx.textAlign = "left";
+  page.ctx.textBaseline = "top";
+
+  for (const feature of features) {
+    if (cursorY >= bottom) break;
+
+    const headingSize = 5.2 * page.sy;
+    page.ctx.font = `600 ${headingSize}px ${family}`;
+    const heading = feature.resourceText
+      ? `${feature.name} · ${feature.resourceText}`
+      : feature.name;
+    const headingLines = wrapCanvasText(page.ctx, heading, targetWidth);
+    const headingLineHeight = headingSize * 1.12;
+
+    for (const line of headingLines) {
+      if (cursorY + headingLineHeight > bottom) break;
+      page.ctx.fillText(line, left, cursorY);
+      cursorY += headingLineHeight;
+    }
+
+    const bodySize = 4.45 * page.sy;
+    const bodyLineHeight = bodySize * 1.18;
+    page.ctx.font = `400 ${bodySize}px ${family}`;
+    const bodyLines = wrapCanvasText(page.ctx, feature.description, targetWidth);
+    for (const line of bodyLines) {
+      if (cursorY + bodyLineHeight > bottom) break;
+      page.ctx.fillText(line, left, cursorY);
+      cursorY += bodyLineHeight;
+    }
+
+    cursorY += 1.5 * page.sy;
+  }
+
+  page.ctx.restore();
+}
+
+function wrapCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (!current || ctx.measureText(candidate).width <= maxWidth) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+const pdfRechargeLabels = {
+  turn: "pro Zug",
+  "short-rest": "kurze Rast",
+  "long-rest": "lange Rast",
+} as const;
+
 function markCircle(page: PageContext, x: number, yFromTop: number, active: boolean): void {
   if (!active) return;
   page.ctx.save();
@@ -342,6 +428,24 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
     drawValueAboveLine(page, row.value[0] - 1, row.value[2] + 1, row.circle[1], formatBonus(skill.bonus), 4.35, true);
     markCircle(page, row.circle[0], row.circle[1], skill.proficient);
   });
+
+
+  // Class and subclass features belong in the large "Merkmale & Eigenschaften" panel.
+  // Use the same resolved rules as the live sheet so base features, subclass features,
+  // path choices and current resource counts cannot drift apart from the character record.
+  const printableClassFeatures = rules.classFeatures.map((feature) => {
+    const resource = feature.resourceId
+      ? rules.classResources.find((entry) => entry.id === feature.resourceId)
+      : undefined;
+    return {
+      name: feature.name,
+      description: feature.description,
+      resourceText: resource
+        ? `${resource.remaining}/${resource.maximum} · ${pdfRechargeLabels[resource.recharge]}`
+        : undefined,
+    };
+  });
+  drawFeatureListTopRect(page, [84, 397, 272, 666], printableClassFeatures);
 
   // Journal areas at the bottom.
   // Ideale / Bindungen / Makel bleiben im Export bewusst frei: die dekorative Fläche ist für Handschrift gedacht.
