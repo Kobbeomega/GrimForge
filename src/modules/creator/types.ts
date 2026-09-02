@@ -15,6 +15,10 @@ import type {
   CharacterSpellcasting,
 } from "../../compendium/spells";
 
+import type {
+  CharacterPathChoices,
+} from "../../compendium/classes";
+
 export const creatorStepIds = [
   "identity",
   "ancestry",
@@ -135,6 +139,7 @@ export interface CharacterCreatorDraft {
 
   classId: string;
   subclassId: string;
+  pathChoices: CharacterPathChoices;
 
   level: number;
 
@@ -198,6 +203,7 @@ export function createEmptyCharacterDraft(
 
     classId: "",
     subclassId: "",
+    pathChoices: {},
 
     level: 1,
 

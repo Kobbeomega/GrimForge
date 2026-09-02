@@ -1,5 +1,6 @@
 import {
   classes,
+  getSubclassProficiencyPackage,
 } from "../../../compendium/classes";
 
 import {
@@ -124,6 +125,7 @@ export function getEquippedWeaponAttacks(
           character,
           definition,
           inventoryItem.quantity,
+          inventory,
         ),
       ];
     },
@@ -134,6 +136,7 @@ function createWeaponAttackSummary(
   character: CharacterArchiveEntry,
   weapon: WeaponItem,
   quantity: number,
+  inventory: CharacterInventory,
 ): WeaponAttackSummary {
   const proficient =
     isProficientWithWeapon(
@@ -154,6 +157,13 @@ function createWeaponAttackSummary(
         ),
       proficient,
     });
+
+  const fightingStyle = character.pathChoices?.[`${character.classId}-fighting-style`];
+  const isRanged = weapon.properties.includes("ammunition");
+  const otherEquippedWeapon = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "weapon" && item.id !== weapon.id);
+  const isOneHandedMelee = !isRanged && !weapon.properties.includes("two-handed");
+  const attackStyleBonus = fightingStyle === "archery" && isRanged ? 2 : 0;
+  const damageStyleBonus = fightingStyle === "dueling" && isOneHandedMelee && !otherEquippedWeapon ? 2 : 0;
 
   const damageType =
     damageTypeLabels[
@@ -198,10 +208,10 @@ function createWeaponAttackSummary(
       ],
     proficient,
     attackBonus:
-      calculation.attackBonus,
+      calculation.attackBonus + attackStyleBonus,
     attackBonusLabel:
-      calculation.attackBonusLabel,
-    damage: calculation.damage,
+      formatSigned(calculation.attackBonus + attackStyleBonus),
+    damage: addFlatDamage(calculation.damage, damageStyleBonus),
     versatileDamage:
       calculation.versatileDamage,
     damageType,
@@ -225,8 +235,11 @@ function isProficientWithWeapon(
     return false;
   }
 
-  const proficiencies =
-    classDefinition.weaponProficiencies;
+  const subclassProficiencies = getSubclassProficiencyPackage(character.classId ?? "", character.subclassId);
+  const proficiencies = [
+    ...classDefinition.weaponProficiencies,
+    ...(subclassProficiencies?.weapons ?? []),
+  ];
 
   if (
     weapon.weaponCategory === "simple" &&
@@ -249,3 +262,6 @@ function isProficientWithWeapon(
     proficiencies.includes(alias),
   );
 }
+
+function formatSigned(value: number): string { return value >= 0 ? `+${value}` : `${value}`; }
+function addFlatDamage(damage: string, bonus: number): string { return bonus > 0 ? `${damage} +${bonus}` : damage; }

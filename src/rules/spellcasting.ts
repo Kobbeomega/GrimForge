@@ -1,6 +1,7 @@
 import {
   getClassSpellcastingAbility,
   getClassSpellcastingRules,
+  getSubclassSpellcastingProfile,
 } from "../compendium/classes";
 
 import type {
@@ -54,31 +55,25 @@ export function calculateSpellAttackBonus({
 
 export function calculateClassSpellcasting({
   classId,
+  subclassId,
   level,
   abilityScores,
   proficiencyBonus,
 }: {
   classId: string;
+  subclassId?: string;
   level: number;
   abilityScores: AbilityScores;
   proficiencyBonus: number;
 }): SpellcastingRuleResult | undefined {
-  const rules =
-    getClassSpellcastingRules(
-      classId,
-    );
+  const subclassProfile = getSubclassSpellcastingProfile(classId, subclassId);
+  const baseRules = getClassSpellcastingRules(classId);
+  const rules = subclassProfile
+    ? { ritualCasting: false, startsAtLevel: subclassProfile.startsAtLevel }
+    : baseRules;
+  const abilityId = subclassProfile?.abilityId ?? getClassSpellcastingAbility(classId);
 
-  const abilityId =
-    getClassSpellcastingAbility(
-      classId,
-    );
-
-  if (
-    !rules ||
-    !abilityId ||
-    level <
-      rules.startsAtLevel
-  ) {
+  if (!rules || !abilityId || level < rules.startsAtLevel) {
     return undefined;
   }
 

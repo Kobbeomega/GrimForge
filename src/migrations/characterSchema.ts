@@ -5,7 +5,7 @@ import { calculateMaximumHitPoints } from "../rules/hitPoints";
 import { getEquipmentById, equipment } from "../compendium/equipment";
 import type { CharacterArchiveEntry, CharacterInventoryItem, InventoryItemCategory } from "../modules/archives/types";
 
-export const CURRENT_CHARACTER_SCHEMA_VERSION = 3;
+export const CURRENT_CHARACTER_SCHEMA_VERSION = 7;
 
 export interface CharacterMigrationResult {
   character: CharacterArchiveEntry;
@@ -39,6 +39,17 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
   }
 
   const background = getBackgroundById(input.backgroundId ?? "");
+
+  if (
+    background?.feature &&
+    (
+      input.backgroundFeature?.name !== background.feature.name ||
+      input.backgroundFeature?.description !== background.feature.description
+    )
+  ) {
+    notes.push("Hintergrundsmerkmal aus dem aktuellen Kompendium aktualisiert.");
+  }
+
   const skillProficiencies = Array.from(new Set([
     ...(input.skillProficiencies ?? []),
     ...(background?.skillProficiencies ?? []),
@@ -53,8 +64,17 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     currency: input.inventory?.currency ?? { copper: 0, silver: 0, gold: 0 },
   };
   const existingInventoryIds = new Set(inventory.items.map((item) => item.id));
-  const backgroundItems = resolveBackgroundInventory(background?.equipment ?? [], timestamp)
-    .filter((item) => !existingInventoryIds.has(item.id));
+  const existingInventoryNames = inventory.items.map((item) => normalizeLabel(item.name));
+  const backgroundItems = previousVersion < CURRENT_CHARACTER_SCHEMA_VERSION
+    ? resolveBackgroundInventory(background?.equipment ?? [], timestamp)
+      .filter((item) => {
+        if (existingInventoryIds.has(item.id)) return false;
+        const candidate = normalizeLabel(item.name);
+        return !existingInventoryNames.some((existing) =>
+          existing === candidate || existing.includes(candidate) || candidate.includes(existing),
+        );
+      })
+    : [];
 
   if (backgroundItems.length > 0) {
     inventory.items.push(...backgroundItems);
@@ -71,6 +91,10 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     classId: input.classId ?? "",
     level: input.level,
     constitution: abilityScores.constitution,
+    bonusPerLevel:
+      input.classId === "sorcerer" && input.subclassId === "draconic-bloodline"
+        ? 1
+        : 0,
   });
 
   const previousMaximumHitPoints = input.vitals?.maximumHitPoints ?? 10;
@@ -106,8 +130,13 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     skillProficiencies,
     toolProficiencies,
     languageChoices: Math.max(input.languageChoices ?? 0, background?.languageChoices ?? 0),
-    backgroundName: input.backgroundName ?? background?.name,
-    backgroundFeature: input.backgroundFeature ?? background?.feature,
+    // Background content is compendium-owned. Refresh stored snapshots whenever
+    // the registry has a definition so older characters also receive corrected
+    // descriptions and future editorial fixes.
+    backgroundName: background?.name ?? input.backgroundName,
+    backgroundFeature: background?.feature
+      ? { ...background.feature }
+      : input.backgroundFeature,
     inventory,
     equipmentIds: Array.from(new Set([
       ...(input.equipmentIds ?? []),
@@ -118,12 +147,19 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
       slots: { spentSlots: {}, spentPactSlots: 0 },
     },
     spentClassResources: input.spentClassResources ?? {},
+    spentHitDice: Math.min(Math.max(0, input.spentHitDice ?? 0), Math.max(1, input.level)),
+    inspiration: input.inspiration ?? false,
+    pathChoices: input.pathChoices ?? {},
     vitals: {
       maximumHitPoints,
       currentHitPoints,
       temporaryHitPoints: input.vitals?.temporaryHitPoints ?? 0,
       armorClass: input.vitals?.armorClass ?? 10,
-      initiativeModifier: Math.floor((abilityScores.dexterity - 10) / 2),
+      initiativeModifier:
+        Math.floor((abilityScores.dexterity - 10) / 2) +
+        (input.classId === "ranger" && input.subclassId === "gloom-stalker" && input.level >= 3
+          ? Math.floor((abilityScores.wisdom - 10) / 2)
+          : 0),
       speed,
     },
     updatedAt: notes.length > 0 ? timestamp : input.updatedAt,
@@ -179,6 +215,9 @@ function scoresEqual(left: AbilityScores | undefined, right: AbilityScores): boo
 
 function resolveBackgroundInventory(labels: string[], timestamp: string): CharacterInventoryItem[] {
   return labels.flatMap((rawLabel, index) => {
+    if (/^\d+\s*(?:GM|GP)$/i.test(rawLabel.trim())) {
+      return [];
+    }
     const parsed = parseEquipmentLabel(rawLabel);
     const definition = findEquipmentDefinition(parsed.name);
     if (definition) {

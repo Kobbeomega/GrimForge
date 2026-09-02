@@ -27,6 +27,12 @@ interface VitalPanelProps {
 
   onShortRest: () => void;
   onLongRest: () => void;
+  hitDie?: number;
+  totalHitDice: number;
+  spentHitDice: number;
+  onUseHitDie: () => void;
+  inspiration: boolean;
+  onToggleInspiration: () => void;
 }
 
 type VitalAction =
@@ -41,6 +47,12 @@ export function VitalPanel({
   onVitalsChange,
   onShortRest,
   onLongRest,
+  hitDie,
+  totalHitDice,
+  spentHitDice,
+  onUseHitDie,
+  inspiration,
+  onToggleInspiration,
 }: VitalPanelProps) {
   const [customAmount, setCustomAmount] =
     useState(1);
@@ -521,6 +533,23 @@ export function VitalPanel({
             })
           }
         />
+      </section>
+
+      <section className="session-reserves" aria-label="Reserven und Inspiration">
+        <div className="session-reserve-card">
+          <span>Trefferwürfel</span>
+          <strong>{Math.max(0, totalHitDice - spentHitDice)} / {totalHitDice} {hitDie ? `W${hitDie}` : ""}</strong>
+          <button type="button" onClick={onUseHitDie} disabled={!hitDie || spentHitDice >= totalHitDice || vitals.currentHitPoints >= vitals.maximumHitPoints}>
+            Trefferwürfel verwenden
+          </button>
+        </div>
+        <div className="session-reserve-card">
+          <span>Inspiration</span>
+          <strong>{inspiration ? "● Vorhanden" : "○ Keine"}</strong>
+          <button type="button" onClick={onToggleInspiration}>
+            {inspiration ? "Verbrauchen" : "Vergeben"}
+          </button>
+        </div>
       </section>
 
       <section className="session-rests">

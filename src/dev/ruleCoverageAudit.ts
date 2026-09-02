@@ -24,8 +24,11 @@ export function getRuleCoverageReport(): RuleCoverageCheck[] {
   ).length;
   const spellClassIds = new Set(classSpellcastingDefinitions.map((entry) => entry.classId));
   const spellcasters = classes.filter((entry) => entry.spellcasting).map((entry) => entry.id);
+  const specialSpellListIds = new Set(["sangromancy", "shadowsteel-curse"]);
   const invalidSpellReferences = spells.flatMap((spell) =>
-    spell.classIds.filter((classId) => !classes.some((entry) => entry.id === classId)),
+    spell.classIds.filter((classId) =>
+      !classes.some((entry) => entry.id === classId) && !specialSpellListIds.has(classId),
+    ),
   );
 
   return [

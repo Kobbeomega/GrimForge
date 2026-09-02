@@ -1,118 +1,744 @@
 .character-print-root { display: none; }
 
 @media print {
-  @page { size: A4 portrait; margin: 8mm; }
-
+  @page { size: A4 portrait; margin: 7mm; }
+  * { box-sizing: border-box; }
   html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #root { display: none !important; }
   body > *:not(#root):not(.character-print-root) { display: none !important; }
-  .character-print-root { display: block !important; position: static !important; width: auto !important; color: #17130f; font-family: Georgia, "Times New Roman", serif; }
-  .print-sheet { box-sizing: border-box; min-height: 277mm; page-break-after: always; break-after: page; padding: 5mm; border: 1.6px solid #221a13; position: relative; background: #fff; }
+  .character-print-root { display: block !important; position: static !important; color: #15110e; font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif; }
+
+  .print-sheet { width: 196mm; min-height: 283mm; page-break-after: always; break-after: page; padding: 4.5mm; border: 1.5px solid #1d1712; position: relative; background: #fff; overflow: hidden; }
   .print-sheet:last-child { page-break-after: auto; break-after: auto; }
-  .print-sheet::before, .print-sheet::after { content: ""; position: absolute; inset: 2mm; border: .5px solid #6e6258; pointer-events: none; }
-  .print-sheet::after { inset: 3.2mm; border-style: double; }
+  .print-sheet::before { content: ""; position: absolute; inset: 2mm; border: .55px solid #756b61; pointer-events: none; }
 
-  .print-banner { text-align: center; margin: 0 6mm 3mm; padding: 2.5mm 8mm 2mm; border: 1.5px solid #211a14; clip-path: polygon(4% 0,96% 0,100% 50%,96% 100%,4% 100%,0 50%); background: linear-gradient(#fff,#eee9e1,#fff); }
-  .print-banner span { display: block; font-size: 7pt; letter-spacing: .22em; }
-  .print-banner h1 { margin: .8mm 0 0; font-size: 18pt; text-transform: uppercase; letter-spacing: .06em; }
+  .print-banner { min-height: 17mm; text-align: center; margin: 0 4mm 2.2mm; padding: 2mm 7mm 1.5mm; border: 1.6px solid #211a14; clip-path: polygon(3% 0,97% 0,100% 50%,97% 100%,3% 100%,0 50%); background: linear-gradient(#fff,#ece7df,#fff); }
+  .print-banner span { display: block; font-size: 6.2pt; letter-spacing: .15em; text-transform: uppercase; }
+  .print-banner h1 { margin: .5mm 0 0; font-size: 17pt; line-height: 1; text-transform: uppercase; letter-spacing: .055em; }
 
-  .print-identity-grid, .print-story-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; margin-bottom: 2.5mm; }
-  .print-field { min-height: 10mm; padding: 1.2mm 2mm; border: 1px solid #352a22; background: linear-gradient(#f8f6f1,#fff); }
-  .print-field span { display: block; font-size: 6.5pt; text-transform: uppercase; letter-spacing: .08em; }
-  .print-field strong { display: block; font-size: 10pt; margin-top: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .print-identity-strip, .print-story-meta { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1.5mm; margin-bottom: 2mm; }
+  .print-field { min-height: 9mm; padding: 1mm 1.6mm; border: 1px solid #352a22; background: linear-gradient(#f6f3ee,#fff); overflow: hidden; }
+  .print-field span { display: block; font-size: 5.6pt; text-transform: uppercase; letter-spacing: .06em; }
+  .print-field strong { display: block; margin-top: .6mm; font-size: 8.3pt; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .print-core-grid { display: grid; grid-template-columns: 28mm 1fr 72mm; gap: 2.5mm; min-height: 185mm; }
-  .print-abilities-column { display: flex; flex-direction: column; gap: 1.5mm; }
-  .print-ability { height: 25mm; border: 1.3px solid #211a14; position: relative; text-align: center; padding-top: 2mm; background: linear-gradient(135deg,#fff 75%,#e7e1d8); }
-  .print-ability > span { font-size: 7pt; font-weight: 700; }
-  .print-ability strong { display: block; font-size: 20pt; line-height: 1; }
-  .print-ability em { position: absolute; right: 1.5mm; bottom: 1.5mm; width: 8mm; height: 8mm; border: 1px solid; border-radius: 50%; display: grid; place-items: center; font-size: 8pt; font-style: normal; background: white; }
-  .print-ability small { display: block; font-size: 5.5pt; text-transform: uppercase; margin-top: 1mm; }
-  .print-passive-box { border: 1.3px solid; text-align: center; padding: 2mm 1mm; margin-top: auto; }
-  .print-passive-box strong { font-size: 16pt; display: block; }
-  .print-passive-box span { font-size: 6pt; text-transform: uppercase; }
+  /* PAGE 1 */
+  .print-core-layout { display: grid; grid-template-columns: 31mm minmax(0,1fr) 65mm; gap: 2mm; height: 242mm; }
+  .print-core-left, .print-core-main, .print-core-right { min-width: 0; display: flex; flex-direction: column; gap: 1.5mm; }
+  .print-ability-stack { display: grid; grid-template-columns: 1fr; gap: 1mm; }
+  .print-ability { height: 18mm; border: 1.25px solid #211a14; position: relative; display: grid; grid-template-columns: 1fr 10mm; grid-template-rows: 1fr 1fr; align-items: center; padding: 1.2mm; background: linear-gradient(135deg,#fff 78%,#e7e1d8); }
+  .print-ability__label { grid-row: 1 / 3; min-width: 0; }
+  .print-ability__label b { display: block; font-size: 7.8pt; letter-spacing: .04em; }
+  .print-ability__label small { display: block; margin-top: .6mm; font-size: 4.7pt; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+  .print-ability strong { grid-column: 2; grid-row: 1; display: block; text-align: center; font-size: 14.5pt; line-height: 1; }
+  .print-ability em { grid-column: 2; grid-row: 2; width: 8.5mm; height: 8.5mm; justify-self: center; border: 1px solid; border-radius: 50%; display: grid; place-items: center; font-size: 8.5pt; font-weight: 800; font-style: normal; background: #fff; }
+  .print-mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm; }
 
-  .print-core-center, .print-core-right { display: flex; flex-direction: column; gap: 2mm; position: relative; }
-  .print-skull-medallion { width: 22mm; height: 22mm; border: 1.5px solid; border-radius: 50%; margin: 0 auto -8mm; display: grid; place-items: center; font-size: 18pt; background: white; z-index: 1; }
-  .print-vitals-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5mm; padding-top: 7mm; }
-  .print-stat { min-height: 20mm; border: 1.3px solid; text-align: center; display: flex; flex-direction: column; justify-content: center; background: linear-gradient(#fff,#eee9e2); }
-  .print-stat strong { font-size: 16pt; line-height: 1; }
-  .print-stat span { font-size: 6pt; text-transform: uppercase; margin-top: 1mm; }
+  .print-vitals-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2mm; }
+  .print-stat { min-height: 17mm; border: 1.25px solid; text-align: center; display: flex; flex-direction: column; justify-content: center; padding: 1mm; background: linear-gradient(#fff,#eee9e2); overflow: hidden; }
+  .print-stat strong { font-size: 14pt; line-height: 1; white-space: nowrap; }
+  .print-stat span { font-size: 5.2pt; text-transform: uppercase; margin-top: .8mm; letter-spacing: .03em; }
+  .print-stat--compact { min-height: 12mm; }
+  .print-stat--compact strong { font-size: 11pt; }
+  .print-stat--compact span { font-size: 4.7pt; }
   .print-stat--shield { clip-path: polygon(8% 0,92% 0,100% 12%,88% 83%,50% 100%,12% 83%,0 12%); padding-bottom: 2mm; }
 
-  .print-panel { border: 1.25px solid #211a14; min-height: 22mm; background: #fff; break-inside: avoid; }
-  .print-panel--grow { flex: 1; }
-  .print-panel h2 { margin: 0; padding: 1.2mm 2mm; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .09em; text-align: center; border-bottom: 1px solid #211a14; background: linear-gradient(90deg,#eee9e2,#fff,#eee9e2); }
-  .print-panel h3 { font-size: 8pt; margin: 1mm 0; text-transform: uppercase; }
-  .print-panel__body { padding: 1.5mm 2mm; font-size: 7.2pt; }
-  .print-panel--compact .print-panel__body { padding: 1mm 1.5mm; }
+  .print-death-strip { min-height: 9mm; display: grid; grid-template-columns: auto 1fr 1fr; gap: 2mm; align-items: center; padding: 1mm 2mm; border: 1px solid #332921; font-size: 6.1pt; }
+  .print-death-strip strong { font-size: 6pt; text-transform: uppercase; letter-spacing: .06em; }
 
-  .print-hp-grid, .print-transformation-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 2mm; }
-  .print-number-line { border-bottom: .7px solid #3b3028; min-height: 8mm; }
-  .print-number-line span { display: block; font-size: 6pt; text-transform: uppercase; }
-  .print-number-line strong { font-size: 12pt; }
-  .print-death-saves { display: flex; justify-content: space-between; margin-top: 1.5mm; font-size: 6.5pt; }
-  .print-two-column-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 3mm; }
-  .print-two-column-list div { border-bottom: .4px solid #aaa; }
-  .print-two-column-list b { margin-right: 1mm; }
-  .print-two-column-list span { display: inline-block; min-width: 7mm; font-weight: 700; }
+  .print-panel { border: 1.15px solid #211a14; min-height: 18mm; background: #fff; break-inside: avoid; overflow: hidden; }
+  .print-panel--grow { flex: 1 1 auto; min-height: 0; }
+  .print-panel h2 { margin: 0; padding: 1mm 1.6mm; font-size: 6.7pt; text-transform: uppercase; letter-spacing: .08em; text-align: center; border-bottom: 1px solid #211a14; background: linear-gradient(90deg,#eee9e2,#fff,#eee9e2); }
+  .print-panel h3 { font-size: 7pt; margin: 1mm 0; text-transform: uppercase; }
+  .print-panel__body { padding: 1.2mm 1.5mm; font-size: 6.6pt; line-height: 1.2; }
+  .print-panel--compact .print-panel__body { padding: .8mm 1mm; }
 
-  .print-skills-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 2mm; }
-  .print-skills-list div { display: grid; grid-template-columns: 4mm 8mm 1fr; align-items: center; min-height: 5mm; border-bottom: .35px solid #c2bbb2; font-size: 6.2pt; }
-  .print-skills-list em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .print-save-list { display: grid; grid-template-columns: repeat(2,1fr); gap: .7mm 1.5mm; }
+  .print-save-list div { display: grid; grid-template-columns: 3.5mm 7mm 1fr; align-items: center; min-height: 5.6mm; border-bottom: .4px solid #a49c93; }
+  .print-save-list b { font-size: 6pt; }
+  .print-save-list span { font-size: 8pt; font-weight: 800; text-align: center; }
+  .print-save-list em { font-style: normal; font-weight: 700; font-size: 5.5pt; }
 
-  .print-table { width: 100%; border-collapse: collapse; font-size: 6.5pt; }
-  .print-table th, .print-table td { border-bottom: .5px solid #696057; padding: 1.2mm .8mm; text-align: left; }
-  .print-table th { text-transform: uppercase; font-size: 5.7pt; }
-  .print-rule-line { min-height: 5.2mm; border-bottom: .45px solid #8a8178; padding-top: 1mm; }
-  .print-lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm; margin-top: 2.5mm; min-height: 48mm; }
-  .print-currency { margin-bottom: 1mm; font-weight: 700; }
-  .print-summary, .print-long-text { white-space: pre-wrap; margin: 0; line-height: 1.5; }
+  .print-skills-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.5mm; }
+  .print-skills-list div { display: grid; grid-template-columns: 3.5mm 7mm minmax(0,1fr); align-items: center; min-height: 5.25mm; border-bottom: .35px solid #bcb4ac; }
+  .print-skills-list b { font-size: 5.7pt; }
+  .print-skills-list span { font-size: 7.7pt; line-height: 1; text-align: center; font-weight: 800; }
+  .print-skills-list em { font-size: 5.3pt; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .print-story-columns { display: grid; grid-template-columns: 1fr 46mm 1fr; gap: 2.5mm; min-height: 115mm; margin-bottom: 2.5mm; }
+  .print-table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.2pt; }
+  .print-table th, .print-table td { border-bottom: .5px solid #696057; padding: .9mm .7mm; text-align: left; vertical-align: middle; }
+  .print-table th { text-transform: uppercase; font-size: 5.1pt; }
+  .print-attack-table th:first-child, .print-attack-table td:first-child { width: 31%; }
+  .print-attack-table th:nth-child(2), .print-attack-table td:nth-child(2) { width: 17%; text-align: center; }
+  .print-attack-table th:last-child, .print-attack-table td:last-child { width: 52%; }
+  .print-attack-table th, .print-attack-table td { overflow: hidden; }
+  .print-attack-table td:nth-child(2) { font-size: 7.5pt; font-weight: 800; }
+  .print-attack-table td strong, .print-attack-table td small { display: block; max-width: 100%; overflow-wrap: anywhere; word-break: normal; }
+  .print-attack-table td:last-child strong { font-size: 5.8pt; line-height: 1.15; }
+  .print-attack-table td small { margin-top: .3mm; font-size: 4.8pt; line-height: 1.1; color: #423a33; }
+
+  .print-feature-columns { columns: 2; column-gap: 3mm; }
+  .print-rule-line { min-height: 4.7mm; border-bottom: .4px solid #918981; padding: .8mm .5mm .2mm; overflow-wrap: anywhere; }
+  .print-currency { margin-bottom: .8mm; font-size: 6.4pt; font-weight: 800; }
+  .print-inventory-list .print-rule-line { min-height: 4.45mm; }
+
+  /* PAGE 2 */
+  .print-story-columns { display: grid; grid-template-columns: minmax(0,1fr) 38mm minmax(0,1fr); gap: 2mm; min-height: 99mm; margin-bottom: 2mm; }
   .print-portrait-frame { border: 2px double #211a14; border-radius: 48% 48% 40% 40%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle,#fff,#ece7df); }
-  .print-portrait-symbol { font-size: 34pt; }
-  .print-portrait-frame span { font-size: 6pt; letter-spacing: .12em; margin-top: 3mm; }
-  .print-transformation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 2mm; }
+  .print-portrait-symbol { font-size: 28pt; }
+  .print-portrait-frame span { font-size: 5pt; letter-spacing: .1em; margin-top: 2mm; }
+  .print-long-text { white-space: pre-wrap; margin: 0; font-size: 7.2pt; line-height: 1.35; }
+  .print-story-note { margin-top: 2mm; border-top: .5px solid #999; padding-top: 1mm; }
+  .print-story-note b { font-size: 6.2pt; text-transform: uppercase; }
+  .print-story-note p { margin: .5mm 0 0; white-space: pre-wrap; font-size: 6.8pt; line-height: 1.3; }
+  .print-transformation-meta { display: grid; grid-template-columns: 1fr 28mm 1.6fr; gap: 1.5mm; }
+  .print-number-line { border-bottom: .7px solid #3b3028; min-height: 9mm; padding: .5mm; overflow: hidden; }
+  .print-number-line span { display: block; font-size: 5.2pt; text-transform: uppercase; }
+  .print-number-line strong { display: block; margin-top: .4mm; font-size: 8.3pt; line-height: 1.1; }
+  .print-transformation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin-top: 1.5mm; }
+  .print-story-bottom { display: grid; grid-template-columns: 1.2fr .8fr; gap: 2mm; margin-top: 2mm; min-height: 55mm; }
 
-  .print-spell-header { display: grid; grid-template-columns: repeat(4,1fr); gap: 2mm; margin-bottom: 2.5mm; }
-  .print-spell-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2mm; align-items: start; }
-  .print-spell-grid .print-panel { min-height: 43mm; }
-  .print-slot-row { font-size: 7pt; margin-bottom: 1mm; border-bottom: .5px solid; padding-bottom: 1mm; }
-  .print-slot-row span { margin-left: 1mm; }
+  /* PAGE 3 */
+  .print-spell-header { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5mm; margin-bottom: 2mm; }
+  .print-spell-header .print-stat { min-height: 18mm; }
+  .print-spell-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5mm; align-items: start; }
+  .print-spell-grid .print-panel { min-height: 48mm; }
+  .print-spell-grid .print-panel__body { padding: 1mm 1.2mm; }
+  .print-slot-row { display: flex; align-items: center; justify-content: space-between; gap: 1mm; min-height: 6mm; border-bottom: .5px solid #544b43; font-size: 5.8pt; }
+  .print-slot-row b { text-transform: uppercase; }
+  .print-slot-row span { white-space: nowrap; }
+  .print-slot-row i { margin-left: .6mm; font-style: normal; font-size: 7pt; }
+  .print-spell-list .print-rule-line { min-height: 5.2mm; font-size: 6.4pt; padding-top: 1mm; }
+
+  /* OPTIONAL JOURNAL */
+  .print-sheet--journal { display: flex; flex-direction: column; gap: 3mm; }
+  .print-journal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2mm; }
+  .print-journal-text { min-height: 24mm; padding: 2mm; border: 1px solid #3a332a; }
+  .print-journal-text--wide { grid-column: 1/-1; min-height: 31mm; }
+  .print-journal-text h2 { margin: 0 0 1.5mm; font-size: 7.5pt; letter-spacing: .07em; text-transform: uppercase; }
+  .print-journal-text p { margin: 0; white-space: pre-wrap; font-size: 7.2pt; line-height: 1.3; }
+  .print-journal-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2mm; }
+  .print-journal-session { break-inside: avoid; padding: 0 0 2mm; margin: 0 0 2mm; border-bottom: 1px solid #aaa; }
+  .print-journal-session h3 { display: flex; justify-content: space-between; gap: 2mm; margin: 0 0 .7mm; font-size: 7.3pt; }
+  .print-journal-session h3 span { font-weight: 400; color: #555; }
+  .print-journal-session p { margin: 0; white-space: pre-wrap; font-size: 7pt; line-height: 1.3; }
 }
 
-.print-attack-table td {
-  vertical-align: top;
+
+/* PRINT LAYOUT V3 — page 1 gameplay focus */
+.print-attack-table th:first-child,
+.print-attack-table td:first-child { width: 29%; }
+.print-attack-table th:nth-child(2),
+.print-attack-table td:nth-child(2) { width: 16%; text-align: center; }
+.print-attack-table th:last-child,
+.print-attack-table td:last-child { width: 55%; }
+
+.print-attack-table td { min-height: 7mm; }
+.print-attack-table td:last-child {
+  white-space: normal;
+  overflow: visible;
+}
+.print-attack-table td:last-child strong {
+  display: block;
+  font-size: 6.2pt;
+  line-height: 1.15;
+  white-space: normal;
+  overflow: visible;
+}
+.print-attack-table td:last-child small {
+  display: block;
+  font-size: 4.9pt;
+  line-height: 1.1;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
-.print-attack-table td:first-child {
-  width: 34%;
+.print-page1-spell-meta {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0,1fr);
+  gap: 1.2mm 2.2mm;
+  align-items: center;
+  padding: .5mm .4mm 1mm;
+  border-bottom: .5px solid #81786f;
+  font-size: 5.6pt;
+}
+.print-page1-spell-meta b {
+  text-transform: uppercase;
+  font-size: 4.8pt;
+  letter-spacing: .03em;
+}
+.print-page1-slots {
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.print-attack-table td:nth-child(2) {
-  width: 16%;
-  text-align: center;
-  font-size: 1.08em;
+.print-page1-spells {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  column-gap: 2.5mm;
+}
+.print-page1-spell-row {
+  display: grid;
+  grid-template-columns: 6mm minmax(0,1fr) auto;
+  gap: 1mm;
+  align-items: center;
+  min-height: 5.2mm;
+  border-bottom: .35px solid #b5ada5;
+  min-width: 0;
+}
+.print-page1-spell-level {
+  display: grid;
+  place-items: center;
+  width: 5mm;
+  height: 4mm;
+  border: .6px solid #514840;
+  font-size: 4.8pt;
   font-weight: 800;
 }
-
-.print-attack-table td:last-child {
-  width: 50%;
+.print-page1-spell-row strong {
+  min-width: 0;
+  font-size: 5.8pt;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.print-page1-spell-row em {
+  max-width: 25mm;
+  font-size: 4.7pt;
+  font-style: normal;
+  color: #49413a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.print-attack-table td strong,
-.print-attack-table td small {
-  display: block;
+.print-notes-area {
+  height: 100%;
+  min-height: 35mm;
+  display: flex;
+  flex-direction: column;
+}
+.print-note-line {
+  flex: 1 1 auto;
+  min-height: 5.5mm;
+  border-bottom: .45px solid #aca49b;
 }
 
-.print-attack-table td small {
-  margin-top: 1mm;
-  font-size: 0.72em;
-  line-height: 1.2;
-  color: #3b342d;
+@media print {
+  .print-core-main > .print-panel:has(.print-page1-spells) {
+    flex: 0 0 auto;
+  }
 }
 
-/* GrimForge 0.9.1 — printable character journal */
-.print-sheet--journal{display:flex;flex-direction:column;gap:4mm}.print-journal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3mm}.print-journal-text{min-height:26mm;padding:3mm;border:1px solid #3a332a;background:rgba(255,255,255,.72)}.print-journal-text--wide{grid-column:1/-1;min-height:34mm}.print-journal-text h2{margin:0 0 2mm;font-size:9pt;letter-spacing:.08em;text-transform:uppercase}.print-journal-text p{margin:0;white-space:pre-wrap;font-size:8.5pt;line-height:1.35}.print-journal-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3mm}.print-journal-session{break-inside:avoid;padding:0 0 3mm;margin:0 0 3mm;border-bottom:1px solid #aaa}.print-journal-session h3{display:flex;justify-content:space-between;gap:3mm;margin:0 0 1mm;font-size:9pt}.print-journal-session h3 span{font-weight:400;color:#555}.print-journal-session p{margin:0;white-space:pre-wrap;font-size:8pt;line-height:1.35}
+
+/* PRINT LAYOUT V4 — high-contrast accents + robust attack grid */
+@media print {
+  /* Stronger page framing */
+  .print-sheet {
+    border: 2px solid #050505;
+  }
+  .print-sheet::before {
+    border-color: #242424;
+  }
+
+  /* Keep the banner mostly light, but give it stronger black structure. */
+  .print-banner {
+    border: 2px solid #080808;
+    background: linear-gradient(#fff 0%, #f1eee9 48%, #fff 100%);
+  }
+  .print-banner h1 {
+    color: #050505;
+    font-weight: 900;
+  }
+
+  /* Main section headers: black bar, white type. */
+  .print-panel h2 {
+    background: #0a0a0a !important;
+    color: #fff !important;
+    border-bottom: 1px solid #000 !important;
+    font-weight: 900;
+    letter-spacing: .10em;
+    padding-top: 1.05mm;
+    padding-bottom: 1.05mm;
+  }
+
+  /* A little more graphic weight in fields and stats. */
+  .print-field,
+  .print-panel,
+  .print-death-strip,
+  .print-stat,
+  .print-ability {
+    border-color: #0c0c0c;
+  }
+
+  .print-stat {
+    background: linear-gradient(#fff 0%, #f5f5f5 62%, #dedede 100%);
+  }
+  .print-stat strong {
+    color: #050505;
+    font-weight: 900;
+  }
+
+  .print-ability {
+    background: linear-gradient(135deg,#fff 72%,#e2e2e2 100%);
+  }
+  .print-ability__label b {
+    font-weight: 900;
+  }
+  .print-ability em {
+    border: 1.4px solid #050505;
+    font-weight: 900;
+  }
+
+  .print-mini-stats .print-stat {
+    border-width: 1.35px;
+  }
+
+  /* Skills/saves become easier to scan without becoming black-heavy. */
+  .print-save-list span,
+  .print-skills-list span {
+    color: #050505;
+    font-weight: 900;
+  }
+  .print-save-list div,
+  .print-skills-list div,
+  .print-rule-line,
+  .print-note-line {
+    border-bottom-color: #777 !important;
+  }
+
+  /* Keep writing areas intentionally light. */
+  .print-notes-area,
+  .print-inventory-list,
+  .print-panel:has(.print-notes-area) .print-panel__body {
+    background: #fff !important;
+  }
+
+  /* Fixed-grid attack block: cannot overflow horizontally like a table can. */
+  .print-attacks-grid {
+    width: 100%;
+    min-width: 0;
+    font-size: 6.1pt;
+  }
+
+  .print-attacks-head,
+  .print-attack-row {
+    display: grid;
+    grid-template-columns: minmax(0, 29%) minmax(0, 15%) minmax(0, 56%);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .print-attacks-head {
+    min-height: 5.2mm;
+    align-items: center;
+    border-bottom: .75px solid #111;
+    background: #efefef;
+    font-size: 5pt;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .025em;
+  }
+
+  .print-attacks-head > span,
+  .print-attack-row > div {
+    min-width: 0;
+    padding: .8mm .9mm;
+  }
+
+  .print-attacks-head > span:nth-child(2),
+  .print-attack-row > div:nth-child(2) {
+    text-align: center;
+  }
+
+  .print-attack-row {
+    min-height: 7.2mm;
+    align-items: center;
+    border-bottom: .5px solid #6b6b6b;
+  }
+
+  .print-attack-row:last-child {
+    border-bottom: 0;
+  }
+
+  .print-attack-name {
+    overflow: hidden;
+  }
+  .print-attack-name strong {
+    display: block;
+    font-size: 6.2pt;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+  .print-attack-name small {
+    display: block;
+    margin-top: .2mm;
+    font-size: 4.7pt;
+  }
+
+  .print-attack-bonus {
+    font-size: 8pt;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .print-attack-damage {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .print-attack-damage strong {
+    display: block;
+    font-size: 6.3pt;
+    line-height: 1.12;
+    white-space: normal;
+  }
+  .print-attack-damage small {
+    display: block;
+    margin-top: .3mm;
+    font-size: 4.85pt;
+    line-height: 1.12;
+    white-space: normal;
+  }
+
+  /* Spell-ready block gets the same stronger black accent. */
+  .print-page1-spell-meta {
+    border-bottom-color: #111;
+  }
+  .print-page1-spell-level {
+    border: 1px solid #050505;
+    background: #0a0a0a;
+    color: #fff;
+  }
+
+  /* Slightly stronger inventory heading/currency line, contents remain light. */
+  .print-currency {
+    color: #050505;
+    font-weight: 900;
+  }
+
+  /* Page 2/3 also receive matching black section bars. */
+  .print-number-line {
+    border-bottom-color: #111;
+  }
+}
+
+
+/* PRINT LAYOUT V5 — classic D&D-style story page, no portrait block */
+@media print {
+  .print-story-columns--no-portrait {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 2mm;
+    min-height: 96mm;
+  }
+
+  .print-story-columns--no-portrait > .print-panel {
+    min-width: 0;
+    height: 100%;
+  }
+
+  .print-story-columns--no-portrait .print-panel__body {
+    height: calc(100% - 8mm);
+    padding: 1.2mm 1.5mm;
+  }
+
+  .print-story-writing-lines {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-story-writing-lines .print-note-line {
+    flex: 1 1 auto;
+    min-height: 6mm;
+  }
+
+  .print-personality-writing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm;
+    margin-top: 2mm;
+  }
+
+  .print-personality-writing-grid > div {
+    min-width: 0;
+  }
+
+  .print-personality-writing-grid h3 {
+    margin: 0 0 .8mm;
+    padding-bottom: .5mm;
+    border-bottom: .6px solid #111;
+    font-size: 5.6pt;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+  }
+
+  .print-personality-writing-grid .print-note-line {
+    min-height: 5.8mm;
+  }
+
+  /* The reclaimed portrait space goes to actual character information. */
+  .print-sheet--story .print-transformation-grid {
+    min-height: 33mm;
+  }
+
+  .print-sheet--story .print-story-bottom {
+    min-height: 51mm;
+  }
+
+  /* Legacy portrait styles remain harmless but the element is no longer rendered. */
+}
+
+
+/* PRINT LAYOUT V6 — detailed spell rows on page 3 */
+@media print {
+  .print-spell-list--detailed {
+    display: block;
+  }
+
+  .print-spell-detail-row {
+    display: grid;
+    grid-template-columns: 4mm minmax(0, 1fr) 18mm 25mm;
+    gap: 1mm;
+    align-items: center;
+    min-width: 0;
+    min-height: 6mm;
+    border-bottom: .45px solid #777;
+    padding: .5mm .4mm;
+    font-size: 5.2pt;
+  }
+
+  .print-spell-prepared {
+    text-align: center;
+    font-size: 6pt;
+    font-weight: 900;
+  }
+
+  .print-spell-name {
+    min-width: 0;
+    font-size: 5.6pt;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  .print-spell-range {
+    min-width: 0;
+    text-align: center;
+    font-size: 5pt;
+    font-weight: 700;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .print-spell-effect {
+    min-width: 0;
+    text-align: right;
+    font-size: 5pt;
+    font-weight: 800;
+    line-height: 1.12;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .print-spell-detail-row:first-child::before {
+    content: "";
+  }
+
+  /* Compact column labels inside each spell panel. */
+  .print-spell-list--detailed::before {
+    content: "  ZAUBER                         REICHWEITE       SCHADEN / EFFEKT";
+    display: block;
+    white-space: pre;
+    overflow: hidden;
+    padding: .7mm .5mm;
+    border-bottom: .7px solid #111;
+    background: #efefef;
+    font-size: 4.3pt;
+    font-weight: 900;
+    letter-spacing: .02em;
+  }
+}
+
+
+/* PRINT LAYOUT V7 — rebuilt spell sheet */
+@media print {
+  .print-sheet--spells {
+    gap: 2.2mm;
+  }
+
+  .print-sheet--spells .print-banner {
+    margin-bottom: .4mm;
+  }
+
+  .print-spell-header {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.6mm;
+    margin: 0;
+  }
+
+  .print-sheet--spells .print-spell-header .print-stat {
+    min-height: 15mm;
+    border: 1.2px solid #111;
+    border-radius: 0;
+    background: #fff;
+  }
+
+  .print-sheet--spells .print-spell-header .print-stat strong {
+    font-size: 13pt;
+    line-height: 1;
+  }
+
+  .print-sheet--spells .print-spell-header .print-stat span {
+    font-size: 5.2pt;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .print-spell-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2mm;
+    align-items: start;
+  }
+
+  .print-sheet--spells .print-panel {
+    min-width: 0;
+    break-inside: avoid;
+    border: 1px solid #111;
+    border-radius: 0;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .print-sheet--spells .print-panel > h2 {
+    margin: 0;
+    padding: 1.25mm 1.6mm;
+    border: 0;
+    border-bottom: 1px solid #111;
+    background: #111;
+    color: #fff;
+    font-size: 7pt;
+    line-height: 1;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .print-sheet--spells .print-panel__body {
+    padding: 0;
+  }
+
+  .print-slot-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2mm;
+    align-items: center;
+    min-height: 6mm;
+    padding: .8mm 1.4mm;
+    border-bottom: .7px solid #111;
+    background: #f3f3f3;
+    font-size: 5.4pt;
+  }
+
+  .print-slot-row b {
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .print-slot-row span {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .8mm;
+  }
+
+  .print-slot-row i {
+    font-style: normal;
+    font-size: 7pt;
+    line-height: 1;
+  }
+
+  .print-spell-list--detailed::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .print-spell-detail-head,
+  .print-spell-detail-row {
+    display: grid;
+    grid-template-columns: 4.5mm minmax(24mm, 1fr) 20mm minmax(32mm, 1.35fr);
+    gap: 1mm;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .print-spell-detail-head {
+    min-height: 5.2mm;
+    padding: .55mm 1mm;
+    border-bottom: .8px solid #111;
+    background: #e7e7e7;
+    font-size: 4.35pt;
+    font-weight: 900;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+  }
+
+  .print-spell-detail-head span:nth-child(3) {
+    text-align: center;
+  }
+
+  .print-spell-detail-head span:nth-child(4) {
+    text-align: right;
+  }
+
+  .print-spell-detail-row {
+    min-height: 7mm;
+    padding: .7mm 1mm;
+    border-bottom: .45px solid #999;
+    font-size: 5.2pt;
+    line-height: 1.15;
+  }
+
+  .print-spell-detail-row:last-child {
+    border-bottom: 0;
+  }
+
+  .print-spell-prepared {
+    text-align: center;
+    font-size: 7pt;
+    font-weight: 900;
+  }
+
+  .print-spell-name,
+  .print-spell-range,
+  .print-spell-effect {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .print-spell-name {
+    font-size: 5.7pt;
+    font-weight: 900;
+  }
+
+  .print-spell-range {
+    text-align: center;
+    font-size: 5pt;
+    font-weight: 700;
+  }
+
+  .print-spell-effect {
+    text-align: right;
+    font-size: 5pt;
+    font-weight: 800;
+  }
+
+  .print-spell-empty {
+    padding: .5mm 1mm 1mm;
+  }
+}

@@ -1,12 +1,21 @@
-import { classes } from "../../../../compendium/classes";
+import {
+  classes,
+  getCharacterPathChoices,
+  getSubclassUnlockLevel,
+  type CharacterPathChoices,
+} from "../../../../compendium/classes";
 import { abilityLabels } from "../../../../compendium/core";
 import { ArtworkHero } from "../../../../components/artwork";
 
 interface ClassStepProps {
   selectedClassId: string;
   selectedSubclassId: string;
+  level: number;
+  pathChoices: CharacterPathChoices;
   onSelectClass: (classId: string) => void;
+  onChangeLevel: (level: number) => void;
   onSelectSubclass: (subclassId: string) => void;
+  onChangePathChoice: (choiceId: string, optionId: string, multiple: boolean) => void;
 }
 
 const featureKindLabels = {
@@ -26,10 +35,18 @@ const rechargeLabels = {
 export function ClassStep({
   selectedClassId,
   selectedSubclassId,
+  level,
+  pathChoices,
   onSelectClass,
+  onChangeLevel,
   onSelectSubclass,
+  onChangePathChoice,
 }: ClassStepProps) {
   const selectedClass = classes.find((entry) => entry.id === selectedClassId);
+  const selectedSubclass = selectedClass?.subclasses.find((entry) => entry.id === selectedSubclassId);
+  const relevantPathChoices = selectedClass
+    ? getCharacterPathChoices(selectedClass.id, selectedSubclass?.id, level, pathChoices)
+    : [];
 
   return (
     <section className="creator-section creator-dossier-step">
@@ -49,6 +66,33 @@ export function ClassStep({
           <span>Pfade</span>
         </div>
       </header>
+
+      <section className="creator-path-choices" aria-label="Charakterstufe">
+        <header className="creator-path-choices__header">
+          <div>
+            <span>Progression</span>
+            <h3>Startstufe</h3>
+          </div>
+          <p>GrimForge bildet für den aktuellen Rules-Audit die Stufen 1 bis 3 vollständig ab.</p>
+        </header>
+        <div className="creator-path-choice__options">
+          {[1, 2, 3].map((candidateLevel) => (
+            <button
+              key={candidateLevel}
+              type="button"
+              className={[
+                "creator-path-choice__option",
+                level === candidateLevel ? "creator-path-choice__option--selected" : "",
+              ].filter(Boolean).join(" ")}
+              aria-pressed={level === candidateLevel}
+              onClick={() => onChangeLevel(candidateLevel)}
+            >
+              <strong>Stufe {candidateLevel}</strong>
+              <span>{candidateLevel === 1 ? "Beginn der Laufbahn" : `Fortgeschrittener Start auf Stufe ${candidateLevel}`}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="creator-class-dossier-grid">
         {classes.map((entry, index) => {
@@ -173,6 +217,8 @@ export function ClassStep({
           <div className="creator-subclass-dossier__grid">
             {selectedClass.subclasses.map((subclass) => {
               const selected = selectedSubclassId === subclass.id;
+              const unlockLevel = getSubclassUnlockLevel(selectedClass.id, subclass.id) ?? 1;
+              const locked = level < unlockLevel;
 
               return (
                 <button
@@ -185,30 +231,103 @@ export function ClassStep({
                     .filter(Boolean)
                     .join(" ")}
                   aria-pressed={selected}
+                  disabled={locked}
                   onClick={() => onSelectSubclass(subclass.id)}
                 >
-                  <span>{selected ? "Gewählt" : "Unterklasse"}</span>
+                  <span>{locked ? `Ab Stufe ${unlockLevel}` : selected ? "Gewählt" : "Unterklasse"}</span>
                   <strong>{subclass.name}</strong>
                   <p>{subclass.description}</p>
                 </button>
               );
             })}
           </div>
+
+          {selectedClass && relevantPathChoices.length > 0 && (
+            <section className="creator-path-choices">
+              <header className="creator-path-choices__header">
+                <div>
+                  <span>Mechanische Vertiefung</span>
+                  <h4>Entscheidungen für {selectedSubclass?.name ?? selectedClass.name}</h4>
+                </div>
+                <p>Diese Entscheidungen werden in der Charakterakte gespeichert und beim späteren Bearbeiten wiederhergestellt.</p>
+              </header>
+
+              <div className="creator-path-choices__list">
+                {relevantPathChoices.map((choice) => {
+                  const rawValue = pathChoices[choice.id];
+                  const selectedValues = Array.isArray(rawValue)
+                    ? rawValue
+                    : rawValue
+                      ? [rawValue]
+                      : [];
+                  const complete = selectedValues.length === choice.choose;
+
+                  return (
+                    <section key={choice.id} className="creator-path-choice">
+                      <header>
+                        <div>
+                          <strong>{choice.name}</strong>
+                          <span>ab Stufe {choice.level} · {choice.choose === 1 ? "1 Wahl" : `${choice.choose} Wahlen`}</span>
+                        </div>
+                        <small>{complete ? "Vollständig" : `${selectedValues.length}/${choice.choose}`}</small>
+                      </header>
+                      <p>{choice.description}</p>
+
+                      <div className="creator-path-choice__options">
+                        {choice.options.map((option) => {
+                          const selected = selectedValues.includes(option.id);
+                          const maxReached = choice.choose > 1 && !selected && selectedValues.length >= choice.choose;
+
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              className={[
+                                "creator-path-choice__option",
+                                selected ? "creator-path-choice__option--selected" : "",
+                              ].filter(Boolean).join(" ")}
+                              aria-pressed={selected}
+                              disabled={maxReached}
+                              onClick={() => onChangePathChoice(choice.id, option.id, choice.choose > 1)}
+                            >
+                              <strong>{option.name}</strong>
+                              <span>{option.description}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                    </section>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </section>
       )}
     </section>
   );
 }
 
-function formatResourceAmount(amount: number | string): string {
+function formatResourceAmount(
+  amount: import("../../../../compendium/classes").ClassResourceAmount,
+): string {
   if (typeof amount === "number") {
     return `${amount} Nutzung${amount === 1 ? "" : "en"}`;
+  }
+
+  if (typeof amount === "object") {
+    if (amount.kind === "class-level-multiplier") {
+      return `${amount.multiplier} × Klassenstufe`;
+    }
+    return "stufenabhängig";
   }
 
   const labels: Record<string, string> = {
     "proficiency-bonus": "Übungsbonus",
     "class-level": "Klassenstufe",
     "ability-modifier": "Attributsmodifikator",
+    "ability-modifier-plus-one": "Attributsmodifikator + 1",
   };
 
   return labels[amount] ?? amount;

@@ -423,3 +423,10 @@
 .journal-session-controls{display:flex;align-items:end;justify-content:flex-end;gap:.45rem}.journal-session-controls label{display:grid;gap:.2rem;color:var(--color-text-muted);font-size:.55rem;letter-spacing:.08em;text-transform:uppercase}
 .journal-session__heading{grid-template-columns:auto minmax(0,1fr) auto}.journal-session__toggle{width:2.2rem;border:1px solid rgba(214,179,95,.22);background:rgba(214,179,95,.04);color:var(--color-primary-light);cursor:pointer}.journal-session--collapsed{padding:.55rem .85rem;background:rgba(0,0,0,.08)}
 @media(max-width:680px){.character-journal__save-state{min-width:0;width:100%}.character-journal__hero{flex-wrap:wrap}.character-journal__toolbar{align-items:flex-start;flex-direction:column}.journal-session-controls{align-items:stretch;flex-direction:column}.journal-session__heading{grid-template-columns:auto minmax(0,1fr)}.journal-session__heading input[type=date]{grid-column:2}}
+
+/* Rules completeness sprint 2 */
+.session-reserves { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px; }
+.session-reserve-card { border:1px solid rgba(123,92,150,.35); padding:12px; display:grid; gap:8px; background:rgba(20,15,25,.35); }
+.session-reserve-card > span { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; opacity:.72; }
+.session-reserve-card > strong { font-size:1rem; }
+@media (max-width:700px){ .session-reserves { grid-template-columns:1fr; } }

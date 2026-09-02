@@ -10,6 +10,7 @@ import {
 
 import {
   classes,
+  getSubclassProficiencyPackage,
 } from "../../../compendium/classes";
 
 import {
@@ -87,6 +88,20 @@ export function mapDraftToArchiveEntry(
         entry.id === draft.subclassId,
     );
 
+  const subclassProficiencies = getSubclassProficiencyPackage(draft.classId, draft.subclassId);
+
+  const battleMasterToolId = draft.classId === "fighter" && draft.subclassId === "battle-master" && draft.level >= 3
+    ? normalizeRawChoice(draft.pathChoices["battle-master-artisans-tool"])[0]
+    : undefined;
+  const battleMasterTool = battleMasterToolId ? getBattleMasterToolLabel(battleMasterToolId) : undefined;
+
+  const samuraiBonusChoice = draft.classId === "fighter" && draft.subclassId === "samurai" && draft.level >= 3
+    ? normalizeRawChoice(draft.pathChoices["samurai-bonus-proficiency"])[0]
+    : undefined;
+  const samuraiBonusSkills = samuraiBonusChoice && samuraiBonusChoice !== "language"
+    ? normalizeSkillChoice(samuraiBonusChoice)
+    : [];
+
   const ancestryLabel =
     selectedAncestry
       ? selectedVariant
@@ -103,20 +118,28 @@ export function mapDraftToArchiveEntry(
           []
         ),
 
-        ...draft
-          .classSkillProficiencies,
+        ...draft.classSkillProficiencies,
+        ...(draft.classId === "bard" && draft.subclassId === "college-of-lore" && draft.level >= 3
+          ? normalizeSkillChoice(draft.pathChoices["lore-bonus-skills"])
+          : []),
+        ...(draft.classId === "warlock" && draft.level >= 2 && normalizeRawChoice(draft.pathChoices["warlock-invocations"]).includes("beguiling-influence")
+          ? (["deception", "persuasion"] as SkillId[])
+          : []),
+        ...samuraiBonusSkills,
       ]),
     );
 
   const timestamp =
     new Date().toISOString();
 
+  const backgroundEquipment = selectedBackground?.equipment ?? [];
   const inventoryItems =
     createStartingInventoryItems(
       draft,
       timestamp,
-      selectedBackground?.equipment ?? [],
+      backgroundEquipment,
     );
+  const backgroundGold = getBackgroundStartingGold(backgroundEquipment);
 
   const maximumHitPoints =
     calculateMaximumHitPoints({
@@ -124,6 +147,8 @@ export function mapDraftToArchiveEntry(
       level: draft.level,
       constitution:
         effectiveAbilityScores.constitution,
+      bonusPerLevel:
+        draft.classId === "sorcerer" && draft.subclassId === "draconic-bloodline" ? 1 : 0,
     });
 
   return {
@@ -191,14 +216,18 @@ ancestryUsesReducedSpeed:
     toolProficiencies:
       selectedBackground
         ? [
-            ...selectedBackground
-              .toolProficiencies,
+            ...selectedBackground.toolProficiencies,
+            ...(subclassProficiencies?.tools ?? []),
+            ...(battleMasterTool ? [battleMasterTool] : []),
           ]
-        : [],
+        : [
+            ...(subclassProficiencies?.tools ?? []),
+            ...(battleMasterTool ? [battleMasterTool] : []),
+          ],
 
     languageChoices:
-      selectedBackground
-        ?.languageChoices ?? 0,
+      (selectedBackground?.languageChoices ?? 0) +
+      (samuraiBonusChoice === "language" ? 1 : 0),
 
     className:
       selectedClass?.name ??
@@ -215,14 +244,18 @@ ancestryUsesReducedSpeed:
       draft.subclassId ||
       undefined,
 
+    pathChoices: { ...draft.pathChoices },
+
     level:
       draft.level,
 
     skillProficiencies,
 
-    skillExpertise: [
+    skillExpertise: Array.from(new Set<SkillId>([
       ...draft.skillExpertise,
-    ],
+      ...normalizeSkillChoice(draft.pathChoices["bard-expertise"]),
+      ...normalizeSkillChoice(draft.pathChoices["rogue-expertise"]),
+    ])),
 
     baseAbilityScores: {
       ...draft.baseAbilities,
@@ -234,16 +267,16 @@ ancestryUsesReducedSpeed:
       maximumHitPoints,
       currentHitPoints: maximumHitPoints,
       temporaryHitPoints: 0,
-      armorClass: 10,
+      armorClass:
+        draft.classId === "sorcerer" && draft.subclassId === "draconic-bloodline"
+          ? 13 + Math.floor((effectiveAbilityScores.dexterity - 10) / 2)
+          : 10,
 
       initiativeModifier:
-        Math.floor(
-          (
-            effectiveAbilityScores
-              .dexterity -
-            10
-          ) / 2,
-        ),
+        Math.floor((effectiveAbilityScores.dexterity - 10) / 2) +
+        (draft.classId === "ranger" && draft.subclassId === "gloom-stalker" && draft.level >= 3
+          ? Math.floor((effectiveAbilityScores.wisdom - 10) / 2)
+          : 0),
 
       speed:
         draft.ancestryUsesReducedSpeed
@@ -258,7 +291,7 @@ ancestryUsesReducedSpeed:
       currency: {
         copper: 0,
         silver: 0,
-        gold: 0,
+        gold: backgroundGold,
       },
     },
 
@@ -273,7 +306,11 @@ ancestryUsesReducedSpeed:
           item.id,
       ),
 
+    startingEquipmentSelections: draft.startingEquipmentSelections.map((selection) => ({ ...selection })),
+
     spentClassResources: {},
+    spentHitDice: 0,
+    inspiration: false,
 
     summary:
       draft.identity.summary.trim() ||
@@ -313,12 +350,17 @@ function cloneDraftSpellcasting(
   CharacterArchiveEntry["spellcasting"]
 > {
   return {
-    spellIds:
-      draft.spellcasting.spellIds.map(
-        (selection) => ({
-          ...selection,
-        }),
-      ),
+    spellIds: (() => {
+      const normal = draft.spellcasting.spellIds.map((selection) => ({ ...selection }));
+      const tomeCantrips = draft.classId === "warlock" && draft.level >= 3
+        ? normalizeRawChoice(draft.pathChoices["warlock-tome-cantrips"])
+        : [];
+      const existing = new Set(normal.map((selection) => selection.spellId));
+      return [
+        ...normal,
+        ...tomeCantrips.filter((spellId) => !existing.has(spellId)).map((spellId) => ({ spellId, prepared: true })),
+      ];
+    })(),
 
     slots: {
       spentSlots: {
@@ -473,17 +515,32 @@ function createStartingInventoryItems(
 }
 
 function createBackgroundInventoryItems(labels: string[], timestamp: string): CharacterInventoryItem[] {
-  return labels.map((label, index) => ({
-    id: `background-${toBackgroundItemId(label)}-${index + 1}`,
-    name: label,
-    category: "other",
-    quantity: 1,
-    weight: 0,
-    equipped: false,
-    notes: "Startausrüstung aus dem Hintergrund.",
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  }));
+  return labels.flatMap((label, index) => {
+    if (parseBackgroundGold(label) !== undefined) {
+      return [];
+    }
+
+    return [{
+      id: `background-${toBackgroundItemId(label)}-${index + 1}`,
+      name: label,
+      category: "other" as const,
+      quantity: 1,
+      weight: 0,
+      equipped: false,
+      notes: "Startausrüstung aus dem Hintergrund.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }];
+  });
+}
+
+function getBackgroundStartingGold(labels: string[]): number {
+  return labels.reduce((total, label) => total + (parseBackgroundGold(label) ?? 0), 0);
+}
+
+function parseBackgroundGold(label: string): number | undefined {
+  const match = label.trim().match(/^(\d+)\s*(?:GM|GP)$/i);
+  return match ? Number(match[1]) : undefined;
 }
 
 function toBackgroundItemId(value: string): string {
@@ -805,4 +862,41 @@ function poundsToKilograms(
   return Number(
     kilograms.toFixed(2),
   );
+}
+
+function getBattleMasterToolLabel(id: string): string | undefined {
+  const labels: Record<string, string> = {
+    "alchemist-supplies": "Alchemistenausrüstung",
+    "brewer-supplies": "Brauerwerkzeug",
+    "calligrapher-supplies": "Kalligrafenwerkzeug",
+    "carpenter-tools": "Zimmermannswerkzeug",
+    "cartographer-tools": "Kartografenwerkzeug",
+    "cobbler-tools": "Schusterwerkzeug",
+    "cook-utensils": "Kochutensilien",
+    "glassblower-tools": "Glasbläserwerkzeug",
+    "jeweler-tools": "Juwelierwerkzeug",
+    "leatherworker-tools": "Ledererwerkzeug",
+    "mason-tools": "Maurerwerkzeug",
+    "painter-supplies": "Malerbedarf",
+    "potter-tools": "Töpferwerkzeug",
+    "smith-tools": "Schmiedewerkzeug",
+    "tinker-tools": "Tüftlerwerkzeug",
+    "weaver-tools": "Weberwerkzeug",
+    "woodcarver-tools": "Holzschnitzerwerkzeug",
+  };
+  return labels[id];
+}
+
+function normalizeRawChoice(value: import("../../../compendium/classes").CharacterPathChoiceValue | undefined): string[] {
+  return Array.isArray(value) ? value : value ? [value] : [];
+}
+
+function normalizeSkillChoice(value: import("../../../compendium/classes").CharacterPathChoiceValue | undefined): SkillId[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  const allowed = new Set<SkillId>([
+    "acrobatics", "animal-handling", "arcana", "athletics", "deception", "history",
+    "insight", "intimidation", "investigation", "medicine", "nature", "perception",
+    "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival",
+  ]);
+  return values.filter((value): value is SkillId => allowed.has(value as SkillId));
 }

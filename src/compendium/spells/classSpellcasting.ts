@@ -204,7 +204,7 @@ export const classSpellcastingDefinitions:
       ritualCasting: false,
 
       focusLabel:
-        "Druidischer Fokus oder Komponententasche",
+        "Komponententasche / Materialkomponenten",
 
       cantripsKnownByLevel: [
         0,

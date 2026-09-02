@@ -108,7 +108,7 @@ function extractCharacters(value: unknown): unknown[] {
   return [];
 }
 
-function isCharacterArchiveEntry(value: unknown): value is CharacterArchiveEntry {
+export function isCharacterArchiveEntry(value: unknown): value is CharacterArchiveEntry {
   if (!isRecord(value)) {
     return false;
   }
@@ -122,9 +122,88 @@ function isCharacterArchiveEntry(value: unknown): value is CharacterArchiveEntry
     typeof value.className === "string" &&
     typeof value.level === "number" &&
     Number.isFinite(value.level) &&
+    value.level >= 1 &&
     typeof value.summary === "string" &&
     isCharacterStatus(value.status) &&
-    typeof value.updatedAt === "string"
+    typeof value.updatedAt === "string" &&
+    isOptionalStringArray(value.ancestryBonusChoices) &&
+    isOptionalStringArray(value.ancestryTraitIds) &&
+    isOptionalStringArray(value.toolProficiencies) &&
+    isOptionalStringArray(value.skillProficiencies) &&
+    isOptionalStringArray(value.skillExpertise) &&
+    isOptionalStringArray(value.equipmentIds) &&
+    isOptionalStringArray(value.transformationFeatureIds) &&
+    isOptionalRecord(value.pathChoices) &&
+    isOptionalRecord(value.spentClassResources) &&
+    isOptionalInventory(value.inventory) &&
+    isOptionalSpellcasting(value.spellcasting) &&
+    isOptionalStartingEquipmentSelections(value.startingEquipmentSelections)
+  );
+}
+
+
+function isOptionalStringArray(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.every((entry) => typeof entry === "string"));
+}
+
+function isOptionalRecord(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  return Object.values(value).every((entry) =>
+    typeof entry === "string" ||
+    (Array.isArray(entry) && entry.every((item) => typeof item === "string")),
+  );
+}
+
+function isOptionalInventory(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value) || !Array.isArray(value.items) || !isRecord(value.currency)) return false;
+
+  const currency = value.currency;
+  if (!["copper", "silver", "gold"].every((key) =>
+    typeof currency[key] === "number" && Number.isFinite(currency[key]) && currency[key] >= 0,
+  )) return false;
+
+  return value.items.every((item) =>
+    isRecord(item) &&
+    typeof item.id === "string" && item.id.length > 0 &&
+    typeof item.name === "string" &&
+    typeof item.category === "string" &&
+    typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity >= 0 &&
+    typeof item.weight === "number" && Number.isFinite(item.weight) && item.weight >= 0 &&
+    typeof item.equipped === "boolean" &&
+    typeof item.notes === "string",
+  );
+}
+
+function isOptionalSpellcasting(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value) || !Array.isArray(value.spellIds) || !isRecord(value.slots)) return false;
+
+  const slots = value.slots;
+  if (!isRecord(slots.spentSlots)) return false;
+  if (!Object.values(slots.spentSlots).every((amount) =>
+    typeof amount === "number" && Number.isFinite(amount) && amount >= 0,
+  )) return false;
+  if (typeof slots.spentPactSlots !== "number" || !Number.isFinite(slots.spentPactSlots) || slots.spentPactSlots < 0) return false;
+
+  const ids = new Set<string>();
+  return value.spellIds.every((selection) => {
+    if (!isRecord(selection) || typeof selection.spellId !== "string" || selection.spellId.length === 0 || typeof selection.prepared !== "boolean") {
+      return false;
+    }
+    if (ids.has(selection.spellId)) return false;
+    ids.add(selection.spellId);
+    return true;
+  });
+}
+
+function isOptionalStartingEquipmentSelections(value: unknown): boolean {
+  if (value === undefined) return true;
+  return Array.isArray(value) && value.every((selection) =>
+    isRecord(selection) &&
+    typeof selection.choiceId === "string" &&
+    typeof selection.optionId === "string",
   );
 }
 

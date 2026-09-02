@@ -1,57 +1,57 @@
-# GrimForge
+# GrimForge 1.0.0
 
-GrimForge ist ein lokaler Dark-Fantasy-Charaktermanager mit Character Creator, Charakterbogen, Journal, Compendium, Import/Export und druckoptimierten Bögen.
+GrimForge ist ein deutschsprachiger Dark-Fantasy-Charaktermanager für D&D 5e auf Basis der 2014-Regeln mit Grim-Hollow-Erweiterungen. Die Anwendung ist als installierbare PWA ausgelegt und unterstützt Charaktererstellung, Charakterarchiv, Spielzustand, Journal, Kompendium sowie Druck- und PDF-Ausgabe.
 
-## Funktionen
+## Umfang von 1.0.0
 
-- geführte Charaktererschaffung
-- Abstammungen, Klassen und Transformationen
-- regelbasierte Werteberechnung
-- Ausrüstung, Angriffe, Ressourcen und Zauber
-- Character Journal und Sitzungsnotizen
-- durchsuchbares Compendium mit Favoriten und Vergleichen
-- JSON-Import und -Export
-- druckoptimierte Charakter- und Statbögen
-- installierbare PWA mit Offline-Cache
+Der Release-Schwerpunkt liegt auf Charakteren der Stufen 1–3:
 
-## Lokale Entwicklung
+- 12 D&D-2014-Kernklassen mit ihrer Progression auf Stufe 1–3
+- 44 in GrimForge enthaltene D&D-Unterklassen
+- zusätzliche Grim-Hollow-Inhalte und Transformationen
+- Klassen- und Unterklassenentscheidungen mit persistenter Speicherung
+- Ressourcen, Zauberwirken und relevante Sondermechaniken
+- Hintergründe, Ausrüstung, Währung und Charakterinventar
+- Archiv, Bearbeiten und Import/Export von Charakterakten
+- Print-Ansicht und PDF-Export
+- Offline-fähige PWA
 
-Voraussetzungen:
+## Voraussetzungen
 
-- Node.js 22
+- Node.js 22 oder neuer
 - npm
 
-```powershell
-npm ci
+## Entwicklung
+
+```bash
+npm install
 npm run dev
 ```
 
-Die Entwicklungsseite läuft anschließend unter der von Vite angezeigten lokalen Adresse.
+## Release-Prüfung
 
-## Qualitätsprüfung
-
-```powershell
-npm run lint
-npm run build
-npm run preview
+```bash
+npm run check:release
 ```
 
-Der Produktions-Build wird in `dist/` erzeugt.
+Alternativ einzeln:
 
-## Deployment
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-Das Repository ist für GitHub Actions und Vercel vorbereitet:
+Der fertige Web-Build wird in `dist/` erzeugt.
 
-- `.github/workflows/ci.yml` prüft Lint und Build.
-- `vercel.json` konfiguriert Vite, SPA-Rewrites und Cache-Header.
-- `DEPLOYMENT.md` enthält die vollständige Schritt-für-Schritt-Anleitung.
+## Daten & Kompatibilität
 
-Nach der einmaligen Verbindung des GitHub-Repositories mit Vercel löst jeder Push auf den Production-Branch automatisch ein neues Deployment aus.
+GrimForge migriert ältere gespeicherte Charakterakten auf das aktuelle Schema. Importierte Akten werden vor der Übernahme strukturell validiert. Charaktere, die bearbeitet und erneut gespeichert werden, behalten ihren laufenden Spielzustand wie Trefferpunkte, Ressourcen, Inspiration, Journal, Währung und Inventar.
 
-## Datenspeicherung
+## Regelumfang
 
-Charaktere, Favoriten und Journalinformationen werden lokal im Browser gespeichert. Vor größeren Browser- oder Gerätewechseln sollte das Archiv über die integrierte Exportfunktion gesichert werden.
+GrimForge 1.0.0 konzentriert sich bewusst auf die implementierten D&D-2014- und Grim-Hollow-Inhalte der Anwendung. Nicht jede jemals für D&D 5e veröffentlichte Klasse, Unterklasse oder Zusatzregel ist Bestandteil dieses Releases.
 
 ## Version
 
-Aktueller Projektstand: **0.9.8**
+**GrimForge 1.0.0**

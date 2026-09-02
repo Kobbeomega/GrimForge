@@ -8,7 +8,7 @@ import {
 } from "../../../../compendium/core";
 
 import {
-  getClassSpellcasting,
+  getSpellById,
   getSpellsForClass,
 } from "../../../../compendium/spells";
 
@@ -47,6 +47,8 @@ type SpellSchoolFilter =
 
 interface SpellsStepProps {
   classId: string;
+  subclassId?: string;
+  pathChoices?: import("../../../../compendium/classes").CharacterPathChoices;
   level: number;
 
   abilityScores: AbilityScores;
@@ -61,6 +63,8 @@ interface SpellsStepProps {
 
 export function SpellsStep({
   classId,
+  subclassId,
+  pathChoices,
   level,
   abilityScores,
   value,
@@ -75,19 +79,16 @@ export function SpellsStep({
   const [selectedOnly, setSelectedOnly] =
     useState(false);
 
-  const definition =
-    getClassSpellcasting(
-      classId,
-    );
-
   const rules =
     getSpellSelectionRules({
       classId,
+      subclassId,
+      pathChoices,
       level,
       abilityScores,
     });
 
-  if (!definition) {
+  if (!rules.enabled || !rules.abilityId || !rules.sourceClassId) {
     return (
       <section className="creator-section">
         <header className="creator-section__header">
@@ -119,21 +120,24 @@ export function SpellsStep({
   }
 
   const spellcastingAbilityModifier =
-    getAbilityModifier(
-      abilityScores[
-        definition.abilityId
-      ],
-    );
+    getAbilityModifier(abilityScores[rules.abilityId]);
 
-  const availableSpells =
-    getSpellsForClass(
-      classId,
-    ).filter(
-      (spell) =>
-        spell.level === 0 ||
-        spell.level <=
-          rules.maximumSpellLevel,
-    );
+  const expandedSpells = rules.expandedSpellIds
+    .map((spellId) => getSpellById(spellId))
+    .filter((spell): spell is SpellDefinition => Boolean(spell));
+
+  const grantedSpells = rules.grantedSpellIds
+    .map((spellId) => getSpellById(spellId))
+    .filter((spell): spell is SpellDefinition => Boolean(spell));
+
+  const grantedIds = new Set(grantedSpells.map((spell) => spell.id));
+  const availableSpells = [
+    ...getSpellsForClass(rules.sourceClassId),
+    ...expandedSpells,
+  ]
+    .filter((spell, index, list) => list.findIndex((entry) => entry.id === spell.id) === index)
+    .filter((spell) => !grantedIds.has(spell.id))
+    .filter((spell) => spell.level === 0 || spell.level <= rules.maximumSpellLevel);
 
   const normalizedSearch =
     searchQuery.trim().toLocaleLowerCase("de");
@@ -351,7 +355,7 @@ export function SpellsStep({
           label="Zauberattribut"
           value={
             abilityLabels[
-              definition.abilityId
+              rules.abilityId
             ]
           }
         />
@@ -379,6 +383,26 @@ export function SpellsStep({
           />
         )}
       </dl>
+
+      {grantedSpells.length > 0 && (
+        <section className="creator-skill-source">
+          <header className="creator-skill-source__header">
+            <p className="creator-section__chapter">Durch Unterklasse</p>
+            <h3>Automatisch bekannte / vorbereitete Zauber</h3>
+            <p>Diese Zauber zählen nicht gegen deine normale Zauberauswahl.</p>
+          </header>
+          <div className="compact-empty-state">
+            <strong>{grantedSpells.map((spell) => spell.name).join(" · ")}</strong>
+          </div>
+        </section>
+      )}
+
+      {rules.restrictedSchools?.length && rules.restrictedSpellCount ? (
+        <div className="compact-empty-state">
+          <strong>Unterklassenregel</strong>
+          <span>Mindestens {rules.restrictedSpellCount} deiner gewählten Zauber müssen aus {rules.restrictedSchools.map((school) => spellSchoolLabels[school]).join(" oder ")} stammen.</span>
+        </div>
+      ) : null}
 
       <section className="creator-spell-toolbar" aria-label="Zauber filtern">
         <label className="creator-spell-toolbar__search">

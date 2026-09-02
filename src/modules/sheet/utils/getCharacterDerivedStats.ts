@@ -99,12 +99,9 @@ export function getCharacterDerivedStats(
    * derivedStats.passivePerception verwenden
    * können.
    */
+  const loreSkills = normalizeLoreSkills(character);
   const perceptionProficient =
-    character
-      .skillProficiencies
-      ?.includes(
-        "perception",
-      ) ?? false;
+    (character.skillProficiencies?.includes("perception") ?? false) || loreSkills.includes("perception");
 
   const perceptionExpertise =
     character
@@ -133,11 +130,14 @@ export function getCharacterDerivedStats(
       character,
     );
 
+  const equippedArmorPresent = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "armor" && getEquipmentById(item.id)?.category === "armor");
+  const normalArmorClass = calculateArmorClass(inventory, dexterityModifier);
+  const fightingStyle = character.pathChoices?.[`${character.classId}-fighting-style`];
+  const defenseBonus = equippedArmorPresent && fightingStyle === "defense" ? 1 : 0;
   const armorClass =
-    calculateArmorClass(
-      inventory,
-      dexterityModifier,
-    );
+    (character.classId === "sorcerer" && character.subclassId === "draconic-bloodline" && !equippedArmorPresent
+      ? Math.max(normalArmorClass, 13 + dexterityModifier)
+      : normalArmorClass) + defenseBonus;
 
   const totalWeight =
     inventory.items.reduce(
@@ -334,4 +334,10 @@ function poundsToKilograms(
       0.45359237
     ).toFixed(2),
   );
+}
+
+function normalizeLoreSkills(character: CharacterArchiveEntry): string[] {
+  if (character.classId !== "bard" || character.subclassId !== "college-of-lore" || character.level < 3) return [];
+  const raw = character.pathChoices?.["lore-bonus-skills"];
+  return Array.isArray(raw) ? raw : raw ? [raw] : [];
 }

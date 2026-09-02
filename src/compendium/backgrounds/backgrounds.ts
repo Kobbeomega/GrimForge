@@ -283,6 +283,23 @@ function parseLanguageChoices(value: string): number {
   return match ? Number(match[0]) : 0;
 }
 
+const importedBackgroundFeatureDescriptions: Record<string, string> = {
+  charlatan:
+    "Du hast eine zweite Identität mit passender Verkleidung, Dokumenten und einer glaubwürdigen Hintergrundgeschichte aufgebaut. Du kannst diese Identität nutzen, um dich als die entsprechende Person auszugeben, und passende Schriftstücke oder persönliche Unterlagen fälschen, sofern du ein vergleichbares Beispiel zur Hand hast.",
+  entertainer:
+    "Du findest gewöhnlich einen Ort zum Auftreten, etwa in einem Gasthaus, Zirkus, Theater oder bei einem Fest. Im Gegenzug für deine Darbietung erhältst du in der Regel einfache Unterkunft und Verpflegung; dein Ruf kann außerdem dazu führen, dass Fremde dich wiedererkennen.",
+  "guild-artisan":
+    "Als anerkanntes Mitglied deiner Gilde kannst du auf die Unterstützung deiner Zunft zählen. Gildenmitglieder gewähren dir nach Möglichkeit Unterkunft und Verpflegung und helfen dir, andere Mitglieder oder einflussreiche Kontakte zu erreichen. In Städten kann ein Gildenhaus als Treffpunkt, Informationsquelle und Anlaufstelle dienen. Für die Mitgliedschaft fallen regelmäßig Beiträge an.",
+  hermit:
+    "Während deiner Abgeschiedenheit bist du auf eine bedeutende Entdeckung gestoßen. Ihre genaue Natur hängt von deinem Charakter und der Kampagne ab: ein verborgenes Wissen, eine vergessene Wahrheit, ein ungewöhnlicher Ort oder eine Erkenntnis, deren Bedeutung sich erst im Abenteuer vollständig zeigt.",
+  outlander:
+    "Du besitzt ein ausgezeichnetes Gedächtnis für Karten und Gelände und kannst dich an die grobe Lage wichtiger Landschaftsmerkmale erinnern. In geeigneter Wildnis findest du außerdem Nahrung und frisches Wasser für dich und mehrere weitere Personen, sofern die Umgebung solche Ressourcen überhaupt bietet.",
+  sailor:
+    "Wenn nötig, kannst du für dich und deine Gefährten eine kostenlose Passage auf einem Segelschiff organisieren, auf dem du früher gedient hast oder zu dessen Besatzung du gute Beziehungen unterhältst. Fahrplan und Route liegen beim Kapitän; als Gegenleistung wird möglicherweise Mithilfe an Bord erwartet.",
+  urchin:
+    "Du kennst die verborgenen Wege, Durchgänge und Abkürzungen einer Stadt. Außerhalb eines Kampfes kannst du dich mit deiner Gruppe zwischen zwei Orten in derselben Stadt deutlich schneller bewegen, wenn du diese Schleichwege nutzen kannst.",
+};
+
 const curatedBackgroundIds = new Set(curatedBackgrounds.map((entry) => entry.id));
 const importedBackgrounds: CharacterBackground[] = sourceBackgrounds2014
   .map((source) => ({ ...source, normalizedId: source.app_id.replaceAll("_", "-") }))
@@ -299,13 +316,28 @@ const importedBackgrounds: CharacterBackground[] = sourceBackgrounds2014
     feature: {
       id: `${source.normalizedId}-feature`,
       name: source.feature,
-      description: "Das Datenpaket enthält den Namen dieses Merkmals, aber keinen vollständigen Regeltext.",
+      description:
+        importedBackgroundFeatureDescriptions[source.normalizedId] ??
+        `Das Merkmal „${source.feature}“ ist für diesen Hintergrund noch nicht redaktionell beschrieben.`,
       source: "core" as const,
     },
   }));
 
-/** Zentrale Hintergrund-Registry; bestehende kuratierte Texte haben Vorrang. */
-export const backgrounds: CharacterBackground[] = [...curatedBackgrounds, ...importedBackgrounds]
+const sourceBackgroundEquipment = new Map(
+  sourceBackgrounds2014.map((source) => [
+    source.app_id.replaceAll("_", "-"),
+    source.equipment.split(";").map((entry) => entry.trim()).filter(Boolean),
+  ]),
+);
+
+/** Zentrale Hintergrund-Registry; kuratierte Texte haben Vorrang, die 2014-Startausrüstung stammt einheitlich aus der Quelldatei. */
+export const backgrounds: CharacterBackground[] = [
+  ...curatedBackgrounds.map((entry) => ({
+    ...entry,
+    equipment: sourceBackgroundEquipment.get(entry.id) ?? entry.equipment,
+  })),
+  ...importedBackgrounds,
+]
   .sort((a, b) => a.name.localeCompare(b.name, "de"));
 export const backgroundRegistry = new Map(backgrounds.map((entry) => [entry.id, entry]));
 

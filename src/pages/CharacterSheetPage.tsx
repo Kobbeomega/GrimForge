@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { getClassById } from "../compendium/classes";
 
 import { CharacterPrintView } from "../modules/print/CharacterPrintView";
+import { downloadBlankGrimHollowSheet, exportGrimHollowSheet } from "../modules/print/exportGrimHollowSheet";
 
 import { exportSingleCharacter } from "../modules/archives/io/characterArchiveIO";
 
@@ -367,38 +369,36 @@ export function CharacterSheetPage({
     });
   }
 
-  function handleShortRest() {
-    const recoveredHitPoints =
-      Math.max(
-        1,
-        Math.floor(
-          vitals.maximumHitPoints / 4,
-        ),
-      );
+  function handleUseHitDie() {
+    const hitDie = getClassById(character.classId ?? "")?.hitDie;
+    const totalHitDice = Math.max(1, character.level);
+    const spentHitDice = Math.min(character.spentHitDice ?? 0, totalHitDice);
+    if (!hitDie || spentHitDice >= totalHitDice) return;
 
-    const rules =
-      calculateCharacterRules(
-        createCharacterRuleInput(
-          character,
-        ),
-      );
+    const constitutionModifier = Math.floor(((character.abilityScores?.constitution ?? 10) - 10) / 2);
+    const roll = Math.floor(Math.random() * hitDie) + 1;
+    const recoveredHitPoints = Math.max(0, roll + constitutionModifier);
 
     updateCharacter({
+      spentHitDice: spentHitDice + 1,
       vitals: {
         ...vitals,
-        currentHitPoints:
-          Math.min(
-            vitals.maximumHitPoints,
-            vitals.currentHitPoints +
-              recoveredHitPoints,
-          ),
+        currentHitPoints: Math.min(vitals.maximumHitPoints, vitals.currentHitPoints + recoveredHitPoints),
       },
-      spentClassResources:
-        restoreClassResourcesByRest({
-          resources:
-            rules.classResources,
-          rest: "short-rest",
-        }),
+    });
+  }
+
+  function handleToggleInspiration() {
+    updateCharacter({ inspiration: !(character.inspiration ?? false) });
+  }
+
+  function handleShortRest() {
+    const rules = calculateCharacterRules(createCharacterRuleInput(character));
+    updateCharacter({
+      spentClassResources: restoreClassResourcesByRest({
+        resources: rules.classResources,
+        rest: "short-rest",
+      }),
     });
   }
 
@@ -423,6 +423,10 @@ export function CharacterSheetPage({
             rules.classResources,
           rest: "long-rest",
         }),
+      spentHitDice: Math.max(
+        0,
+        (character.spentHitDice ?? 0) - Math.max(1, Math.floor(character.level / 2)),
+      ),
       spellcasting: {
         spellIds:
           (
@@ -463,6 +467,20 @@ export function CharacterSheetPage({
             onClick={() => exportSingleCharacter(character)}
           >
             Akte exportieren
+          </GrimButton>
+
+          <GrimButton
+            type="button"
+            onClick={() => void exportGrimHollowSheet(character)}
+          >
+            Grim-Hollow-PDF
+          </GrimButton>
+
+          <GrimButton
+            type="button"
+            onClick={downloadBlankGrimHollowSheet}
+          >
+            Leerer Bogen
           </GrimButton>
 
           <GrimButton
@@ -558,6 +576,8 @@ export function CharacterSheetPage({
               onLongRest={
                 handleLongRest
               }
+              onUseHitDie={handleUseHitDie}
+              onToggleInspiration={handleToggleInspiration}
               rulesSection={
                 <CharacterRulesSection
                   character={character}
@@ -670,6 +690,10 @@ interface CharacterOverviewProps {
 
   onLongRest: () => void;
 
+  onUseHitDie: () => void;
+
+  onToggleInspiration: () => void;
+
   rulesSection: React.ReactNode;
 }
 
@@ -683,6 +707,8 @@ function CharacterOverview({
   onVitalsChange,
   onShortRest,
   onLongRest,
+  onUseHitDie,
+  onToggleInspiration,
   rulesSection,
 }: CharacterOverviewProps) {
   const classLabel = [
@@ -819,6 +845,12 @@ function CharacterOverview({
         onLongRest={
           onLongRest
         }
+        hitDie={getClassById(character.classId ?? "")?.hitDie}
+        totalHitDice={Math.max(1, character.level)}
+        spentHitDice={character.spentHitDice ?? 0}
+        onUseHitDie={onUseHitDie}
+        inspiration={character.inspiration ?? false}
+        onToggleInspiration={onToggleInspiration}
       />
 
       {rulesSection}

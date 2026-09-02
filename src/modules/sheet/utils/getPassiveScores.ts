@@ -82,11 +82,11 @@ function calculatePassiveScore(
       character.level,
     );
 
+  const rawLoreSkills = character.pathChoices?.["lore-bonus-skills"];
+  const loreSkills = Array.isArray(rawLoreSkills) ? rawLoreSkills : rawLoreSkills ? [rawLoreSkills] : [];
   const proficient =
-    character.skillProficiencies
-      ?.includes(
-        definition.skillId,
-      ) ?? false;
+    (character.skillProficiencies?.includes(definition.skillId) ?? false) ||
+    (character.classId === "bard" && character.subclassId === "college-of-lore" && character.level >= 3 && loreSkills.includes(definition.skillId));
 
   const expertise =
     character.skillExpertise

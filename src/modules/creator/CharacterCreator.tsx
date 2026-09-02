@@ -7,8 +7,18 @@ import {
 } from "../../compendium/classes/skillChoices";
 
 import {
+  getCharacterPathChoices,
+  getClassSubclassUnlockLevel,
+  getSubclassById,
+  getSubclassUnlockLevel,
+  isCharacterPathChoiceComplete,
+} from "../../compendium/classes";
+
+import {
   getAncestryById,
 } from "../../compendium/ancestries";
+
+import { getBackgroundById } from "../../compendium/backgrounds";
 
 import {
   startingEquipment,
@@ -44,6 +54,10 @@ import {
 } from "./mappers/mapDraftToArchiveEntry";
 
 import {
+  mergeEditedCharacter,
+} from "./mappers/mergeEditedCharacter";
+
+import {
   useCharacterCreator,
 } from "./useCharacterCreator";
 
@@ -65,6 +79,7 @@ interface CharacterCreatorProps {
   fileNumber: string;
 
   initialDraft?: CharacterCreatorDraft;
+  initialCharacter?: CharacterArchiveEntry;
 
   onCancel: () => void;
 
@@ -87,9 +102,14 @@ const pointBuyCosts: Record<
   15: 9,
 };
 
+function normalizePathChoiceValues(value: string | string[] | undefined): string[] {
+  return Array.isArray(value) ? value : value ? [value] : [];
+}
+
 export function CharacterCreator({
   fileNumber,
   initialDraft,
+  initialCharacter,
   onCancel,
   onFinished,
 }: CharacterCreatorProps) {
@@ -202,27 +222,102 @@ export function CharacterCreator({
       return;
     }
 
+    const subclassUnlockLevel = getClassSubclassUnlockLevel(creator.draft.classId);
+    const subclassRequired = typeof subclassUnlockLevel === "number" && creator.draft.level >= subclassUnlockLevel;
+
+    if (subclassRequired && !creator.draft.subclassId) {
+      window.alert(
+        `Wähle für Stufe ${creator.draft.level} zuerst eine Unterklasse.`,
+      );
+      creator.setCurrentStep("class");
+      return;
+    }
+
+    if (creator.draft.subclassId) {
+      const selectedSubclass = getSubclassById(creator.draft.classId, creator.draft.subclassId);
+      const selectedSubclassUnlockLevel = getSubclassUnlockLevel(creator.draft.classId, creator.draft.subclassId);
+
+      if (!selectedSubclass || (selectedSubclassUnlockLevel && creator.draft.level < selectedSubclassUnlockLevel)) {
+        window.alert("Die gewählte Unterklasse ist auf dieser Stufe nicht verfügbar.");
+        creator.setCurrentStep("class");
+        return;
+      }
+    }
+
+    const requiredPathChoices = getCharacterPathChoices(
+      creator.draft.classId,
+      creator.draft.subclassId || undefined,
+      creator.draft.level,
+      creator.draft.pathChoices,
+    );
+
+    const incompletePathChoice = requiredPathChoices.find(
+      (definition) => !isCharacterPathChoiceComplete(
+        definition,
+        creator.draft.pathChoices[definition.id],
+      ),
+    );
+
+    if (incompletePathChoice) {
+      window.alert(
+        `Vervollständige zuerst die Klassenentscheidung „${incompletePathChoice.name}“.`,
+      );
+      creator.setCurrentStep("class");
+      return;
+    }
+
     const classSkillChoice =
       getClassSkillChoice(
         creator.draft.classId,
       );
 
-    if (
-      classSkillChoice &&
-      creator.draft
-        .classSkillProficiencies
-        .length !==
-        classSkillChoice.choose
-    ) {
-      window.alert(
-        `Wähle genau ${classSkillChoice.choose} Klassenfertigkeiten.`,
-      );
+    if (classSkillChoice) {
+      const selectedClassSkills = creator.draft.classSkillProficiencies;
+      const validClassSkills =
+        selectedClassSkills.length === classSkillChoice.choose &&
+        new Set(selectedClassSkills).size === selectedClassSkills.length &&
+        selectedClassSkills.every((skillId) => classSkillChoice.options.includes(skillId));
 
-      creator.setCurrentStep(
-        "skills",
-      );
+      if (!validClassSkills) {
+        window.alert(
+          `Wähle genau ${classSkillChoice.choose} gültige Klassenfertigkeiten.`,
+        );
 
-      return;
+        creator.setCurrentStep(
+          "skills",
+        );
+
+        return;
+      }
+    }
+
+    const expertiseChoiceId = creator.draft.classId === "bard" && creator.draft.level >= 3
+      ? "bard-expertise"
+      : creator.draft.classId === "rogue"
+        ? "rogue-expertise"
+        : undefined;
+    if (expertiseChoiceId) {
+      const rawExpertise = creator.draft.pathChoices[expertiseChoiceId];
+      const expertiseIds = Array.isArray(rawExpertise) ? rawExpertise : rawExpertise ? [rawExpertise] : [];
+      const backgroundSkills = getBackgroundById(creator.draft.backgroundId)?.skillProficiencies ?? [];
+      const loreBonusSkills =
+        creator.draft.classId === "bard" &&
+        creator.draft.subclassId === "college-of-lore" &&
+        creator.draft.level >= 3
+          ? normalizePathChoiceValues(creator.draft.pathChoices["lore-bonus-skills"])
+          : [];
+      const proficientSkills = new Set([
+        ...backgroundSkills,
+        ...creator.draft.classSkillProficiencies,
+        ...loreBonusSkills,
+      ]);
+      const invalidExpertise = expertiseIds.find((id) => id !== "thieves-tools" && !proficientSkills.has(id as never));
+      const rogueToolCount = expertiseIds.filter((id) => id === "thieves-tools").length;
+      if (invalidExpertise || (creator.draft.classId === "bard" && rogueToolCount > 0)) {
+        window.alert("Expertise kann nur für Fertigkeiten gewählt werden, in denen du bereits geübt bist.");
+        creator.setCurrentStep("class");
+        return;
+      }
     }
 
     const spentAbilityPoints =
@@ -296,12 +391,17 @@ export function CharacterCreator({
         classId:
           creator.draft.classId,
 
+        subclassId:
+          creator.draft.subclassId || undefined,
+
+        pathChoices:
+          creator.draft.pathChoices,
+
         level:
           creator.draft.level,
 
         abilityScores:
-          creator.draft
-            .baseAbilities,
+          previewCharacter.abilityScores ?? creator.draft.baseAbilities,
 
         spellcasting:
           creator.draft.spellcasting,
@@ -318,6 +418,17 @@ export function CharacterCreator({
       );
 
       return;
+    }
+
+    if (creator.draft.classId === "warlock" && creator.draft.level >= 2) {
+      const rawInvocations = creator.draft.pathChoices["warlock-invocations"];
+      const invocations = Array.isArray(rawInvocations) ? rawInvocations : rawInvocations ? [rawInvocations] : [];
+      const requiresEldritchBlast = invocations.some((id) => ["agonizing-blast", "eldritch-spear", "repelling-blast"].includes(id));
+      if (requiresEldritchBlast && !creator.draft.spellcasting.spellIds.some((selection) => selection.spellId === "eldritch-blast")) {
+        window.alert("Qualvoller Strahl, Unheimlicher Speer und Abstoßender Strahl setzen den Zaubertrick Unheimlicher Strahl voraus.");
+        creator.setCurrentStep("spells");
+        return;
+      }
     }
 
     if (
@@ -367,15 +478,14 @@ export function CharacterCreator({
       }
     }
 
-    const sealedCharacter:
-      CharacterArchiveEntry = {
-      ...previewCharacter,
-
-      status: "active",
-
-      updatedAt:
-        new Date().toISOString(),
-    };
+    const sealedCharacter: CharacterArchiveEntry =
+      initialCharacter
+        ? mergeEditedCharacter(previewCharacter, initialCharacter)
+        : {
+            ...previewCharacter,
+            status: "active",
+            updatedAt: new Date().toISOString(),
+          };
 
     onFinished(
       sealedCharacter,
@@ -523,6 +633,8 @@ export function CharacterCreator({
               creator.draft
                 .subclassId
             }
+            level={creator.draft.level}
+            pathChoices={creator.draft.pathChoices}
             onSelectClass={(
               classId,
             ) =>
@@ -533,6 +645,8 @@ export function CharacterCreator({
                   classId,
 
                   subclassId: "",
+                  pathChoices: {},
+                  skillExpertise: [],
 
                   classSkillProficiencies:
                     [],
@@ -551,6 +665,34 @@ export function CharacterCreator({
                 }),
               )
             }
+            onChangeLevel={(level) =>
+              creator.updateDraft((draft) => {
+                const currentUnlockLevel = draft.subclassId
+                  ? getSubclassUnlockLevel(draft.classId, draft.subclassId)
+                  : undefined;
+                const keepSubclass = !currentUnlockLevel || level >= currentUnlockLevel;
+
+                return {
+                  ...draft,
+                  level,
+                  subclassId: keepSubclass ? draft.subclassId : "",
+                  pathChoices: Object.fromEntries(
+                    Object.entries(draft.pathChoices).filter(([choiceId]) =>
+                      getCharacterPathChoices(
+                        draft.classId,
+                        keepSubclass ? draft.subclassId || undefined : undefined,
+                        level,
+                        draft.pathChoices,
+                      ).some((definition) => definition.id === choiceId),
+                    ),
+                  ),
+                  spellcasting: {
+                    spellIds: [],
+                    slots: { spentSlots: {}, spentPactSlots: 0 },
+                  },
+                };
+              })
+            }
             onSelectSubclass={(
               subclassId,
             ) =>
@@ -558,8 +700,37 @@ export function CharacterCreator({
                 (draft) => ({
                   ...draft,
                   subclassId,
+                  pathChoices: Object.fromEntries(
+                    Object.entries(draft.pathChoices).filter(([choiceId]) =>
+                      getCharacterPathChoices(draft.classId, undefined, draft.level).some((definition) => definition.id === choiceId),
+                    ),
+                  ),
                 }),
               )
+            }
+            onChangePathChoice={(choiceId, optionId, multiple) =>
+              creator.updateDraft((draft) => {
+                const current = draft.pathChoices[choiceId];
+                const values = Array.isArray(current)
+                  ? current
+                  : current
+                    ? [current]
+                    : [];
+
+                const nextValue = multiple
+                  ? values.includes(optionId)
+                    ? values.filter((entry) => entry !== optionId)
+                    : [...values, optionId]
+                  : optionId;
+
+                return {
+                  ...draft,
+                  pathChoices: {
+                    ...draft.pathChoices,
+                    [choiceId]: nextValue,
+                  },
+                };
+              })
             }
           />
         );
@@ -639,12 +810,17 @@ export function CharacterCreator({
             classId={
               creator.draft.classId
             }
+            subclassId={
+              creator.draft.subclassId || undefined
+            }
+            pathChoices={
+              creator.draft.pathChoices
+            }
             level={
               creator.draft.level
             }
             abilityScores={
-              creator.draft
-                .baseAbilities
+              previewCharacter.abilityScores ?? creator.draft.baseAbilities
             }
             value={
               creator.draft.spellcasting

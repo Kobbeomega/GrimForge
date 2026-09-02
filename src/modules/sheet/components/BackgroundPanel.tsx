@@ -1,3 +1,4 @@
+import { getBackgroundById } from "../../../compendium/backgrounds";
 import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
@@ -9,11 +10,16 @@ interface BackgroundPanelProps {
 export function BackgroundPanel({
   character,
 }: BackgroundPanelProps) {
+  const backgroundDefinition =
+    getBackgroundById(character.backgroundId ?? "");
+
   const backgroundName =
+    backgroundDefinition?.name ??
     character.backgroundName ??
     "Kein Hintergrund gespeichert";
 
   const feature =
+    backgroundDefinition?.feature ??
     character.backgroundFeature;
 
   const toolProficiencies =

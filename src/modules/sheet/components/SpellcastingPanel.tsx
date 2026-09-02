@@ -7,6 +7,8 @@ import {
   getSpellById,
 } from "../../../compendium/spells";
 
+import { getGrantedSubclassSpellIds } from "../../../compendium/classes";
+
 import type {
   CharacterSpellcasting,
   SpellComponents,
@@ -57,19 +59,22 @@ export function SpellcastingPanel({
   const spellcasting =
     getCharacterSpellcasting(character);
 
-  const selectedSpells =
-    spellcasting.spellIds.flatMap(
-      (selection) => {
-        const spell =
-          getSpellById(
-            selection.spellId,
-          );
+  const grantedIds = getGrantedSubclassSpellIds({
+    classId: character.classId ?? "",
+    subclassId: character.subclassId,
+    level: character.level,
+    pathChoices: character.pathChoices,
+  });
 
-        return spell
-          ? [{ spell, selection }]
-          : [];
-      },
-    );
+  const selectedSpells = [
+    ...spellcasting.spellIds,
+    ...grantedIds
+      .filter((spellId) => !spellcasting.spellIds.some((selection) => selection.spellId === spellId))
+      .map((spellId) => ({ spellId, prepared: true })),
+  ].flatMap((selection) => {
+    const spell = getSpellById(selection.spellId);
+    return spell ? [{ spell, selection }] : [];
+  });
 
   const cantrips =
     selectedSpells.filter(

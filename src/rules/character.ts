@@ -11,6 +11,8 @@ import type {
   SkillId,
 } from "../compendium/skills";
 
+import type { CharacterPathChoices } from "../compendium/classes";
+
 import {
   calculateAbilityModifiers,
   calculateInitiativeModifier,
@@ -76,6 +78,7 @@ import type {
 export interface CharacterRuleInput {
   classId: string;
   subclassId?: string;
+  pathChoices?: CharacterPathChoices;
   level: number;
   abilityScores: AbilityScores;
   proficientSkillIds?: readonly SkillId[];
@@ -173,18 +176,28 @@ export function calculateCharacterRules(
       >,
     );
 
+  const subclassSkillIds =
+    input.classId === "bard" && input.subclassId === "college-of-lore" && level >= 3
+      ? normalizeSkillChoice(input.pathChoices?.["lore-bonus-skills"])
+      : [];
+
+  const resolvedProficientSkillIds = [...new Set([
+    ...(input.proficientSkillIds ?? []),
+    ...subclassSkillIds,
+  ])];
+
   const skillBonuses =
     calculateSkillBonuses({
       abilityScores:
         input.abilityScores,
       proficiencyBonus,
       proficientSkillIds:
-        input.proficientSkillIds,
+        resolvedProficientSkillIds,
       expertiseSkillIds:
         input.expertiseSkillIds,
     });
 
-  const armorClass =
+  let armorClass =
     calculateArmorClass({
       dexterity:
         input.abilityScores
@@ -200,6 +213,20 @@ export function calculateCharacterRules(
       ...input.armorClass,
     });
 
+  if (input.classId === "sorcerer" && input.subclassId === "draconic-bloodline" && level >= 1 && !input.armorClass?.armor) {
+    const draconicArmorClass = 13 + abilityModifiers.dexterity + (input.armorClass?.shieldBonus ?? 0) + (input.armorClass?.flatBonus ?? 0);
+    if (draconicArmorClass > armorClass.armorClass) {
+      armorClass = {
+        armorClass: draconicArmorClass,
+        baseArmorClass: 13,
+        dexterityContribution: abilityModifiers.dexterity,
+        shieldContribution: input.armorClass?.shieldBonus ?? 0,
+        flatContribution: input.armorClass?.flatBonus ?? 0,
+        formula: "13 + GE (Drachenzähigkeit)",
+      };
+    }
+  }
+
   const classFeatures =
     resolveCharacterClassFeatures({
       classId:
@@ -207,6 +234,7 @@ export function calculateCharacterRules(
       subclassId:
         input.subclassId,
       level,
+      pathChoices: input.pathChoices,
     });
 
   const classResources =
@@ -236,15 +264,15 @@ export function calculateCharacterRules(
           input.abilityScores,
         proficiencyBonus,
         proficientSkillIds:
-          input.proficientSkillIds,
+          resolvedProficientSkillIds,
         expertiseSkillIds:
           input.expertiseSkillIds,
       }),
     initiativeModifier:
-      calculateInitiativeModifier(
-        input.abilityScores
-          .dexterity,
-      ),
+      calculateInitiativeModifier(input.abilityScores.dexterity) +
+      (input.classId === "ranger" && input.subclassId === "gloom-stalker" && level >= 3
+        ? abilityModifiers.wisdom
+        : 0),
     maximumHitPoints:
       calculateMaximumHitPoints({
         classId:
@@ -258,9 +286,8 @@ export function calculateCharacterRules(
             .hitPointFlatBonus ??
           0,
         bonusPerLevel:
-          input
-            .hitPointBonusPerLevel ??
-          0,
+          (input.hitPointBonusPerLevel ?? 0) +
+          (input.classId === "sorcerer" && input.subclassId === "draconic-bloodline" && level >= 1 ? 1 : 0),
       }),
     armorClass,
     speed:
@@ -276,6 +303,8 @@ export function calculateCharacterRules(
       calculateClassSpellcasting({
         classId:
           input.classId,
+        subclassId:
+          input.subclassId,
         level,
         abilityScores:
           input.abilityScores,
@@ -284,4 +313,15 @@ export function calculateCharacterRules(
     classFeatures,
     classResources,
   };
+}
+
+
+function normalizeSkillChoice(value: import("../compendium/classes").CharacterPathChoiceValue | undefined): SkillId[] {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  const allowed = new Set<SkillId>([
+    "acrobatics", "animal-handling", "arcana", "athletics", "deception", "history",
+    "insight", "intimidation", "investigation", "medicine", "nature", "perception",
+    "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival",
+  ]);
+  return values.filter((value): value is SkillId => allowed.has(value as SkillId));
 }

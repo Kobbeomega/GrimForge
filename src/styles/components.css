@@ -17491,3 +17491,119 @@ padding:1.25rem;
 .project-health__details { margin-top: 1rem; }
 .project-health__details summary { cursor: pointer; font-weight: 700; }
 .project-health__details ul { max-height: 18rem; overflow: auto; padding-left: 1.2rem; }
+
+/* Sprint 5 — persistente Klassen-/Unterklassenentscheidungen */
+.creator-path-choices {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(111, 79, 143, 0.26);
+}
+
+.creator-path-choices__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.creator-path-choices__header span,
+.creator-path-choice header span {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  opacity: 0.68;
+}
+
+.creator-path-choices__header h4 {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+}
+
+.creator-path-choices__header p {
+  max-width: 36rem;
+  margin: 0;
+  opacity: 0.75;
+}
+
+.creator-path-choices__list {
+  display: grid;
+  gap: 1rem;
+}
+
+.creator-path-choice {
+  padding: 1rem;
+  border: 1px solid rgba(111, 79, 143, 0.24);
+  background: rgba(17, 13, 22, 0.28);
+}
+
+.creator-path-choice > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.creator-path-choice > header div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.creator-path-choice > header small {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.creator-path-choice__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.creator-path-choice__option {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 100%;
+  padding: 0.85rem;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  cursor: pointer;
+}
+
+.creator-path-choice__option:hover:not(:disabled),
+.creator-path-choice__option--selected {
+  border-color: rgba(171, 112, 222, 0.72);
+  background: rgba(111, 79, 143, 0.18);
+}
+
+.creator-path-choice__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.creator-path-choice__option span {
+  font-size: 0.83rem;
+  line-height: 1.4;
+  opacity: 0.78;
+}
+
+.creator-path-choice__future-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+@media (max-width: 760px) {
+  .creator-path-choices__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .creator-path-choice__options {
+    grid-template-columns: 1fr;
+  }
+}

@@ -9,6 +9,7 @@ import {
 
 
 import type { CharacterArchiveEntry } from "../modules/archives/types";
+import { isCharacterArchiveEntry } from "../modules/archives/io/characterArchiveIO";
 import { migrateCharacterArchiveEntries, migrateCharacterArchiveEntry } from "../migrations/characterSchema";
 
 interface CharacterContextValue {
@@ -157,10 +158,11 @@ function loadCharacters(): CharacterArchiveEntry[] {
       JSON.parse(storedValue);
 
     if (!Array.isArray(parsedValue)) {
-  return [];
-}
+      return [];
+    }
 
-    return migrateCharacterArchiveEntries(parsedValue as CharacterArchiveEntry[]).characters;
+    const validCharacters = parsedValue.filter(isCharacterArchiveEntry);
+    return migrateCharacterArchiveEntries(validCharacters).characters;
   } catch {
   return [];
 }

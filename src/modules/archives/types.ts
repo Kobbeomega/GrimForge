@@ -16,6 +16,7 @@ import type {
 import type {
   CharacterSpellcasting,
 } from "../../compendium/spells";
+import type { CharacterPathChoices } from "../../compendium/classes";
 
 export type CharacterStatus =
   | "active"
@@ -155,6 +156,8 @@ export interface CharacterArchiveEntry {
 
   subclass?: string;
   subclassId?: string;
+  /** Persistente Klassen-/Unterklassenentscheidungen wie Totem, Land oder Manöver. */
+  pathChoices?: CharacterPathChoices;
 
   level: number;
 
@@ -186,8 +189,17 @@ export interface CharacterArchiveEntry {
 
   equipmentIds?: string[];
 
+  /** Persistiert die ursprünglichen Startausrüstungs-Entscheidungen für sichere Creator-Roundtrips. */
+  startingEquipmentSelections?: Array<{ choiceId: string; optionId: string }>;
+
   /** Verbrauchte Klassenressourcen, nach Ressourcen-ID. */
   spentClassResources?: Record<string, number>;
+
+  /** Bereits verbrauchte Trefferwürfel. Gesamtzahl entspricht der Charakterstufe. */
+  spentHitDice?: number;
+
+  /** D&D-5e-Inspiration: maximal ein Inspirationspunkt gleichzeitig. */
+  inspiration?: boolean;
 
   sealId?: string;
 

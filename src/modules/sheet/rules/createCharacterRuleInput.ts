@@ -18,6 +18,7 @@ export function createCharacterRuleInput(
       character.classId ?? "",
     subclassId:
       character.subclassId,
+    pathChoices: { ...(character.pathChoices ?? {}) },
     level:
       character.level,
     abilityScores: {

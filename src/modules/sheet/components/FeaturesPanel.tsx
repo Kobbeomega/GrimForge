@@ -1,5 +1,7 @@
+import { getBackgroundById } from "../../../compendium/backgrounds";
 import {
   classes,
+  getCharacterPathChoiceSummary,
 } from "../../../compendium/classes";
 
 import type {
@@ -26,6 +28,13 @@ export function FeaturesPanel({
         character.subclassId,
     );
 
+  const backgroundDefinition =
+    getBackgroundById(character.backgroundId ?? "");
+
+  const currentBackgroundFeature =
+    backgroundDefinition?.feature ??
+    character.backgroundFeature;
+
   const toolProficiencies =
     character.toolProficiencies ?? [];
 
@@ -34,6 +43,8 @@ export function FeaturesPanel({
 
   const savingThrows =
     classDefinition?.savingThrows ?? [];
+
+  const pathChoiceSummary = getCharacterPathChoiceSummary(character.pathChoices);
 
   return (
     <section className="features-panel">
@@ -79,17 +90,18 @@ export function FeaturesPanel({
         <FeatureRecord
           eyebrow="Vergangenheit"
           title={
+            backgroundDefinition?.name ??
             character.backgroundName ??
             "Kein Hintergrund gespeichert"
           }
           description={
-            character.backgroundFeature
+            currentBackgroundFeature
               ?.description ??
             "Für diese Akte wurde noch kein Hintergrundsmerkmal gespeichert."
           }
           accent={
             Boolean(
-              character.backgroundFeature,
+              currentBackgroundFeature,
             )
           }
         >
@@ -98,7 +110,7 @@ export function FeaturesPanel({
               {
                 label: "Merkmal",
                 value:
-                  character.backgroundFeature
+                  currentBackgroundFeature
                     ?.name ??
                   "Nicht gespeichert",
               },
@@ -183,6 +195,14 @@ export function FeaturesPanel({
               </p>
             </div>
           )}
+
+          {pathChoiceSummary.map((choice) => (
+            <div key={choice.id} className="feature-record__subfeature">
+              <span>{choice.name}</span>
+              <strong>{choice.selections.map((selection) => selection.name).join(" · ")}</strong>
+              <p>{choice.selections.map((selection) => selection.description).join(" ")}</p>
+            </div>
+          ))}
         </FeatureRecord>
 
       </div>

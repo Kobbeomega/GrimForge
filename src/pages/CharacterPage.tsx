@@ -111,6 +111,7 @@ export function CharacterPage() {
         <CharacterCreator
           fileNumber={editingDraft?.fileNumber ?? nextFileNumber}
           initialDraft={editingDraft}
+          initialCharacter={editingDraft ? selectedCharacter ?? undefined : undefined}
           onCancel={handleCancelCreator}
           onFinished={handleCharacterFinished}
         />
