@@ -33,6 +33,7 @@ interface SpellcastingPanelProps {
 
   onChange: (
     spellcasting: CharacterSpellcasting,
+    notice?: string,
   ) => void;
 }
 
@@ -152,6 +153,54 @@ export function SpellcastingPanel({
 
         spentPactSlots: next,
       },
+    });
+  }
+
+  function castSpell(spellLevel: number) {
+    if (spellLevel <= 0) return;
+
+    if (stats.pactSlots && stats.pactSlots.slotLevel >= spellLevel && spellcasting.slots.spentPactSlots < stats.pactSlots.slots) {
+      onChange({
+        ...spellcasting,
+        slots: {
+          ...spellcasting.slots,
+          spentPactSlots: spellcasting.slots.spentPactSlots + 1,
+        },
+      }, `Zauber gewirkt: ein Paktplatz Grad ${stats.pactSlots.slotLevel} verbraucht.`);
+      return;
+    }
+
+    const slotLevel = normalSpellLevels.find((level) => {
+      const maximum = stats.spellSlots[level] ?? 0;
+      const spent = spellcasting.slots.spentSlots[level] ?? 0;
+      return level >= spellLevel && spent < maximum;
+    });
+
+    if (slotLevel) {
+      onChange({
+        ...spellcasting,
+        slots: {
+          ...spellcasting.slots,
+          spentSlots: {
+            ...spellcasting.slots.spentSlots,
+            [slotLevel]: (spellcasting.slots.spentSlots[slotLevel] ?? 0) + 1,
+          },
+        },
+      }, `Zauber gewirkt: ein Slot Grad ${slotLevel} verbraucht.`);
+    }
+  }
+
+  function canCastSpell(spellLevel: number) {
+    if (spellLevel <= 0) return true;
+
+    if (stats.pactSlots && stats.pactSlots.slotLevel >= spellLevel && spellcasting.slots.spentPactSlots < stats.pactSlots.slots) {
+      return true;
+    }
+
+    return normalSpellLevels.some((level) => {
+      const maximum = stats.spellSlots[level] ?? 0;
+      const spent = spellcasting.slots.spentSlots[level] ?? 0;
+      return level >= spellLevel && spent < maximum;
     });
   }
 
@@ -290,6 +339,8 @@ export function SpellcastingPanel({
         spells={cantrips}
         character={character}
         stats={stats}
+        onCast={castSpell}
+        canCast={canCastSpell}
       />
 
       <CompactSpellList
@@ -297,6 +348,8 @@ export function SpellcastingPanel({
         spells={levelledSpells}
         character={character}
         stats={stats}
+        onCast={castSpell}
+        canCast={canCastSpell}
       />
     </section>
   );
@@ -445,11 +498,15 @@ function CompactSpellList({
   spells,
   character,
   stats,
+  onCast,
+  canCast,
 }: {
   title: string;
   spells: ResolvedSpell[];
   character: CharacterArchiveEntry;
   stats: SpellcastingStats;
+  onCast: (spellLevel: number) => void;
+  canCast: (spellLevel: number) => boolean;
 }) {
   return (
     <section className="compact-character-spells">
@@ -589,6 +646,21 @@ function CompactSpellList({
                         <span className="compact-spell-row__prepared">
                           Vorbereitet
                         </span>
+                      )}
+
+                      {spell.level > 0 && selection.prepared && (
+                        <button
+                          type="button"
+                          className="compact-spell-row__cast"
+                          disabled={!canCast(spell.level)}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onCast(spell.level);
+                          }}
+                        >
+                          Wirken
+                        </button>
                       )}
                     </summary>
 

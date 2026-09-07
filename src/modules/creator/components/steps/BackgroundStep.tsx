@@ -13,6 +13,15 @@ const sourceLabels = {
   custom: "Eigene Chronik",
 } as const;
 
+const abilityLabels: Record<string, string> = {
+  strength: "ST",
+  dexterity: "GE",
+  constitution: "KO",
+  intelligence: "IN",
+  wisdom: "WE",
+  charisma: "CH",
+};
+
 export function BackgroundStep({
   selectedBackgroundId,
   onSelectBackground,
@@ -107,6 +116,20 @@ export function BackgroundStep({
                       : "Keine zusätzlichen",
                   ]}
                 />
+                {background.abilityScoreOptions && (
+                  <DossierReward
+                    label="Attribute"
+                    values={background.abilityScoreOptions.map(
+                      (ability) => abilityLabels[ability] ?? ability,
+                    )}
+                  />
+                )}
+                {background.originFeat && (
+                  <DossierReward
+                    label="Ursprungstalent"
+                    values={[background.originFeat]}
+                  />
+                )}
               </div>
 
               <section className="creator-dossier-card__feature">

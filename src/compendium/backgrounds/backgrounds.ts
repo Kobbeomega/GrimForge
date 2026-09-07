@@ -49,6 +49,10 @@ export interface CharacterBackground
    */
   equipment: string[];
 
+  abilityScoreOptions?: string[];
+
+  originFeat?: string;
+
   feature: BackgroundFeature;
 }
 
@@ -264,6 +268,65 @@ const curatedBackgrounds:
     },
   ];
 
+const grimHollowBackgrounds: CharacterBackground[] = [
+  ghBackground("augustine-trading-company-agent", "Agent der Augustine-Handelsgesellschaft", ["intelligence", "wisdom", "charisma"], "Scharfsinniger Sammler", ["history", "persuasion"], ["Fälscherwerkzeug"], ["Fälscherwerkzeug", "Geschichtsbuch", "Lupe", "10 Blatt Pergament", "Robe", "8 GM"]),
+  ghBackground("antiquarian", "Antiquar", ["dexterity", "constitution", "intelligence"], "Begabt", ["arcana", "history"], ["Tüftlerwerkzeug"], ["Dolch", "Tüftlerwerkzeug", "Alte Karten", "10 Blatt Pergament", "Robe", "8 GM"]),
+  ghBackground("beast-hunter", "Bestienjäger", ["strength", "dexterity", "intelligence"], "Bluthund", ["animal-handling", "survival"], ["Ledererwerkzeug"], ["Dolch", "Speer", "Ledererwerkzeug", "Jagdfalle", "Reisekleidung", "5 GM"]),
+  ghBackground("beggar", "Bettler", ["strength", "dexterity", "wisdom"], "Überlebender", ["insight", "persuasion"], ["Verkleidungsset"], ["Dolch", "Verkleidungsset", "Robe", "12 GM"]),
+  ghBackground("knight-of-the-order", "Ordensritter", ["strength", "wisdom", "charisma"], "Wilder Angreifer", ["animal-handling", "athletics"], ["Ein Musikinstrument"], ["Dolch", "Schild", "Instrument", "Reisekleidung", "6 GM"]),
+  ghBackground("courtier", "Höfling", ["intelligence", "wisdom", "charisma"], "Begabt", ["insight", "persuasion"], ["Musikinstrument oder Handwerkszeug"], ["Gewähltes Werkzeug oder Instrument", "Familienerbstück", "Feine Kleidung", "15 GM"]),
+  ghBackground("disgraced-raider", "Entehrter Plünderer", ["strength", "constitution", "wisdom"], "Wilder Angreifer", ["athletics", "nature"], ["Navigatorenwerkzeug"], ["Speer", "Navigatorenwerkzeug", "Baufälliges Ruderboot", "Reisekleidung", "8 GM"]),
+  ghBackground("emissary", "Gesandter", ["strength", "constitution", "charisma"], "Begabt", ["insight", "persuasion"], ["Kalligraphenwerkzeug"], ["Dolch", "Kalligraphenwerkzeug", "Diplomatenpapiere", "Feine Kleidung", "Siegelring", "10 GM"]),
+  ghBackground("executioner", "Henker", ["strength", "constitution", "intelligence"], "Todesgebunden", ["athletics", "medicine"], ["Schmiedewerkzeug"], ["Dolch", "Schmiedewerkzeug", "Fremdes Tagebuch", "Reisekleidung", "10 GM"]),
+  ghBackground("explorer", "Entdecker", ["strength", "constitution", "wisdom"], "Wachsam", ["athletics", "survival"], ["Navigatorenwerkzeug"], ["Dolch", "Navigatorenwerkzeug", "Karten", "Reisekleidung", "8 GM"]),
+  ghBackground("exterminator", "Schädlingsbekämpfer", ["dexterity", "constitution", "intelligence"], "Magie-Eingeweihter (Druide)", ["animal-handling", "medicine"], ["Giftmischerwerkzeug"], ["Dolch", "Giftmischerwerkzeug", "Jagdfalle", "Reisekleidung", "8 GM"]),
+  ghBackground("fey-blessed", "Von Feen Gesegneter", ["dexterity", "constitution", "charisma"], "Magie-Eingeweihter (Magier)", ["arcana", "performance"], ["Ein Musikinstrument"], ["Dolch", "Instrument", "Reisekleidung", "8 GM"]),
+  ghBackground("free-swords-mercenary", "Söldner der Freien Schwerter", ["strength", "dexterity", "constitution"], "Wille des Freischwert-Söldners", ["acrobatics", "athletics"], ["Ein Spielset"], ["Dolch", "Speer", "Spielset", "Robe", "10 GM"]),
+  ghBackground("heretic", "Häretiker", ["strength", "dexterity", "wisdom"], "Magie-Eingeweihter (Kleriker)", ["deception", "religion"], ["Verkleidungsset"], ["Verkleidungsset", "Häretischer Text", "Heiliges Symbol", "Reisekleidung", "10 GM"]),
+  ghBackground("inquisitor-of-the-faithful", "Inquisitor der Gläubigen", ["strength", "wisdom", "charisma"], "Überzeugender Inquisitor", ["intimidation", "religion"], ["Heilerausrüstung"], ["Keule", "Navigatorenwerkzeug", "Buch heiliger Riten", "Heiliges Symbol", "Verhörwerkzeug", "Handschellen", "Reisekleidung", "10 GM"]),
+  ghBackground("former-inquisitor", "Ehemaliger Inquisitor", ["strength", "wisdom", "charisma"], "Überzeugender Inquisitor", ["persuasion", "religion"], ["Navigatorenwerkzeug"], ["Keule", "Navigatorenwerkzeug", "Verkleidungsset", "Reisekleidung", "8 GM"]),
+  ghBackground("one-of-the-taken", "Einer der Fortgenommenen", ["dexterity", "wisdom", "charisma"], "Magie-Eingeweihter (Druide)", ["arcana", "nature"], ["Holzschnitzerwerkzeug"], ["Holzschnitzerwerkzeug", "Kräuterkundigenwerkzeug", "Reisekleidung", "8 GM"]),
+  ghBackground("physician", "Arzt", ["dexterity", "intelligence", "wisdom"], "Triage-Experte", ["medicine", "nature"], ["Kräuterkundigenwerkzeug"], ["Dolch oder Skalpell", "Heilerausrüstung", "Kräuterkundigenwerkzeug", "Bandagen", "Heilmittelbuch", "Blutegelglas", "Robe", "10 GM"]),
+  ghBackground("pioneer", "Pionier", ["strength", "constitution", "wisdom"], "Überlebender", ["athletics", "survival"], ["Zimmermanns- oder Maurerwerkzeug"], ["Dolch", "Gewähltes Werkzeug", "Maultier und Karren", "Reisekleidung", "8 GM"]),
+  ghBackground("pit-fighter", "Arenakämpfer", ["strength", "dexterity", "charisma"], "Wilder Angreifer", ["athletics", "performance"], ["Ein Spielset"], ["Dolch", "Speer", "Spielset", "Robe", "10 GM"]),
+  ghBackground("plague-marked", "Von der Seuche Gezeichneter", ["constitution", "intelligence", "wisdom"], "Triage-Experte", ["intimidation", "medicine"], ["Kräuterkundigenwerkzeug"], ["Kräuterkundigenwerkzeug", "Reisekleidung", "8 GM"]),
+  ghBackground("prisoner", "Gefangener", ["dexterity", "constitution", "charisma"], "Wachsam", ["deception", "sleight-of-hand"], ["Diebeswerkzeug"], ["Dolch oder Behelfsmesser", "Diebeswerkzeug", "Reisekleidung", "8 GM"]),
+  ghBackground("released-serf", "Freigelassener Leibeigener", ["constitution", "intelligence", "wisdom"], "Überlebender", ["perception", "stealth"], ["Beliebiges Handwerkszeug"], ["Dolch", "Gewähltes Handwerkszeug", "Beutel mit Reiseandenken", "Reisekleidung", "8 GM"]),
+  ghBackground("thaumaturges-servant", "Diener des Thaumaturgen", ["intelligence", "wisdom", "charisma"], "Gunst des Thaumaturgen", ["arcana", "insight"], ["Kartographenwerkzeug"], ["Kartographenwerkzeug", "Tinte und Feder", "Pergament", "Robe", "8 GM"]),
+  ghBackground("ebon-syndicate-smuggler", "Schmuggler des Ebon-Syndikats", ["dexterity", "intelligence", "charisma"], "Entschlossenheit des Syndikats", ["history", "stealth"], ["Fälscherwerkzeug"], ["Fälscherwerkzeug", "Truhe mit falschem Boden", "Pergament", "Kostüm", "8 GM"]),
+];
+
+function ghBackground(
+  id: string,
+  name: string,
+  abilityScoreOptions: string[],
+  originFeat: string,
+  skillProficiencies: CharacterBackground["skillProficiencies"],
+  toolProficiencies: string[],
+  equipment: string[],
+): CharacterBackground {
+  return {
+    id,
+    name,
+    description:
+      "Ein Grim-Hollow-Hintergrund aus Etharis mit festen Fertigkeiten, Werkzeugen, Startausrüstung und einem Ursprungstalent.",
+    source: "grim-hollow-2025",
+    skillProficiencies,
+    toolProficiencies,
+    languageChoices: 0,
+    equipment,
+    abilityScoreOptions,
+    originFeat,
+    feature: {
+      id: `${id}-origin-feat`,
+      name: originFeat,
+      description:
+        "Dieses Ursprungstalent gehört zu diesem Grim-Hollow-Hintergrund und sollte im Spiel als Starttalent der Figur berücksichtigt werden.",
+      source: "grim-hollow-2025",
+    },
+  };
+}
+
 
 const skillNameToId: Record<string, SkillId> = {
   "Akrobatik": "acrobatics", "Tierkunde": "animal-handling", "Arkane Kunde": "arcana",
@@ -337,6 +400,7 @@ export const backgrounds: CharacterBackground[] = [
     equipment: sourceBackgroundEquipment.get(entry.id) ?? entry.equipment,
   })),
   ...importedBackgrounds,
+  ...grimHollowBackgrounds,
 ]
   .sort((a, b) => a.name.localeCompare(b.name, "de"));
 export const backgroundRegistry = new Map(backgrounds.map((entry) => [entry.id, entry]));

@@ -805,3 +805,117 @@
     flex: 0 0 auto;
   }
 }
+
+/* PRINT POLISH 1.0.2 — table state summary for paper play */
+@media print {
+  .print-tabletop-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 1mm 1.3mm;
+  }
+
+  .print-tabletop-grid .print-number-line {
+    min-height: 7.4mm;
+    padding: .55mm .75mm;
+    background: linear-gradient(#fff 0%, #f7f7f7 100%);
+  }
+
+  .print-tabletop-grid .print-number-line:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .print-tabletop-grid .print-number-line span {
+    font-size: 4.6pt;
+    font-weight: 900;
+    letter-spacing: .055em;
+  }
+
+  .print-tabletop-grid .print-number-line strong {
+    margin-top: .25mm;
+    font-size: 6.4pt;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .print-tabletop-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .8mm;
+    margin-top: 1mm;
+    padding-top: .8mm;
+    border-top: .5px dashed #777;
+  }
+
+  .print-tabletop-resources span {
+    padding: .35mm .8mm;
+    border: .65px solid #111;
+    background: #f2f2f2;
+    font-size: 4.85pt;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .print-slot-row i {
+    min-width: 2.4mm;
+    text-align: center;
+  }
+
+  .print-slot-row i:has(+ i) {
+    margin-left: .25mm;
+  }
+}
+
+/* PRINT POLISH 1.0.3 — transformation rule text */
+@media print {
+  .print-transformation-rule {
+    break-inside: avoid;
+    margin-bottom: 1mm;
+    padding: .85mm 1mm;
+    border: .55px solid #8d847b;
+    background: #fff;
+  }
+
+  .print-transformation-rule header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1mm;
+    padding-bottom: .45mm;
+    border-bottom: .35px solid #b7afa7;
+  }
+
+  .print-transformation-rule strong {
+    min-width: 0;
+    font-size: 5.7pt;
+    line-height: 1.08;
+  }
+
+  .print-transformation-rule span {
+    flex: 0 0 auto;
+    padding: .2mm .55mm;
+    border: .45px solid #111;
+    background: #efefef;
+    font-size: 4.1pt;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .print-transformation-rule p {
+    margin: .55mm 0 0;
+    font-size: 4.9pt;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+
+  .print-transformation-rule--drawback {
+    border-color: #111;
+    background: linear-gradient(#fff 0%, #f5f2ef 100%);
+  }
+
+  .print-transformation-rule--drawback span {
+    background: #111;
+    color: #fff;
+  }
+}

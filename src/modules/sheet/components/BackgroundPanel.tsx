@@ -3,6 +3,15 @@ import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
 
+const abilityLabels: Record<string, string> = {
+  strength: "ST",
+  dexterity: "GE",
+  constitution: "KO",
+  intelligence: "IN",
+  wisdom: "WE",
+  charisma: "CH",
+};
+
 interface BackgroundPanelProps {
   character: CharacterArchiveEntry;
 }
@@ -78,6 +87,26 @@ export function BackgroundPanel({
                 : "Keine"}
             </dd>
           </div>
+
+          {backgroundDefinition?.abilityScoreOptions && (
+            <div>
+              <dt>Attributsoptionen</dt>
+
+              <dd>
+                {backgroundDefinition.abilityScoreOptions
+                  .map((ability) => abilityLabels[ability] ?? ability)
+                  .join(", ")}
+              </dd>
+            </div>
+          )}
+
+          {backgroundDefinition?.originFeat && (
+            <div>
+              <dt>Ursprungstalent</dt>
+
+              <dd>{backgroundDefinition.originFeat}</dd>
+            </div>
+          )}
         </dl>
       </article>
     </section>

@@ -18,6 +18,7 @@ import { getCharacterInventory } from "../archives/utils/getCharacterInventory";
 import { getCharacterVitals } from "../archives/utils/getCharacterVitals";
 import { getSpellDisplayValues } from "../sheet/utils/getSpellDisplayValues";
 import type { CharacterArchiveEntry } from "../archives/types";
+import type { TransformationFeatureKind } from "../../compendium/transformations";
 import "./character-print.css";
 
 interface CharacterPrintViewProps {
@@ -25,6 +26,16 @@ interface CharacterPrintViewProps {
 }
 
 const emptyLines = Array.from({ length: 5 }, (_, index) => index);
+
+const tableConditionLabels: Record<string, string> = {
+  concentrating: "Konzentration",
+  blessed: "Gesegnet",
+  frightened: "Verängstigt",
+  poisoned: "Vergiftet",
+  restrained: "Festgesetzt",
+  exhaustion: "Erschöpfung",
+  unconscious: "Bewusstlos",
+};
 
 export function CharacterPrintView({ character }: CharacterPrintViewProps) {
   const backgroundDefinition = getBackgroundById(character.backgroundId ?? "");
@@ -134,6 +145,23 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
     })
     .join(" · ");
 
+  const spentSpellSlotCount = Object.entries(derived.spellcasting.spellSlots)
+    .filter(([, total]) => (total ?? 0) > 0)
+    .reduce((sum, [level]) => {
+      const spent = character.spellcasting?.slots.spentSlots[
+        Number(level) as keyof typeof character.spellcasting.slots.spentSlots
+      ] ?? 0;
+      return sum + spent;
+    }, 0);
+  const activeConditionLabels = (character.conditionIds ?? [])
+    .map((conditionId) => tableConditionLabels[conditionId] ?? conditionId)
+    .filter(Boolean);
+  const resourceSummary = rules.classResources
+    .filter((resource) => resource.maximum > 0)
+    .slice(0, 4)
+    .map((resource) => `${resource.name}: ${resource.remaining}/${resource.maximum}`);
+  const hitDieLabel = `W${getClassById(character.classId ?? "")?.hitDie ?? "—"}`;
+
   const identitySubtitle = [character.className, character.level ? `Stufe ${character.level}` : "", character.ancestry]
     .filter(Boolean)
     .join(" · ");
@@ -202,9 +230,23 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
 
             <div className="print-death-strip print-reserve-strip">
               <strong>Reserven</strong>
-              <span>Trefferwürfel {Math.max(0, character.level - (character.spentHitDice ?? 0))}/{character.level} W{getClassById(character.classId ?? "")?.hitDie ?? "—"}</span>
+              <span>Trefferwürfel {Math.max(0, character.level - (character.spentHitDice ?? 0))}/{character.level} {hitDieLabel}</span>
               <span>Inspiration {character.inspiration ? "●" : "○"}</span>
             </div>
+
+            <PrintPanel title="Live am Tisch" compact>
+              <div className="print-tabletop-grid">
+                <PrintNumberLine label="Aktive Zustände" value={activeConditionLabels.length > 0 ? activeConditionLabels.join(" · ") : "Keine"} />
+                <PrintNumberLine label="Trefferwürfel" value={`${Math.max(0, character.level - (character.spentHitDice ?? 0))}/${character.level} ${hitDieLabel}`} />
+                <PrintNumberLine label="Inspiration" value={character.inspiration ? "Vorhanden" : "Offen"} />
+                <PrintNumberLine label="Slots verbraucht" value={derived.spellcasting.enabled ? spentSpellSlotCount : "—"} />
+              </div>
+              {resourceSummary.length > 0 && (
+                <div className="print-tabletop-resources">
+                  {resourceSummary.map((resource) => <span key={resource}>{resource}</span>)}
+                </div>
+              )}
+            </PrintPanel>
 
             <PrintPanel title="Angriffe & Zauberwirken">
               <div className="print-attacks-grid" role="table" aria-label="Angriffe und Zauberwirken">
@@ -374,12 +416,12 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
           <div className="print-transformation-grid">
             <div>
               <h3>Segen & Merkmale</h3>
-              {transformationBoons.slice(0, 8).map((feature) => <PrintRuleLine key={`${feature.stage}-${feature.id}`} text={`${feature.stage}. ${feature.name}`} />)}
+              {transformationBoons.slice(0, 8).map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
               {transformationBoons.length === 0 && emptyLines.slice(0, 4).map((line) => <PrintRuleLine key={line} />)}
             </div>
             <div>
               <h3>Makel & Konsequenzen</h3>
-              {transformationFlaws.slice(0, 8).map((feature) => <PrintRuleLine key={`${feature.stage}-${feature.id}`} text={`${feature.stage}. ${feature.name}`} />)}
+              {transformationFlaws.slice(0, 8).map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
               {transformationFlaws.length === 0 && emptyLines.slice(0, 4).map((line) => <PrintRuleLine key={line} />)}
             </div>
           </div>
@@ -412,7 +454,10 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                 {level > 0 && (
                   <div className="print-slot-row">
                     <b>Plätze</b>
-                    <span>{Array.from({ length: derived.spellcasting.spellSlots[level as keyof typeof derived.spellcasting.spellSlots] ?? 0 }, (_, index) => <i key={index}>○</i>)}</span>
+                    <span>{Array.from({ length: derived.spellcasting.spellSlots[level as keyof typeof derived.spellcasting.spellSlots] ?? 0 }, (_, index) => {
+                      const spent = character.spellcasting?.slots.spentSlots[level as keyof typeof character.spellcasting.slots.spentSlots] ?? 0;
+                      return <i key={index}>{index < spent ? "●" : "○"}</i>;
+                    })}</span>
                   </div>
                 )}
                 <div className="print-spell-list print-spell-list--detailed">
@@ -538,10 +583,12 @@ const printFeatureKindLabels = {
   "bonus-action": "Bonusaktion",
   reaction: "Reaktion",
   resource: "Ressource",
+  benefit: "Segen",
+  drawback: "Makel",
 } as const;
 
-function formatPrintFeatureKind(kind: keyof typeof printFeatureKindLabels): string {
-  return printFeatureKindLabels[kind];
+function formatPrintFeatureKind(kind: keyof typeof printFeatureKindLabels | TransformationFeatureKind): string {
+  return printFeatureKindLabels[kind as keyof typeof printFeatureKindLabels] ?? kind;
 }
 
 const printRechargeLabels = {
@@ -565,6 +612,17 @@ function PrintNumberLine({ label, value }: { label: string; value: string | numb
 }
 function PrintRuleLine({ text = "" }: { text?: string }) {
   return <div className="print-rule-line">{text}</div>;
+}
+function PrintTransformationRule({ feature }: { feature: { stage: number; name: string; description: string; kind: TransformationFeatureKind } }) {
+  return (
+    <article className={`print-transformation-rule print-transformation-rule--${feature.kind}`}>
+      <header>
+        <strong>{feature.stage}. {feature.name}</strong>
+        <span>{formatPrintFeatureKind(feature.kind)}</span>
+      </header>
+      <p>{feature.description}</p>
+    </article>
+  );
 }
 function StoryNote({ label, text }: { label: string; text: string }) {
   return <div className="print-story-note"><b>{label}</b><p>{text}</p></div>;

@@ -1,0 +1,25 @@
+.level-up { display: grid; gap: 1.4rem; margin: 1.5rem 0; }
+.level-up__header h2 { margin: .4rem 0; }
+.level-up__header > p:first-child { color: #78572e; text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; }
+.level-up__steps, .level-up__footer { display: flex; flex-wrap: wrap; gap: .7rem; }
+.level-up__steps button { flex: 1 1 180px; padding: .85rem; border: 1px solid #94744b; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.level-up__steps button[aria-current] { background: #342920; color: #f5e6ca; }
+.level-up__card { margin: 0; padding: 1.25rem; border: 1px solid #ae947066; border-radius: 8px; background: #fffaf02e; min-width: 0; }
+.level-up__card h3 { margin-top: 0; }
+.level-up__card legend { padding: 0 .5rem; font-weight: 700; }
+.level-up__fields { display: flex; flex-wrap: wrap; gap: 1rem; }
+.level-up__card > label, .level-up__fields > label { display: grid; gap: .5rem; flex: 1 1 200px; }
+.level-up select, .level-up input[type=number] { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #94744b; border-radius: 4px; background: #fff8ea; color: #30271e; font: inherit; }
+.level-up__options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: .65rem; }
+.level-up__options label { display: flex; align-items: flex-start; gap: .65rem; padding: .8rem; border: 1px solid #ae947066; border-radius: 4px; cursor: pointer; }
+.level-up__options label:has(input:checked) { border-color: #78572e; background: #b8944922; }
+.level-up__options input { margin-top: .3rem; accent-color: #78572e; }
+.level-up__options small { display: block; margin-top: .35rem; line-height: 1.5; }
+.level-up__summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+.level-up__summary dt { font-size: .85rem; }
+.level-up__summary dd { margin: .4rem 0 0; font-weight: 700; }
+.level-up__errors { border-left: 3px solid #953b30; padding: 1rem; background: #953b3010; }
+.level-up__footer { padding: 1rem 0; }
+.level-up button:focus-visible, .level-up input:focus-visible, .level-up select:focus-visible { outline: 3px solid #b58b43; outline-offset: 3px; }
+.level-up button:disabled { opacity: .55; cursor: not-allowed; }
+@media print { .level-up { display: none; } }

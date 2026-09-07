@@ -18,12 +18,14 @@ export function useCharacterRules(
   character: CharacterArchiveEntry,
 ) {
   return useMemo(
-    () =>
-      calculateCharacterRules(
+    () => ({
+      ...calculateCharacterRules(
         createCharacterRuleInput(
           character,
         ),
       ),
+      ...(character.vitals ? { maximumHitPoints: character.vitals.maximumHitPoints } : {}),
+    }),
 
     [character],
   );

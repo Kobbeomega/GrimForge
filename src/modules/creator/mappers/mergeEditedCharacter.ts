@@ -1,4 +1,5 @@
 import type { CharacterArchiveEntry } from "../../archives/types";
+import { calculateMaximumHitPoints } from "../../../rules/hitPoints";
 
 /**
  * Merges creator-owned character-definition changes with sheet/session state.
@@ -45,7 +46,14 @@ export function mergeEditedCharacter(
     original.vitals?.maximumHitPoints ?? preview.vitals?.maximumHitPoints ?? 0;
   const oldCurrent = original.vitals?.currentHitPoints ?? oldMaximum;
   const damageTaken = Math.max(0, oldMaximum - oldCurrent);
-  const newMaximum = preview.vitals?.maximumHitPoints ?? oldMaximum;
+  const originalCalculatedMaximum = calculateMaximumHitPoints({
+    classId: original.classId ?? "", level: original.level,
+    constitution: original.abilityScores?.constitution ?? 10,
+    bonusPerLevel: original.classId === "sorcerer" && original.subclassId === "draconic-bloodline" ? 1 : 0,
+  });
+  const preserveRolledHitPoints = Boolean(original.levelUpHistory?.length) && original.classId === preview.classId && original.level === preview.level;
+  const newMaximum = Math.max(1, (preview.vitals?.maximumHitPoints ?? oldMaximum) +
+    (preserveRolledHitPoints ? oldMaximum - originalCalculatedMaximum : 0));
 
   return {
     ...preview,
@@ -53,6 +61,11 @@ export function mergeEditedCharacter(
     createdAt: original.createdAt ?? preview.createdAt,
     updatedAt: new Date().toISOString(),
     journal: original.journal,
+    levelUpHistory: original.levelUpHistory,
+    spellcasting: preview.spellcasting ? {
+      ...preview.spellcasting,
+      slots: structuredClone(original.spellcasting?.slots ?? { spentSlots: {}, spentPactSlots: 0 }),
+    } : original.spellcasting,
     inspiration: original.inspiration ?? false,
     spentClassResources: { ...(original.spentClassResources ?? {}) },
     spentHitDice: Math.min(
@@ -72,6 +85,7 @@ export function mergeEditedCharacter(
     vitals: preview.vitals
       ? {
           ...preview.vitals,
+          maximumHitPoints: newMaximum,
           currentHitPoints: Math.max(
             0,
             Math.min(newMaximum, newMaximum - damageTaken),

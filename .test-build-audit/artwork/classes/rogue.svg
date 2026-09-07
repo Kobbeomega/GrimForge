@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" role="img" aria-label="alley rooftops and hidden knives">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08070b"/><stop offset="0.52" stop-color="#47444c"/><stop offset="1" stop-color="#09080c"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#8c8793" stop-opacity=".78"/><stop offset="1" stop-color="#8c8793" stop-opacity="0"/></radialGradient>
+    <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eee4d0" stop-opacity=".16"/><stop offset="1" stop-color="#eee4d0" stop-opacity="0"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="grain"><feTurbulence baseFrequency=".8" numOctaves="2" seed="61" type="fractalNoise"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .12 0"/></filter>
+  </defs>
+  <rect width="1600" height="600" fill="url(#sky)"/>
+  <circle cx="1256" cy="186" r="321.20000000000005" fill="url(#glow)" filter="url(#blur)"/>
+  <circle cx="1256" cy="186" r="146" fill="#ddd1b8" opacity=".34"/>
+  <path d="M0 430 L170 356 L330 440 L510 526 L700 430 L910 276 L1110 420 L1320 576 L1600 410 V600 H0Z" fill="#0b0a0e" opacity=".9"/>
+  <path d="M0 500 C240 430 370 530 620 470 C850 414 1010 520 1240 450 C1420 400 1510 455 1600 430 V600 H0Z" fill="url(#mist)" opacity=".65"/>
+  <g opacity=".28" stroke="#8c8793" fill="none">
+    <circle cx="1250" cy="300" r="180"/><circle cx="1250" cy="300" r="135"/><path d="M1070 300h360M1250 120v360M1123 173l254 254M1377 173l-254 254"/>
+  </g>
+  <text x="1235" y="390" text-anchor="middle" fill="#f0e2c8" opacity=".34" font-family="Georgia, serif" font-size="270">◆</text>
+  <g opacity=".42" fill="#8c8793"><circle cx="930" cy="160" r="3"/><circle cx="980" cy="220" r="2"/><circle cx="1460" cy="145" r="4"/><circle cx="1380" cy="265" r="2"/><circle cx="1110" cy="90" r="2"/></g>
+  <rect width="1600" height="600" filter="url(#grain)" opacity=".45"/>
+  <path d="M32 32H1568V568H32Z" fill="none" stroke="#e1cfaa" stroke-opacity=".22" stroke-width="2"/>
+  <path d="M32 90V32H90M1510 32H1568V90M32 510V568H90M1510 568H1568V510" fill="none" stroke="#8c8793" stroke-opacity=".48" stroke-width="4"/>
+</svg>

@@ -8,6 +8,15 @@ import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
 
+const abilityLabels: Record<string, string> = {
+  strength: "ST",
+  dexterity: "GE",
+  constitution: "KO",
+  intelligence: "IN",
+  wisdom: "WE",
+  charisma: "CH",
+};
+
 interface FeaturesPanelProps {
   character: CharacterArchiveEntry;
 }
@@ -58,6 +67,15 @@ export function FeaturesPanel({
           Wandlung deines Charakters.
         </span>
       </header>
+
+      {Boolean(character.levelUpHistory?.length) && <section className="level-up__card">
+        <h3>Deine Aufstiege</h3>
+        <ul>{character.levelUpHistory?.map((entry, index) => <li key={`${entry.date}-${index}`}>
+          Stufe {entry.fromLevel} → {entry.toLevel} · +{entry.hitPointGain} maximale TP
+          {entry.hitPointMode === "roll" ? ` (Wurf: ${entry.hitDieRoll})` : " (fester Wert)"}
+          {" · "}{new Date(entry.date).toLocaleDateString("de-DE")}
+        </li>)}</ul>
+      </section>}
 
       <div className="features-panel__grid">
         <FeatureRecord
@@ -131,6 +149,31 @@ export function FeaturesPanel({
                     ? `${languageChoices} nach Wahl`
                     : "Keine",
               },
+              ...(backgroundDefinition?.abilityScoreOptions
+                ? [
+                    {
+                      label: "Attributsoptionen",
+                      value:
+                        backgroundDefinition.abilityScoreOptions
+                          .map(
+                            (ability) =>
+                              abilityLabels[
+                                ability
+                              ] ?? ability,
+                          )
+                          .join(", "),
+                    },
+                  ]
+                : []),
+              ...(backgroundDefinition?.originFeat
+                ? [
+                    {
+                      label: "Ursprungstalent",
+                      value:
+                        backgroundDefinition.originFeat,
+                    },
+                  ]
+                : []),
             ]}
           />
         </FeatureRecord>

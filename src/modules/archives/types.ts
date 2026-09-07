@@ -161,6 +161,19 @@ export interface CharacterArchiveEntry {
 
   level: number;
 
+  /** Abgeschlossene Aufstiege; ältere Akten benötigen keine Migration. */
+  levelUpHistory?: Array<{
+    fromLevel: number;
+    toLevel: number;
+    date: string;
+    hitPointGain: number;
+    hitPointMode: "average" | "roll";
+    hitDieRoll?: number;
+    subclassId?: string;
+    pathChoices: CharacterPathChoices;
+    spellIds: string[];
+  }>;
+
   skillProficiencies?: SkillId[];
   skillExpertise?: SkillId[];
 
@@ -200,6 +213,9 @@ export interface CharacterArchiveEntry {
 
   /** D&D-5e-Inspiration: maximal ein Inspirationspunkt gleichzeitig. */
   inspiration?: boolean;
+
+  /** Schnelle Spieltisch-Marker wie vergiftet, konzentriert oder erschöpft. */
+  conditionIds?: string[];
 
   sealId?: string;
 
