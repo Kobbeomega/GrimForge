@@ -16,6 +16,10 @@ import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
 
+import {
+  getFeatById,
+} from "../../../compendium/feats";
+
 export interface PassiveScores {
   perception: number;
   investigation: number;
@@ -94,6 +98,39 @@ function calculatePassiveScore(
         definition.skillId,
       ) ?? false;
 
+  const featBonus =
+    (character.featIds ?? []).reduce(
+      (sum, featId) => {
+        const feat =
+          getFeatById(featId);
+
+        if (
+          definition.skillId ===
+          "perception"
+        ) {
+          return (
+            sum +
+            (feat?.bonuses
+              ?.passivePerception ?? 0)
+          );
+        }
+
+        if (
+          definition.skillId ===
+          "investigation"
+        ) {
+          return (
+            sum +
+            (feat?.bonuses
+              ?.passiveInvestigation ?? 0)
+          );
+        }
+
+        return sum;
+      },
+      0,
+    );
+
   return (
     10 +
     getSkillBonus({
@@ -103,6 +140,7 @@ function calculatePassiveScore(
       proficiencyBonus,
       proficient,
       expertise,
-    })
+    }) +
+    featBonus
   );
 }

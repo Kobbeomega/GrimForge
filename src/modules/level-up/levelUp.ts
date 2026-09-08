@@ -1,5 +1,6 @@
 import { getCharacterPathChoices, getClassById, getClassSubclassUnlockLevel, getSubclassUnlockLevel, isCharacterPathChoiceComplete, type CharacterPathChoices } from "../../compendium/classes";
-import { defaultAbilityScores, getAbilityModifier } from "../../compendium/core";
+import { defaultAbilityScores, getAbilityModifier, isAbilityId, type AbilityId, type AbilityScores } from "../../compendium/core";
+import { getFeatAbilityChoices, getFeatById, type CharacterFeatChoices } from "../../compendium/feats";
 import { getSpellById, type CharacterSpellcasting } from "../../compendium/spells";
 import type { CharacterArchiveEntry } from "../archives/types";
 import { getCharacterVitals } from "../archives/utils/getCharacterVitals";
@@ -7,13 +8,18 @@ import { mapArchiveEntryToDraft } from "../creator/mappers/mapArchiveEntryToDraf
 import { mapDraftToArchiveEntry } from "../creator/mappers/mapDraftToArchiveEntry";
 import { getSpellSelectionRules, validateSpellSelection } from "../creator/utils/getSpellSelectionRules";
 
-export const MAX_LEVEL_UP_LEVEL = 3;
+export const MAX_LEVEL_UP_LEVEL = 5;
 export interface LevelUpDraft {
   fromLevel: number;
   subclassId: string;
   pathChoices: CharacterPathChoices;
   hitPointMode: "average" | "roll";
   hitDieRoll: number;
+  abilityScoreMode: "none" | "increase" | "feat";
+  abilityScoreIncreases: Partial<Record<AbilityId, number>>;
+  featId: string;
+  featChoices: CharacterFeatChoices;
+  featNote: string;
   spellcasting: CharacterSpellcasting;
 }
 
@@ -28,8 +34,36 @@ export function createLevelUpDraft(character: CharacterArchiveEntry): LevelUpDra
     pathChoices: structuredClone(mapArchiveEntryToDraft(character).pathChoices),
     hitPointMode: "average",
     hitDieRoll: Math.floor((getClassById(character.classId ?? "")?.hitDie ?? 8) / 2) + 1,
+    abilityScoreMode: character.level + 1 === 4 ? "increase" : "none",
+    abilityScoreIncreases: {},
+    featId: "",
+    featChoices: structuredClone(character.featChoices ?? {}),
+    featNote: "",
     spellcasting: structuredClone(character.spellcasting ?? { spellIds: [], slots: { spentSlots: {}, spentPactSlots: 0 } }),
   };
+}
+
+function applyAbilityScoreIncrease(scores: AbilityScores, draft: LevelUpDraft): AbilityScores {
+  const next = { ...scores };
+  const increases = draft.abilityScoreMode === "feat"
+    ? getFeatAbilityIncreases(draft)
+    : draft.abilityScoreIncreases;
+  if (draft.abilityScoreMode === "none") return next;
+  for (const [abilityId, rawIncrease] of Object.entries(increases)) {
+    if (!isAbilityId(abilityId)) continue;
+    const increase = Number.isFinite(rawIncrease) ? Math.floor(rawIncrease ?? 0) : 0;
+    next[abilityId] = Math.min(20, next[abilityId] + Math.max(0, increase));
+  }
+  return next;
+}
+
+function getFeatAbilityIncreases(draft: LevelUpDraft): Partial<Record<AbilityId, number>> {
+  const feat = getFeatById(draft.featId);
+  const increases: Partial<Record<AbilityId, number>> = { ...(feat?.abilityIncreases ?? {}) };
+  for (const abilityId of getFeatAbilityChoices(feat, draft.featChoices)) {
+    increases[abilityId] = (increases[abilityId] ?? 0) + 1;
+  }
+  return increases;
 }
 
 export function getLevelUpHitPointGain(character: CharacterArchiveEntry, draft: LevelUpDraft): number {
@@ -42,10 +76,14 @@ export function getLevelUpHitPointGain(character: CharacterArchiveEntry, draft: 
 
 export function previewLevelUp(character: CharacterArchiveEntry, draft: LevelUpDraft): CharacterArchiveEntry {
   const level = character.level + 1;
+  const baseAbilityScores = applyAbilityScoreIncrease({ ...defaultAbilityScores, ...(character.baseAbilityScores ?? character.abilityScores) }, draft);
   // Reuse existing choice resolution, but copy only progression-owned fields.
-  const mapped = mapDraftToArchiveEntry({ ...mapArchiveEntryToDraft(character), level, subclassId: draft.subclassId, pathChoices: draft.pathChoices });
+  const mapped = mapDraftToArchiveEntry({ ...mapArchiveEntryToDraft(character), level, subclassId: draft.subclassId, pathChoices: draft.pathChoices, baseAbilities: baseAbilityScores });
   const vitals = getCharacterVitals(character);
   const maximumHitPoints = vitals.maximumHitPoints + getLevelUpHitPointGain(character, draft);
+  const speed = character.classId === "barbarian" && character.level < 5 && level >= 5
+    ? vitals.speed + 3
+    : vitals.speed;
   return {
     ...character,
     level,
@@ -56,8 +94,16 @@ export function previewLevelUp(character: CharacterArchiveEntry, draft: LevelUpD
     skillExpertise: [...new Set([...(character.skillExpertise ?? []), ...(mapped.skillExpertise ?? [])])],
     toolProficiencies: [...new Set([...(character.toolProficiencies ?? []), ...(mapped.toolProficiencies ?? [])])],
     languageChoices: Math.max(character.languageChoices ?? 0, mapped.languageChoices ?? 0),
+    baseAbilityScores: mapped.baseAbilityScores,
+    abilityScores: mapped.abilityScores,
+    featIds: draft.abilityScoreMode === "feat" && draft.featId
+      ? [...new Set([...(character.featIds ?? []), draft.featId])]
+      : character.featIds,
+    featChoices: draft.abilityScoreMode === "feat" && draft.featId
+      ? structuredClone(draft.featChoices)
+      : character.featChoices,
     spellcasting: { ...structuredClone(draft.spellcasting), slots: structuredClone(character.spellcasting?.slots ?? { spentSlots: {}, spentPactSlots: 0 }) },
-    vitals: { ...vitals, maximumHitPoints, currentHitPoints: Math.min(vitals.currentHitPoints, maximumHitPoints) },
+    vitals: { ...vitals, maximumHitPoints, currentHitPoints: Math.min(vitals.currentHitPoints, maximumHitPoints), speed },
   };
 }
 
@@ -70,12 +116,40 @@ export function validateLevelUp(character: CharacterArchiveEntry, draft: LevelUp
   if (!Number.isInteger(character.level) || character.level < 1 || level > MAX_LEVEL_UP_LEVEL) return [`Der aktuelle Regelumfang unterstützt Aufstiege bis Stufe ${MAX_LEVEL_UP_LEVEL}.`];
   if (draft.fromLevel !== character.level) errors.push("Die Charakterstufe hat sich geändert. Öffne den Aufstieg erneut.");
   if (draft.hitPointMode === "roll" && (!Number.isInteger(draft.hitDieRoll) || draft.hitDieRoll < 1 || draft.hitDieRoll > definition.hitDie)) errors.push(`Trage ein Würfelergebnis von 1 bis ${definition.hitDie} ein.`);
+  if (level === 4) {
+    if (draft.abilityScoreMode === "none") errors.push("Stufe 4 benötigt eine Attributswerterhöhung oder ein Talent.");
+    if (draft.abilityScoreMode === "increase") {
+      const baseScores = { ...defaultAbilityScores, ...character.abilityScores };
+      const entries = Object.entries(draft.abilityScoreIncreases)
+        .filter(([abilityId, increase]) => isAbilityId(abilityId) && Number.isFinite(increase) && Math.floor(increase ?? 0) > 0)
+        .map(([abilityId, increase]) => [abilityId as AbilityId, Math.floor(increase ?? 0)] as const);
+      const total = entries.reduce((sum, [, increase]) => sum + increase, 0);
+      if (total !== 2) errors.push("Verteile auf Stufe 4 genau 2 Attributspunkte.");
+      if (entries.some(([, increase]) => increase > 2)) errors.push("Ein Attribut kann durch diesen Aufstieg höchstens um 2 steigen.");
+      if (entries.some(([abilityId, increase]) => baseScores[abilityId] + increase > 20)) errors.push("Attributswerte dürfen durch den Aufstieg nicht über 20 steigen.");
+    }
+    if (draft.abilityScoreMode === "feat") {
+      const feat = getFeatById(draft.featId);
+      if (!feat) errors.push("Wähle ein Talent.");
+      if (feat && character.featIds?.includes(feat.id)) errors.push("Dieses Talent ist bereits gewählt.");
+      if (feat?.abilityChoice) {
+        const selected = getFeatAbilityChoices(feat, draft.featChoices);
+        if (selected.length !== feat.abilityChoice.choose) errors.push(`${feat.name}: Wähle ${feat.abilityChoice.choose} Attribut${feat.abilityChoice.choose === 1 ? "" : "e"}.`);
+      }
+      const featIncreases = getFeatAbilityIncreases(draft);
+      const baseScores = { ...defaultAbilityScores, ...(character.baseAbilityScores ?? character.abilityScores) };
+      if (Object.entries(featIncreases).some(([abilityId, increase]) => isAbilityId(abilityId) && baseScores[abilityId] + (increase ?? 0) > 20)) errors.push("Talent-Attributsboni dürfen Werte nicht über 20 steigern.");
+    }
+  } else if (draft.abilityScoreMode !== "none") {
+    errors.push("Attributswerterhöhung oder Talent ist in diesem Aufstieg nicht vorgesehen.");
+  }
   const unlock = getClassSubclassUnlockLevel(classId);
   if (unlock && level >= unlock && !draft.subclassId) errors.push("Wähle eine Unterklasse.");
   if (character.subclassId && draft.subclassId !== character.subclassId) errors.push("Eine bestehende Unterklasse kann beim Aufstieg nicht gewechselt werden.");
   if (draft.subclassId) {
     const required = getSubclassUnlockLevel(classId, draft.subclassId);
-    if (!required || required > level) errors.push("Diese Unterklasse ist auf der neuen Stufe nicht verfügbar.");
+    const keepsExistingEarlySubclass = character.subclassId === draft.subclassId && Boolean(required);
+    if (!required || (required > level && !keepsExistingEarlySubclass)) errors.push("Diese Unterklasse ist auf der neuen Stufe nicht verfügbar.");
   }
   const preview = previewLevelUp(character, draft);
   const definitions = getCharacterPathChoices(classId, draft.subclassId, level, draft.pathChoices);
@@ -114,6 +188,11 @@ export function applyLevelUp(character: CharacterArchiveEntry, draft: LevelUpDra
       fromLevel: character.level, toLevel: next.level, date: timestamp,
       hitPointGain: getLevelUpHitPointGain(character, draft), hitPointMode: draft.hitPointMode,
       hitDieRoll: draft.hitPointMode === "roll" ? draft.hitDieRoll : undefined,
+      abilityScoreMode: draft.abilityScoreMode,
+      abilityScoreIncreases: structuredClone(draft.abilityScoreIncreases),
+      featId: draft.abilityScoreMode === "feat" ? draft.featId : undefined,
+      featChoices: draft.abilityScoreMode === "feat" ? structuredClone(draft.featChoices) : undefined,
+      featNote: draft.abilityScoreMode === "feat" ? draft.featNote.trim() : undefined,
       subclassId: next.subclassId, pathChoices: structuredClone(next.pathChoices ?? {}),
       spellIds: next.spellcasting?.spellIds.map((selection) => selection.spellId) ?? [],
     }],

@@ -4,6 +4,10 @@ import {
   getCharacterPathChoiceSummary,
 } from "../../../compendium/classes";
 
+import {
+  getFeatById,
+} from "../../../compendium/feats";
+
 import type {
   CharacterArchiveEntry,
 } from "../../archives/types";
@@ -54,6 +58,10 @@ export function FeaturesPanel({
     classDefinition?.savingThrows ?? [];
 
   const pathChoiceSummary = getCharacterPathChoiceSummary(character.pathChoices);
+  const chosenFeats =
+    (character.featIds ?? [])
+      .map((featId) => getFeatById(featId))
+      .filter((feat): feat is NonNullable<typeof feat> => Boolean(feat));
 
   return (
     <section className="features-panel">
@@ -73,9 +81,30 @@ export function FeaturesPanel({
         <ul>{character.levelUpHistory?.map((entry, index) => <li key={`${entry.date}-${index}`}>
           Stufe {entry.fromLevel} → {entry.toLevel} · +{entry.hitPointGain} maximale TP
           {entry.hitPointMode === "roll" ? ` (Wurf: ${entry.hitDieRoll})` : " (fester Wert)"}
+          {entry.abilityScoreMode === "increase" && entry.abilityScoreIncreases
+            ? ` · Attribute: ${Object.entries(entry.abilityScoreIncreases).map(([abilityId, value]) => `${abilityLabels[abilityId] ?? abilityId} +${value}`).join(", ")}`
+            : ""}
+          {entry.abilityScoreMode === "feat" && entry.featId
+            ? ` · Talent: ${getFeatById(entry.featId)?.name ?? entry.featId}`
+            : ""}
           {" · "}{new Date(entry.date).toLocaleDateString("de-DE")}
         </li>)}</ul>
       </section>}
+
+      {chosenFeats.length > 0 && (
+        <section className="level-up__card">
+          <h3>Talente</h3>
+          <ul>
+            {chosenFeats.map((feat) => (
+              <li key={feat.id}>
+                <strong>{feat.name}</strong>
+                {" — "}
+                {feat.description}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="features-panel__grid">
         <FeatureRecord

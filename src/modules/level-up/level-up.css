@@ -7,9 +7,18 @@
 .level-up__card { margin: 0; padding: 1.25rem; border: 1px solid #ae947066; border-radius: 8px; background: #fffaf02e; min-width: 0; }
 .level-up__card h3 { margin-top: 0; }
 .level-up__card legend { padding: 0 .5rem; font-weight: 700; }
-.level-up__fields { display: flex; flex-wrap: wrap; gap: 1rem; }
+.level-up__fields, .level-up__mode-options { display: flex; flex-wrap: wrap; gap: 1rem; }
 .level-up__card > label, .level-up__fields > label { display: grid; gap: .5rem; flex: 1 1 200px; }
-.level-up select, .level-up input[type=number] { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #94744b; border-radius: 4px; background: #fff8ea; color: #30271e; font: inherit; }
+.level-up select, .level-up input[type=number], .level-up input[type=text] { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #94744b; border-radius: 4px; background: #fff8ea; color: #30271e; font: inherit; }
+.level-up__mode-options label { display: flex; align-items: center; gap: .45rem; padding: .65rem .8rem; border: 1px solid #ae947066; border-radius: 4px; cursor: pointer; }
+.level-up__mode-options label:has(input:checked) { border-color: #78572e; background: #b8944922; }
+.level-up__ability-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: .65rem; }
+.level-up__ability-grid label { display: grid; grid-template-columns: minmax(0,1fr) 5.5rem; align-items: center; gap: .6rem; padding: .7rem; border: 1px solid #ae947066; border-radius: 4px; }
+.level-up__ability-grid span { display: grid; gap: .2rem; font-weight: 700; }
+.level-up__ability-grid small { color: #6d5b47; font-weight: 500; }
+.level-up__feat-preview { display: grid; gap: .75rem; margin-top: .8rem; padding: .9rem; border: 1px solid #ae947066; border-radius: 6px; background: #fff8ea66; }
+.level-up__feat-preview > strong { color: #4d3423; font-size: 1.05rem; }
+.level-up__feat-preview p { margin: 0; line-height: 1.55; }
 .level-up__options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: .65rem; }
 .level-up__options label { display: flex; align-items: flex-start; gap: .65rem; padding: .8rem; border: 1px solid #ae947066; border-radius: 4px; cursor: pointer; }
 .level-up__options label:has(input:checked) { border-color: #78572e; background: #b8944922; }

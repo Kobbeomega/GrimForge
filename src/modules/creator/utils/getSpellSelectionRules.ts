@@ -72,7 +72,7 @@ export function getSpellSelectionRules({
       cantripsRequired: Math.max(0, cantripsKnown - forcedCantripIds.length),
       levelledSpellsRequired: spellsKnown,
       preparedSpellsRequired: 0,
-      maximumSpellLevel: level >= 3 ? 1 : 0,
+      maximumSpellLevel: getMaximumSpellLevel(subclassProfile.sourceClassId, level),
       grantedSpellIds: [...new Set([...grantedSpellIds, ...forcedCantripIds])],
       expandedSpellIds,
       forcedCantripIds,
@@ -316,3 +316,4 @@ function formatSchool(school: SpellSchool): string {
   };
   return labels[school];
 }
+

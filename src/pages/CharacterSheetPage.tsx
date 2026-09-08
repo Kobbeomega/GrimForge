@@ -491,9 +491,9 @@ export function CharacterSheetPage({
 
         <div className="sheet-toolbar__actions">
           <GrimButton type="button" disabled={levelUpOpen || character.level >= MAX_LEVEL_UP_LEVEL || !getClassById(character.classId ?? "")}
-            title={character.level >= MAX_LEVEL_UP_LEVEL ? "Der aktuelle Regelumfang reicht bis Stufe 3." : "Nächste Charakterstufe vorbereiten"}
+            title={character.level >= MAX_LEVEL_UP_LEVEL ? "Der aktuelle Regelumfang reicht bis Stufe 5." : "Nächste Charakterstufe vorbereiten"}
             onClick={() => { setLevelUpNotice(""); setLevelUpOpen(true); }}>
-            {character.level >= MAX_LEVEL_UP_LEVEL ? "Stufe 3 erreicht" : "Level-up"}
+            {character.level >= MAX_LEVEL_UP_LEVEL ? "Stufe 5 erreicht" : "Level-up"}
           </GrimButton>
           <GrimButton
             type="button"
@@ -1048,3 +1048,4 @@ function formatDate(
     },
   ).format(date);
 }
+

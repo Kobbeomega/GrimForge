@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getCharacterClassFeatures, getCharacterPathChoices, getClassById, getClassSubclassUnlockLevel, getSubclassUnlockLevel } from "../../compendium/classes";
-import { defaultAbilityScores, getAbilityModifier, getProficiencyBonus } from "../../compendium/core";
+import { abilityIds, abilityLabels, defaultAbilityScores, getAbilityModifier, getProficiencyBonus, type AbilityId } from "../../compendium/core";
+import { feats, getFeatAbilityChoices, getFeatById } from "../../compendium/feats";
 import { GrimButton } from "../../components/ui/GrimButton";
 import type { CharacterArchiveEntry } from "../archives/types";
 import { SpellsStep } from "../creator/components/steps/SpellStep";
@@ -30,6 +31,30 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
   const oldFeatures = new Set(getCharacterClassFeatures({ classId, subclassId: character.subclassId, level: character.level }).map((feature) => feature.id));
   const newFeatures = getCharacterClassFeatures({ classId, subclassId: draft.subclassId, level }).filter((feature) => !oldFeatures.has(feature.id));
   const steps = ["Trefferpunkte & Klasse", "Zauber", "Aufstieg prüfen"];
+  const currentAbilityScores = { ...defaultAbilityScores, ...character.abilityScores };
+  const abilityIncreaseTotal = Object.values(draft.abilityScoreIncreases).reduce((sum, increase) => sum + (Number.isFinite(increase) ? Math.max(0, Math.floor(increase ?? 0)) : 0), 0);
+  const selectedFeat = getFeatById(draft.featId);
+
+  function setAbilityIncrease(abilityId: AbilityId, increase: number) {
+    const next = { ...draft.abilityScoreIncreases };
+    if (increase <= 0 || !Number.isFinite(increase)) delete next[abilityId];
+    else next[abilityId] = Math.min(2, Math.floor(increase));
+    setDraft({ ...draft, abilityScoreIncreases: next });
+  }
+
+  function setFeatAbilityChoice(abilityId: AbilityId) {
+    if (!selectedFeat?.abilityChoice) return;
+    setDraft({
+      ...draft,
+      featChoices: {
+        ...draft.featChoices,
+        [selectedFeat.id]: {
+          ...(draft.featChoices[selectedFeat.id] ?? {}),
+          [selectedFeat.abilityChoice.id]: [abilityId],
+        },
+      },
+    });
+  }
 
   function save() {
     try { onSave(applyLevelUp(character, draft)); }
@@ -62,6 +87,47 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
           <strong>Maximale TP: {character.vitals?.maximumHitPoints ?? 10} → {Number.isFinite(preview.vitals?.maximumHitPoints) ? preview.vitals?.maximumHitPoints : "—"} (+{Number.isFinite(getLevelUpHitPointGain(character, draft)) ? getLevelUpHitPointGain(character, draft) : "—"})</strong>
           <p>Aktuelle TP bleiben erhalten. Eine Heilung oder lange Rast kannst du anschließend im Charakterbogen ausführen.</p>
         </section>
+
+        {level === 4 && <section className="level-up__card">
+          <h3>Attributswerterhöhung oder Talent</h3>
+          <p>Auf Stufe 4 kannst du entweder zwei Attributspunkte verteilen oder ein Talent notieren.</p>
+          <div className="level-up__mode-options" role="radiogroup" aria-label="Stufe-4-Entscheidung">
+            <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "increase"} onChange={() => setDraft({ ...draft, abilityScoreMode: "increase", featNote: "" })} /> Attribute erhöhen</label>
+            <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "feat"} onChange={() => setDraft({ ...draft, abilityScoreMode: "feat", abilityScoreIncreases: {} })} /> Talent statt ASI</label>
+          </div>
+          {draft.abilityScoreMode === "increase" ? <>
+            <p><strong>Verteilt:</strong> {abilityIncreaseTotal}/2 Punkte</p>
+            <div className="level-up__ability-grid">
+              {abilityIds.map((abilityId) => {
+                const increase = draft.abilityScoreIncreases[abilityId] ?? 0;
+                const before = currentAbilityScores[abilityId];
+                const after = preview.abilityScores?.[abilityId] ?? before;
+                return <label key={abilityId}>
+                  <span>{abilityLabels[abilityId]} <small>{before} → {after}</small></span>
+                  <select value={increase} onChange={(event) => setAbilityIncrease(abilityId, Number(event.target.value))}>
+                    <option value={0}>+0</option>
+                    <option value={1} disabled={before >= 20}>+1</option>
+                    <option value={2} disabled={before >= 19}>+2</option>
+                  </select>
+                </label>;
+              })}
+            </div>
+          </> : <>
+            <label>Talent wählen<select value={draft.featId} onChange={(event) => setDraft({ ...draft, featId: event.target.value, featNote: "", featChoices: { ...draft.featChoices, [event.target.value]: {} } })}>
+              <option value="">Bitte wählen</option>
+              {feats.map((feat) => <option key={feat.id} value={feat.id} disabled={character.featIds?.includes(feat.id)}>{feat.name}</option>)}
+            </select></label>
+            {selectedFeat && <div className="level-up__feat-preview">
+              <strong>{selectedFeat.name}</strong>
+              <p>{selectedFeat.description}</p>
+              {selectedFeat.abilityChoice && <label>{selectedFeat.abilityChoice.name}<select value={getFeatAbilityChoices(selectedFeat, draft.featChoices)[0] ?? ""} onChange={(event) => setFeatAbilityChoice(event.target.value as AbilityId)}>
+                <option value="">Bitte wählen</option>
+                {selectedFeat.abilityChoice.options.map((abilityId) => <option key={abilityId} value={abilityId} disabled={currentAbilityScores[abilityId] >= 20}>{abilityLabels[abilityId]} ({currentAbilityScores[abilityId]} → {Math.min(20, currentAbilityScores[abilityId] + 1)})</option>)}
+              </select></label>}
+              <label>Optionale Notiz<input type="text" value={draft.featNote} onChange={(event) => setDraft({ ...draft, featNote: event.target.value })} placeholder="Hausregel, Quelle oder Details ..." /></label>
+            </div>}
+          </>}
+        </section>}
 
         {canChooseSubclass && <section className="level-up__card">
           <h3>Deine Unterklasse</h3>
@@ -110,6 +176,7 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
             <div><dt>Trefferwürfel</dt><dd>{character.level} → {level} W{definition?.hitDie}</dd></div>
             <div><dt>Übungsbonus</dt><dd>+{getProficiencyBonus(character.level)} → +{getProficiencyBonus(level)}</dd></div>
             <div><dt>Unterklasse</dt><dd>{preview.subclass ?? "Noch keine"}</dd></div>
+            {level === 4 && <div><dt>Stufe-4-Wahl</dt><dd>{draft.abilityScoreMode === "feat" ? selectedFeat?.name ?? "Talent offen" : "Attribute"}</dd></div>}
           </dl>
           {choices.filter((choice) => choice.level > character.level).map((choice) => <p key={choice.id}><strong>{choice.name}:</strong> {choice.options.filter((option) => choiceValues(draft.pathChoices[choice.id]).includes(option.id)).map((option) => option.name).join(", ") || "Noch offen"}</p>)}
           <p>Klassenressourcen und Zauberplätze richten sich nach der neuen Stufe. Bereits verbrauchte Ressourcen und Plätze bleiben verbraucht.</p>

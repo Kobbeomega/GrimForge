@@ -1,5 +1,6 @@
 import type { CharacterArchiveEntry } from "../../archives/types";
 import { calculateMaximumHitPoints } from "../../../rules/hitPoints";
+import { getFeatById } from "../../../compendium/feats";
 
 /**
  * Merges creator-owned character-definition changes with sheet/session state.
@@ -49,7 +50,9 @@ export function mergeEditedCharacter(
   const originalCalculatedMaximum = calculateMaximumHitPoints({
     classId: original.classId ?? "", level: original.level,
     constitution: original.abilityScores?.constitution ?? 10,
-    bonusPerLevel: original.classId === "sorcerer" && original.subclassId === "draconic-bloodline" ? 1 : 0,
+    bonusPerLevel:
+      (original.classId === "sorcerer" && original.subclassId === "draconic-bloodline" ? 1 : 0) +
+      (original.featIds ?? []).reduce((sum, featId) => sum + (getFeatById(featId)?.bonuses?.hitPointsPerLevel ?? 0), 0),
   });
   const preserveRolledHitPoints = Boolean(original.levelUpHistory?.length) && original.classId === preview.classId && original.level === preview.level;
   const newMaximum = Math.max(1, (preview.vitals?.maximumHitPoints ?? oldMaximum) +
@@ -62,6 +65,8 @@ export function mergeEditedCharacter(
     updatedAt: new Date().toISOString(),
     journal: original.journal,
     levelUpHistory: original.levelUpHistory,
+    featIds: original.featIds,
+    featChoices: original.featChoices,
     spellcasting: preview.spellcasting ? {
       ...preview.spellcasting,
       slots: structuredClone(original.spellcasting?.slots ?? { spentSlots: {}, spentPactSlots: 0 }),

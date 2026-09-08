@@ -1,7 +1,6 @@
 import {
   getAbilityModifier,
   getProficiencyBonus,
-  getSkillBonus,
 } from "../../../compendium/core";
 
 import {
@@ -74,23 +73,19 @@ export function getCharacterDerivedStats(
     character.abilityScores
       ?.dexterity ?? 10;
 
-  const wisdom =
-    character.abilityScores
-      ?.wisdom ?? 10;
-
   const dexterityModifier =
     getAbilityModifier(
       dexterity,
     );
 
-  const wisdomModifier =
-    getAbilityModifier(
-      wisdom,
-    );
-
   const proficiencyBonus =
     getProficiencyBonus(
       character.level,
+    );
+
+  const passiveScores =
+    getPassiveScores(
+      character,
     );
 
   /*
@@ -99,36 +94,8 @@ export function getCharacterDerivedStats(
    * derivedStats.passivePerception verwenden
    * können.
    */
-  const loreSkills = normalizeLoreSkills(character);
-  const perceptionProficient =
-    (character.skillProficiencies?.includes("perception") ?? false) || loreSkills.includes("perception");
-
-  const perceptionExpertise =
-    character
-      .skillExpertise
-      ?.includes(
-        "perception",
-      ) ?? false;
-
   const passivePerception =
-    10 +
-    getSkillBonus({
-      abilityModifier:
-        wisdomModifier,
-
-      proficiencyBonus,
-
-      proficient:
-        perceptionProficient,
-
-      expertise:
-        perceptionExpertise,
-    });
-
-  const passiveScores =
-    getPassiveScores(
-      character,
-    );
+    passiveScores.perception;
 
   const equippedArmorPresent = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "armor" && getEquipmentById(item.id)?.category === "armor");
   const normalArmorClass = calculateArmorClass(inventory, dexterityModifier);
@@ -334,10 +301,4 @@ function poundsToKilograms(
       0.45359237
     ).toFixed(2),
   );
-}
-
-function normalizeLoreSkills(character: CharacterArchiveEntry): string[] {
-  if (character.classId !== "bard" || character.subclassId !== "college-of-lore" || character.level < 3) return [];
-  const raw = character.pathChoices?.["lore-bonus-skills"];
-  return Array.isArray(raw) ? raw : raw ? [raw] : [];
 }

@@ -9,6 +9,7 @@ import {
   formatAbilityModifier,
 } from "../../compendium/core";
 import { getSpellById } from "../../compendium/spells";
+import { getFeatById } from "../../compendium/feats";
 import { getGrantedSubclassSpellIds } from "../../compendium/classes";
 import { getTransformationById } from "../../compendium/transformations";
 import { calculateCharacterRules } from "../../rules";
@@ -161,6 +162,9 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
     .slice(0, 4)
     .map((resource) => `${resource.name}: ${resource.remaining}/${resource.maximum}`);
   const hitDieLabel = `W${getClassById(character.classId ?? "")?.hitDie ?? "—"}`;
+  const chosenFeats = (character.featIds ?? [])
+    .map((featId) => getFeatById(featId))
+    .filter((feat): feat is NonNullable<typeof feat> => Boolean(feat));
 
   const identitySubtitle = [character.className, character.level ? `Stufe ${character.level}` : "", character.ancestry]
     .filter(Boolean)
@@ -196,6 +200,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
 
             <div className="print-mini-stats">
               <PrintStat label="Passive Wahrn." value={rules.passivePerception} compact />
+              <PrintStat label="Passive Nachf." value={derived.passiveScores.investigation} compact />
               <PrintStat label="Übungsbonus" value={formatAbilityModifier(rules.proficiencyBonus)} compact />
             </div>
 
@@ -323,6 +328,22 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                 {classFeatureRows.length === 0 && <PrintRuleLine text="Keine Klassenmerkmale für diese Stufe." />}
               </div>
             </PrintPanel>
+
+            {chosenFeats.length > 0 && (
+              <PrintPanel title="Talente" compact>
+                <div className="print-class-feature-grid">
+                  {chosenFeats.map((feat) => (
+                    <div className="print-class-feature" key={feat.id}>
+                      <div className="print-class-feature__head">
+                        <strong>{feat.name}</strong>
+                        <span>Talent</span>
+                      </div>
+                      <p>{feat.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </PrintPanel>
+            )}
 
             <PrintPanel title="Notizen" grow>
               <div className="print-notes-area" aria-label="Notizen">

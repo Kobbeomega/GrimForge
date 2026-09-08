@@ -1,6 +1,11 @@
 import {
   getClassById,
 } from "../compendium/classes";
+import {
+  getFeatAbilityChoices,
+  getFeatById,
+  type CharacterFeatChoices,
+} from "../compendium/feats";
 
 import type {
   AbilityId,
@@ -95,6 +100,8 @@ export interface CharacterRuleInput {
   hitPointFlatBonus?: number;
   hitPointBonusPerLevel?: number;
   spentClassResources?: CharacterClassResourceUsage;
+  featIds?: readonly string[];
+  featChoices?: CharacterFeatChoices;
 }
 
 export interface CalculatedCharacterRules {
@@ -142,6 +149,23 @@ export function calculateCharacterRules(
         ?.savingThrows ??
         [],
     );
+
+  for (const featId of input.featIds ?? []) {
+    const feat = getFeatById(featId);
+    if (feat?.grantsSavingThrowProficiency === "chosen-ability") {
+      for (const abilityId of getFeatAbilityChoices(feat, input.featChoices)) {
+        savingThrowProficiencies.add(abilityId);
+      }
+    }
+  }
+
+  const featBonuses = (input.featIds ?? [])
+    .map((featId) => getFeatById(featId)?.bonuses)
+    .filter(Boolean);
+  const featInitiativeBonus = featBonuses.reduce((sum, bonus) => sum + (bonus?.initiative ?? 0), 0);
+  const featPassivePerceptionBonus = featBonuses.reduce((sum, bonus) => sum + (bonus?.passivePerception ?? 0), 0);
+  const featSpeedBonus = featBonuses.reduce((sum, bonus) => sum + (bonus?.speed ?? 0), 0);
+  const featHitPointBonusPerLevel = featBonuses.reduce((sum, bonus) => sum + (bonus?.hitPointsPerLevel ?? 0), 0);
 
   const savingThrows =
     (
@@ -267,9 +291,10 @@ export function calculateCharacterRules(
           resolvedProficientSkillIds,
         expertiseSkillIds:
           input.expertiseSkillIds,
-      }),
+      }) + featPassivePerceptionBonus,
     initiativeModifier:
       calculateInitiativeModifier(input.abilityScores.dexterity) +
+      featInitiativeBonus +
       (input.classId === "ranger" && input.subclassId === "gloom-stalker" && level >= 3
         ? abilityModifiers.wisdom
         : 0),
@@ -287,6 +312,7 @@ export function calculateCharacterRules(
           0,
         bonusPerLevel:
           (input.hitPointBonusPerLevel ?? 0) +
+          featHitPointBonusPerLevel +
           (input.classId === "sorcerer" && input.subclassId === "draconic-bloodline" && level >= 1 ? 1 : 0),
       }),
     armorClass,
@@ -298,6 +324,8 @@ export function calculateCharacterRules(
           input
             .usesReducedSpeed ??
           false,
+        flatBonus:
+          featSpeedBonus,
       }),
     spellcasting:
       calculateClassSpellcasting({

@@ -83,7 +83,9 @@ export function resolveCharacterClassResources({
         maximum,
         spent,
         remaining: Math.max(0, maximum - spent),
-        recharge: resource.recharge,
+        recharge: classId === "bard" && resource.id === "bard-bardic-inspiration-uses" && level >= 5
+          ? "short-rest"
+          : resource.recharge,
         featureId: feature.id,
       };
     });

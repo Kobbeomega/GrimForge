@@ -17,6 +17,10 @@ import {
   type SkillId,
 } from "../../../compendium/skills";
 
+import {
+  getFeatById,
+} from "../../../compendium/feats";
+
 import type {
   AbilityId,
 } from "../../../compendium/core";
@@ -501,6 +505,25 @@ function calculatePassiveSkill({
       skillId,
     );
 
+  const featBonus =
+    (character.featIds ?? []).reduce(
+      (sum, featId) => {
+        const feat =
+          getFeatById(featId);
+
+        if (skillId === "perception") {
+          return sum + (feat?.bonuses?.passivePerception ?? 0);
+        }
+
+        if (skillId === "investigation") {
+          return sum + (feat?.bonuses?.passiveInvestigation ?? 0);
+        }
+
+        return sum;
+      },
+      0,
+    );
+
   return (
     10 +
     getSkillBonus({
@@ -514,6 +537,7 @@ function calculatePassiveSkill({
       proficiencyBonus,
       proficient,
       expertise,
-    })
+    }) +
+    featBonus
   );
 }

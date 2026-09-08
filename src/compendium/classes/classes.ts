@@ -1247,15 +1247,79 @@ export function getClassSubclassUnlockLevel(
   return levels.length > 0 ? Math.min(...levels) : undefined;
 }
 
+const abilityScoreImprovementDescription =
+  "Auf Stufe 4 erhöhst du einen Attributswert um 2 oder zwei Attributswerte um je 1. Alternativ kann eure Runde ein Talent erlauben. Trage die Werte anschließend über „Bearbeiten“ in die Akte ein.";
+
+const extraAttackDescription =
+  "Wenn du in deinem Zug die Angriffsaktion ausführst, kannst du zweimal statt einmal angreifen.";
+
+const coreLevelMilestoneFeatures: Record<string, ClassFeature[]> = {
+  barbarian: [
+    { id: "barbarian-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "barbarian-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "barbarian-fast-movement", name: "Schnelle Bewegung", description: "Deine Bewegungsrate erhöht sich um 3 m, solange du keine schwere Rüstung trägst.", level: 5, kind: "passive" },
+  ],
+  bard: [
+    { id: "bard-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "bard-font-of-inspiration", name: "Quelle der Inspiration", description: "Du erhältst alle verbrauchten Bardischen Inspirationen zurück, wenn du eine kurze oder lange Rast beendest.", level: 5, kind: "passive" },
+  ],
+  cleric: [
+    { id: "cleric-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "cleric-destroy-undead", name: "Untote zerstören", description: "Wenn ein Untoter mit Herausfordern der Untoten seinen Rettungswurf nicht schafft und seine HG niedrig genug ist, wird er zerstört statt vertrieben. Auf Stufe 5 gilt dies bis HG 1/2.", level: 5, kind: "passive" },
+  ],
+  druid: [
+    { id: "druid-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "druid-wild-shape-swim", name: "Tiergestalt-Verbesserung", description: "Ab Stufe 4 kannst du Tiergestalt auch für Gestalten mit Schwimmbewegungsrate verwenden, solange die weiteren Grenzen deiner Tiergestalt eingehalten werden.", level: 4, kind: "passive" },
+  ],
+  fighter: [
+    { id: "fighter-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "fighter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+  ],
+  monk: [
+    { id: "monk-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "monk-slow-fall", name: "Langsamer Fall", description: "Als Reaktion verringerst du Fallschaden um das Fünffache deiner Mönchsstufe.", level: 4, kind: "reaction" },
+    { id: "monk-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "monk-stunning-strike", name: "Betäubender Schlag", description: "Wenn du eine Kreatur mit einem Nahkampfwaffenangriff triffst, kannst du 1 Ki-Punkt ausgeben. Misslingt ihr ein KO-Rettungswurf, ist sie bis zum Ende deines nächsten Zuges betäubt.", level: 5, kind: "passive" },
+  ],
+  paladin: [
+    { id: "paladin-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "paladin-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+  ],
+  ranger: [
+    { id: "ranger-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "ranger-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+  ],
+  "monster-hunter": [
+    { id: "monster-hunter-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "monster-hunter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+  ],
+  rogue: [
+    { id: "rogue-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "rogue-uncanny-dodge", name: "Unheimliches Ausweichen", description: "Wenn dich ein Angreifer trifft, den du sehen kannst, kannst du deine Reaktion verwenden, um den Schaden dieses Angriffs gegen dich zu halbieren.", level: 5, kind: "reaction" },
+  ],
+  sorcerer: [
+    { id: "sorcerer-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+  ],
+  warlock: [
+    { id: "warlock-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+  ],
+  wizard: [
+    { id: "wizard-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+  ],
+};
+
 export function getClassFeatures(
   classId: string,
   level: number,
 ): ClassFeature[] {
-  return (
-    getClassById(classId)?.features?.filter(
+  return [
+    ...(getClassById(classId)?.features?.filter(
       (feature) => feature.level <= level,
-    ) ?? []
-  );
+    ) ?? []),
+    ...(coreLevelMilestoneFeatures[classId]?.filter(
+      (feature) => feature.level <= level,
+    ) ?? []),
+  ];
 }
 
 export function getSubclassFeatures(

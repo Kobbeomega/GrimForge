@@ -17,6 +17,7 @@ import type {
   CharacterSpellcasting,
 } from "../../compendium/spells";
 import type { CharacterPathChoices } from "../../compendium/classes";
+import type { CharacterFeatChoices } from "../../compendium/feats";
 
 export type CharacterStatus =
   | "active"
@@ -169,6 +170,11 @@ export interface CharacterArchiveEntry {
     hitPointGain: number;
     hitPointMode: "average" | "roll";
     hitDieRoll?: number;
+    abilityScoreMode?: "none" | "increase" | "feat";
+    abilityScoreIncreases?: Partial<Record<AbilityId, number>>;
+    featId?: string;
+    featChoices?: CharacterFeatChoices;
+    featNote?: string;
     subclassId?: string;
     pathChoices: CharacterPathChoices;
     spellIds: string[];
@@ -176,6 +182,8 @@ export interface CharacterArchiveEntry {
 
   skillProficiencies?: SkillId[];
   skillExpertise?: SkillId[];
+  featIds?: string[];
+  featChoices?: CharacterFeatChoices;
 
   summary: string;
 

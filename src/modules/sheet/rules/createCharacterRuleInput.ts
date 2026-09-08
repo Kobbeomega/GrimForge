@@ -58,5 +58,12 @@ export function createCharacterRuleInput(
       character
         .spentClassResources ??
       {},
+    featIds:
+      character
+        .featIds ??
+      [],
+    featChoices:
+      character
+        .featChoices,
   };
 }
