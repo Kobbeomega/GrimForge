@@ -380,7 +380,7 @@ export function CharacterSheetPage({
         ),
       },
     }, "Heilung");
-    setLevelUpNotice(`${safeAmount} Trefferpunkte geheilt.`);
+    setLevelUpNotice(`${healed - vitals.currentHitPoints} Trefferpunkte geheilt (${healed}/${vitals.maximumHitPoints}).`);
   }
 
   function handleTemporaryHitPointsChange(
@@ -455,7 +455,7 @@ export function CharacterSheetPage({
         currentHitPoints: Math.min(vitals.maximumHitPoints, vitals.currentHitPoints + recoveredHitPoints),
       },
     });
-    setLevelUpNotice(`Trefferwürfel: W${hitDie} zeigt ${roll}, ${recoveredHitPoints} TP geheilt.`);
+    setLevelUpNotice(`Trefferwürfel: W${hitDie} zeigt ${roll}, ${Math.min(recoveredHitPoints, vitals.maximumHitPoints - vitals.currentHitPoints)} TP geheilt.`);
   }
 
   function handleToggleInspiration() {

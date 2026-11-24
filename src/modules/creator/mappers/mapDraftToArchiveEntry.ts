@@ -43,6 +43,7 @@ import { CURRENT_CHARACTER_SCHEMA_VERSION, resolveBackgroundInventory } from "..
 
 import {
   calculateMaximumHitPoints,
+  buildHitPointsPerLevel,
 } from "../../../rules/hitPoints";
 
 export function mapDraftToArchiveEntry(
@@ -149,8 +150,7 @@ export function mapDraftToArchiveEntry(
       level: draft.level,
       constitution:
         effectiveAbilityScores.constitution,
-      bonusPerLevel:
-        draft.classId === "sorcerer" && draft.subclassId === "draconic-bloodline" ? 1 : 0,
+      bonusPerLevel: buildHitPointsPerLevel(draft),
     });
 
   return {

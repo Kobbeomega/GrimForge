@@ -119,10 +119,14 @@ export function CharacterCreator({
       initialDraft,
     });
 
-  const previewCharacter =
+  const generatedCharacter =
     mapDraftToArchiveEntry(
       creator.draft,
     );
+  const previewCharacter = initialCharacter ? mergeEditedCharacter(generatedCharacter, initialCharacter) : generatedCharacter;
+  const retainedScores = initialDraft && Object.entries(initialDraft.baseAbilities).every(
+    ([id, value]) => creator.draft.baseAbilities[id as keyof typeof initialDraft.baseAbilities] === value,
+  );
 
   const isEditing =
     Boolean(initialDraft);
@@ -333,7 +337,7 @@ export function CharacterCreator({
         0,
       );
 
-    if (spentAbilityPoints !== 27) {
+    if (!retainedScores && spentAbilityPoints !== 27) {
       window.alert(
         "Verteile im Point-Buy-System genau 27 Punkte.",
       );
@@ -348,7 +352,10 @@ export function CharacterCreator({
     const equipmentConfiguration =
       getStartingEquipment(creator.draft);
 
-    if (equipmentConfiguration) {
+    const unchangedLegacyKit = initialCharacter?.inventory && !initialCharacter.startingEquipmentSelections?.length &&
+      initialDraft?.classId === creator.draft.classId && initialDraft?.backgroundId === creator.draft.backgroundId &&
+      JSON.stringify(initialDraft?.startingEquipmentSelections) === JSON.stringify(creator.draft.startingEquipmentSelections);
+    if (equipmentConfiguration && !unchangedLegacyKit) {
       const completedEquipmentChoices =
         equipmentConfiguration
           .choices
@@ -475,7 +482,7 @@ export function CharacterCreator({
 
     const sealedCharacter: CharacterArchiveEntry =
       initialCharacter
-        ? mergeEditedCharacter(previewCharacter, initialCharacter)
+        ? previewCharacter
         : {
             ...previewCharacter,
             status: "active",
@@ -532,7 +539,7 @@ export function CharacterCreator({
               ancestryVariantId,
             ) =>
               creator.updateDraft(
-                (draft) => ({
+                (draft) => ancestryId === draft.ancestryId ? draft : ({
                   ...draft,
 
                   ancestryId,
@@ -550,7 +557,7 @@ export function CharacterCreator({
               )
             }
             onVariantChange={(ancestryVariantId) =>
-              creator.updateDraft((draft) => ({
+              creator.updateDraft((draft) => ancestryVariantId === draft.ancestryVariantId ? draft : ({
                 ...draft,
                 ancestryVariantId,
                 ancestryBonusChoices: [],
@@ -606,7 +613,7 @@ export function CharacterCreator({
               backgroundId,
             ) =>
               creator.updateDraft(
-                (draft) => ({
+                (draft) => backgroundId === draft.backgroundId ? draft : ({
                   ...draft,
 
                   backgroundId,
@@ -622,6 +629,7 @@ export function CharacterCreator({
       case "class":
         return (
           <ClassStep
+            existingLevel={initialCharacter?.level}
             selectedClassId={
               creator.draft.classId
             }
@@ -635,7 +643,7 @@ export function CharacterCreator({
               classId,
             ) =>
               creator.updateDraft(
-                (draft) => ({
+                (draft) => classId === draft.classId ? draft : ({
                   ...draft,
 
                   classId,
@@ -663,6 +671,7 @@ export function CharacterCreator({
             }
             onChangeLevel={(level) =>
               creator.updateDraft((draft) => {
+                if (level === draft.level || initialCharacter) return draft;
                 const currentUnlockLevel = draft.subclassId
                   ? getSubclassUnlockLevel(draft.classId, draft.subclassId)
                   : undefined;
@@ -693,7 +702,7 @@ export function CharacterCreator({
               subclassId,
             ) =>
               creator.updateDraft(
-                (draft) => ({
+                (draft) => subclassId === draft.subclassId ? draft : ({
                   ...draft,
                   subclassId,
                   pathChoices: Object.fromEntries(
@@ -734,6 +743,7 @@ export function CharacterCreator({
       case "abilities":
         return (
           <AbilitiesStep
+            campaignValues={!!initialDraft && Object.values(initialDraft.baseAbilities).reduce((sum,v) => sum + (pointBuyCosts[v] ?? Infinity),0) !== 27}
             classId={creator.draft.classId}
             ancestryId={creator.draft.ancestryId}
             ancestryVariantId={creator.draft.ancestryVariantId}
@@ -785,6 +795,7 @@ export function CharacterCreator({
       case "equipment":
         return (
           <EquipmentStep
+            editing={isEditing}
             draft={creator.draft}
             onSelectionsChange={(
               startingEquipmentSelections,
@@ -1020,7 +1031,7 @@ export function CharacterCreator({
         subtitle={
           isEditing
             ? "Überarbeite den bestehenden Eintrag und versiegle die Änderungen erneut."
-            : "Führe das entstehende Schicksal durch die zehn Kapitel."
+            : "Beginne mit dem Namen. Über „Nächstes Kapitel“ wählst du Herkunft, Klasse und Spielwerte. Erst „Akte besiegeln“ legt den Charakter im Archiv an."
         }
       />
 

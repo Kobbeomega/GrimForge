@@ -4,6 +4,7 @@ import { getFeatAbilityChoices, getFeatById, type CharacterFeatChoices } from ".
 import { getSpellById, type CharacterSpellcasting } from "../../compendium/spells";
 import type { CharacterArchiveEntry } from "../archives/types";
 import { getCharacterVitals } from "../archives/utils/getCharacterVitals";
+import { ancestryHitPointsPerLevel } from "../../rules/hitPoints";
 import { mapArchiveEntryToDraft } from "../creator/mappers/mapArchiveEntryToDraft";
 import { mapDraftToArchiveEntry } from "../creator/mappers/mapDraftToArchiveEntry";
 import { getSpellSelectionRules, validateSpellSelection } from "../creator/utils/getSpellSelectionRules";
@@ -92,7 +93,7 @@ function getLevelUpHitPointGain(character: CharacterArchiveEntry, draft: LevelUp
   const draconic = character.classId === "sorcerer" && draft.subclassId === "draconic-bloodline";
   const draconicBonus = draconic ? (character.subclassId === draft.subclassId ? 1 : character.level + 1) : 0;
   return Math.max(1, roll + newModifier) + (newModifier - oldModifier) * character.level
-    + existingFeatBonus + newFeatBonus * (character.level + 1) + draconicBonus;
+    + existingFeatBonus + newFeatBonus * (character.level + 1) + draconicBonus + ancestryHitPointsPerLevel(character);
 }
 
 export function previewLevelUp(character: CharacterArchiveEntry, draft: LevelUpDraft): CharacterArchiveEntry {

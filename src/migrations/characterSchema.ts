@@ -2,7 +2,8 @@ import { getAncestryAbilityBonuses, applyAbilityBonuses, getAncestryById } from 
 import { getBackgroundById } from "../compendium/backgrounds";
 import { getSubclassProficiencyPackage, getSubclassSkillProficiencies } from "../compendium/classes";
 import { defaultAbilityScores, type AbilityScores } from "../compendium/core";
-import { calculateMaximumHitPoints } from "../rules/hitPoints";
+import { calculateMaximumHitPoints, buildHitPointsPerLevel } from "../rules/hitPoints";
+import { getFeatById } from "../compendium/feats";
 import { getEquipmentById, equipment } from "../compendium/equipment";
 import type { CharacterArchiveEntry, CharacterInventoryItem, InventoryItemCategory } from "../modules/archives/types";
 
@@ -102,18 +103,16 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
     classId: input.classId ?? "",
     level: input.level,
     constitution: abilityScores.constitution,
-    bonusPerLevel:
-      input.classId === "sorcerer" && input.subclassId === "draconic-bloodline"
-        ? 1
-        : 0,
+    bonusPerLevel: buildHitPointsPerLevel(input) + (input.featIds ?? []).reduce((n,id) => n + (getFeatById(id)?.bonuses?.hitPointsPerLevel ?? 0),0),
   });
 
   const previousMaximumHitPoints = input.vitals?.maximumHitPoints ?? 10;
   const previousCurrentHitPoints = input.vitals?.currentHitPoints ?? previousMaximumHitPoints;
   const missingHitPoints = Math.max(0, previousMaximumHitPoints - previousCurrentHitPoints);
 
+  // A version number cannot tell us whether the campaign used rolled HP.
   const shouldRecalculateHitPoints =
-    previousVersion < CURRENT_CHARACTER_SCHEMA_VERSION &&
+    !(Number.isInteger(input.vitals?.maximumHitPoints) && previousMaximumHitPoints > 0) &&
     calculatedMaximumHitPoints > 0;
 
   const maximumHitPoints = shouldRecalculateHitPoints
@@ -178,7 +177,8 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
           : 0),
       speed,
     },
-    updatedAt: notes.length > 0 ? timestamp : input.updatedAt,
+    // Reading a backup isn't a player edit. Keep conflict resolution chronological.
+    updatedAt: input.updatedAt,
   };
 
   return {

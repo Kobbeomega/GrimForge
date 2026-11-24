@@ -4,16 +4,16 @@
  */
 export const theme = {
   colors: {
-    background: "#111215",
+    background: "#120e11",
     surface: "#191a1e",
     surfaceLight: "#242329",
     paper: "#eee4d5",
     paperDark: "#cabbab",
-    primary: "#9a774e",
-    primaryDark: "#473727",
-    primaryLight: "#d9b98b",
+    primary: "#9d4054",
+    primaryDark: "#491c29",
+    primaryLight: "#f1abb5",
     blood: "#a65b58",
-    border: "#403b37",
+    border: "#50353e",
     text: "#f0eae1",
     textMuted: "#c6bdb3",
     success: "#7ca48a",
@@ -22,10 +22,10 @@ export const theme = {
   },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
   radius: { none: 0 },
-  border: { thin: "1px solid #403b37", thick: "2px solid #9a774e" },
+  border: { thin: "1px solid #50353e", thick: "2px solid #9d4054" },
   shadow: {
     paper: "0 0 18px rgba(0, 0, 0, .35)",
-    glow: "0 0 14px rgba(167, 123, 73, .20)",
+    glow: "0 0 14px rgba(143, 52, 73, .20)",
   },
   typography: {
     title: { fontFamily: "Georgia, serif", fontWeight: 700, letterSpacing: "0.12em" },

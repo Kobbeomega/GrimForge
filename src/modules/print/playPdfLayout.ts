@@ -1,6 +1,6 @@
 // A4 portrait; standard PDF fonts keep the export sharp and selectable.
 const width = 595.28, height = 841.89, margin = 43, bottom = 783;
-const ink = "0.13 0.12 0.12", edge = "0.39 0.35 0.31", paper = "0.965 0.954 0.931";
+const ink = "0.13 0.12 0.12", edge = "0.38 0.12 0.17", paper = "0.977 0.964 0.958";
 const winAnsi = new Map([...("€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ")].map((c,i)=>[c,128+i]));
 function hex(s: string) {
   return [...s.normalize("NFC")].map(c=>{
@@ -51,7 +51,7 @@ export class PlayPdf {
     this.diamond(x+2.5,y-1,1.1,"1 1 1");
     this.path([[x-2,y+3],[x+2,y+3]],false,undefined,"1 1 1",.6);
   }
-  private line(y:number){this.ops.push(`0.63 0.58 0.50 RG 0.6 w ${margin} ${height-y} m ${width-margin} ${height-y} l S`);}
+  private line(y:number){this.ops.push(`0.63 0.53 0.54 RG 0.6 w ${margin} ${height-y} m ${width-margin} ${height-y} l S`);}
   private page() {
     this.pages.push([]);
     this.panel(20,20,width-40,height-40,15);

@@ -21,7 +21,7 @@ export function ArchiveManagementPage() {
 
   function commitImport(mode: "merge" | "replace") {
     if (!pending) return;
-    replaceCharacters(mode === "merge" ? mergeCharacterArchives(characters, pending.characters) : pending.characters);
+    replaceCharacters(mode === "merge" ? mergeCharacterArchives(characters, pending.characters) : pending.characters, mode === "replace");
     setMessage([pending.characters.length + " Akten importiert.", ...pending.warnings].join(" "));
     setPending(null);
   }
@@ -95,7 +95,8 @@ export function ArchiveManagementPage() {
           {pending ? <div role="group" aria-label="Import bestätigen">
             <p>{pending.characters.length} Akten eingelesen. Ersetzen entfernt alle bisherigen Akten aus diesem Browser.</p>
             <GrimButton onClick={() => commitImport("merge")}>Zusammenführen</GrimButton>
-            <GrimButton onClick={() => commitImport("replace")}>Archiv ersetzen</GrimButton>
+            {pending.warnings.length > 0 && <ul>{pending.warnings.map((w,i) => <li key={i}>{w}</li>)}</ul>}
+            <GrimButton disabled={pending.warnings.some(w => w.includes("übersprungen"))} onClick={() => commitImport("replace")}>Archiv ersetzen</GrimButton>
             <GrimButton onClick={() => { setPending(null); setMessage("Import abgebrochen. Archiv unverändert."); }}>Abbrechen</GrimButton>
           </div> : <GrimButton type="button" onClick={() => fileInputRef.current?.click()}>Daten importieren</GrimButton>}
           <input

@@ -211,8 +211,8 @@ export function CharacterPrintSheets({ character }: CharacterPrintViewProps) {
 
             <div className="print-death-strip">
               <strong>Todesrettungen</strong>
-              <span>Erfolge ○ ○ ○</span>
-              <span>Fehlschläge ○ ○ ○</span>
+              <span>Erfolge {[1,2,3].map(n => n <= (character.deathSaves?.successes ?? 0) ? "●" : "○").join(" ")}</span>
+              <span>Fehlschläge {[1,2,3].map(n => n <= (character.deathSaves?.failures ?? 0) ? "●" : "○").join(" ")}</span>
             </div>
 
             <div className="print-death-strip print-reserve-strip">
@@ -224,6 +224,7 @@ export function CharacterPrintSheets({ character }: CharacterPrintViewProps) {
             <PrintPanel title="Live am Tisch" compact>
               <div className="print-tabletop-grid">
                 <PrintNumberLine label="Aktive Zustände" value={activeConditionLabels.length > 0 ? activeConditionLabels.join(" · ") : "Keine"} />
+                {!!character.exhaustionLevel && <PrintNumberLine label="Erschöpfung" value={`Stufe ${character.exhaustionLevel}/6`} />}
                 <PrintNumberLine label="Unterklasse" value={subclass?.name ?? "—"} />
               </div>
               {resourceSummary.length > 0 && (

@@ -43,8 +43,10 @@ export function makeGrimHollowPlayPdf(c:CharacterArchiveEntry): Uint8Array {
     ["Rüstungsklasse",String(stats.armorClass)],["Initiative",signed(rules.initiativeModifier)],
     ["Bewegung",rules.speed+" m"],["Übungsbonus",signed(stats.proficiencyBonus)],["Passive Wahrnehmung",String(rules.passivePerception)],
     ["Trefferwürfel",Math.max(0,c.level-(c.spentHitDice??0))+"/"+c.level+(cls?" W"+cls.hitDie:"")],
-    ["Inspiration",c.inspiration?"Vorhanden":"Nicht aktiv"],["TP / Zustände am Tisch","________________"],
+    ["Inspiration",c.inspiration?"Vorhanden":"Nicht aktiv"],["Erschöpfung",c.exhaustionLevel ? "Stufe "+c.exhaustionLevel+" / 6" : c.conditionIds?.includes("exhaustion") ? "Stufe am Tisch klären" : "Keine"],
   ]);
+  if(hp.currentHitPoints === 0 || c.deathSaves?.successes || c.deathSaves?.failures)
+    pdf.row("Todesrettungen",`Erfolge: ${c.deathSaves?.successes ?? 0}/3 · Fehlschläge: ${c.deathSaves?.failures ?? 0}/3`);
   pdf.heading("Attribute und Rettungswürfe");
   pdf.cells(abilityIds.map(id=>[abilityLabels[id],scores[id]+" ("+signed(getAbilityModifier(scores[id]))+") / RW "+signed(rules.savingThrows[id])]),3);
   pdf.heading("Fertigkeiten");

@@ -1,5 +1,5 @@
 import type { CharacterArchiveEntry } from "../types";
-import { migrateCharacterArchiveEntries } from "../../../migrations/characterSchema";
+import { CURRENT_CHARACTER_SCHEMA_VERSION, migrateCharacterArchiveEntries } from "../../../migrations/characterSchema";
 
 const FORMAT = "grimforge-character-archive";
 const VERSION = 2;
@@ -54,7 +54,7 @@ export async function readCharacterArchiveFile(
   const characters = candidates.filter((candidate, index): candidate is CharacterArchiveEntry => {
     const valid = isCharacterArchiveEntry(candidate);
     if (!valid) {
-      warnings.push(`Eintrag ${index + 1} wurde übersprungen, weil Pflichtfelder fehlen.`);
+      warnings.push(`Eintrag ${index + 1} wurde übersprungen: Datenformat ungültig oder neuer als diese GrimForge-Version.`);
     }
     return valid;
   });
@@ -115,13 +115,14 @@ export function isCharacterArchiveEntry(value: unknown): value is CharacterArchi
 
   return (
     typeof value.id === "string" &&
+    (value.schemaVersion === undefined || (Number.isInteger(value.schemaVersion) && Number(value.schemaVersion) <= CURRENT_CHARACTER_SCHEMA_VERSION)) &&
     value.id.length > 0 &&
     typeof value.fileNumber === "string" &&
     typeof value.name === "string" &&
     typeof value.ancestry === "string" &&
     typeof value.className === "string" &&
     typeof value.level === "number" &&
-    Number.isFinite(value.level) &&
+    Number.isInteger(value.level) &&
     value.level >= 1 &&
     typeof value.summary === "string" &&
     isCharacterStatus(value.status) &&
@@ -134,7 +135,11 @@ export function isCharacterArchiveEntry(value: unknown): value is CharacterArchi
     isOptionalStringArray(value.equipmentIds) &&
     isOptionalStringArray(value.transformationFeatureIds) &&
     isOptionalRecord(value.pathChoices) &&
-    isOptionalRecord(value.spentClassResources) &&
+    (value.spentClassResources === undefined || (isRecord(value.spentClassResources) &&
+      Object.values(value.spentClassResources).every(n => typeof n === "number" && Number.isInteger(n) && n >= 0))) &&
+    isOptionalStringArray(value.conditionIds) &&
+    isOptionalStringArray(value.featIds) &&
+    (value.levelUpHistory === undefined || (Array.isArray(value.levelUpHistory) && value.levelUpHistory.every(isRecord))) &&
     isOptionalInventory(value.inventory) &&
     isOptionalSpellcasting(value.spellcasting) &&
     isOptionalStartingEquipmentSelections(value.startingEquipmentSelections)
@@ -212,11 +217,15 @@ function isCharacterStatus(value: unknown): boolean {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function downloadJson(value: unknown, fileName: string): void {
-  const blob = new Blob([JSON.stringify(value, null, 2)], {
+  downloadArchiveText(JSON.stringify(value, null, 2), fileName);
+}
+
+export function downloadArchiveText(text: string, fileName: string): void {
+  const blob = new Blob([text], {
     type: "application/json;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);

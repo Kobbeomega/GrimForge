@@ -1,10 +1,18 @@
-## Inventar und Homebrew (1.2.0 RC4)
+# GrimForge 1.2.0-rc.10 · Nachtblut
+
+**Erste Partie:** Unter **Charaktere** eine Akte erstellen, die Auswahl prüfen und speichern. Für die Runde im Charakterbogen die **GrimForge-Spielakte (A4)** ausgeben. Unter **Spieltisch** werden laufende Werte wie aktuelle TP und verbrauchte Ressourcen geführt. Das **Grim-Hollow-Original (PDF)** bleibt eine separate Ausgabe.
+
+**Update einer laufenden Kampagne:** Vor dem Versionswechsel unter **Datensicherung** das gesamte Archiv als JSON exportieren und die Datei aufbewahren. Bestehende Akten nicht vorsorglich neu anlegen. Gewürfelte TP und verbrauchtes Inventar bleiben erhalten. Speziell bei alten Hügelzwergen die maximalen TP mit dem Kampagnenbogen vergleichen.
+
+**Release prüfen:** `npm ci`, `npm run check:release`, `npm test`, `npm run test:smoke`. Prüfumfang, Befunde und Grenzen: [Audit RC10](docs/AUDIT-RC10.md).
+
+## Inventar und Homebrew
 
 Im Inventar unter **Gegenstand hinzufügen** entweder **Aus dem Ausrüstungskatalog** oder **Eigener Gegenstand** wählen. Waffen erhalten Würfel, Schadensart, Eigenschaften, Reichweite und Zusatzboni. Rüstungen und Schilde erhalten Basis-RK bzw. RK-Bonus. Werte greifen nach **Ausrüsten**; freie Effekte bleiben Notizen. Homebrew lässt sich später über **Werte bearbeiten** ändern und wird mit der Akte als JSON gespeichert. Der Katalog dient nicht als automatischer Kauf: GM ändern sich erst bei manueller Münzeingabe.
 
 Die üblichen zusätzlichen Gegenstände verwenden die [2014-Ausrüstungswerte](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/equipment). Nicht eindeutig zuordenbare Hintergrundgegenstände bleiben Freitext; gespielte Inventare werden nicht nachträglich aufgefüllt. Das Projekt enthält verschiedene Regelstände, daher ist der Katalogabgleich keine Vollständigkeitsprüfung aller Grim-Hollow-Quellen.
 
-# GrimForge 1.2.0-rc.2
+## Spielumfang
 
 Regelabgleich bis Stufe 5: Die Tests prüfen die Datenpakete, Startpakete, regulären Unterklassen und die Werte des Spielbogens. Für eine unabhängige Vollständigkeitsprüfung aller Grim-Hollow-Sonderregeln reichen gekürzte Buchauszüge nicht aus. Bestehende Inventare bleiben erhalten; korrigierte Startpakete werden nicht nachträglich in gespielte Akten eingebucht.
 
@@ -29,7 +37,7 @@ GrimForge ist ein deutschsprachiger Dark-Fantasy-Charaktermanager für D&D 5e au
 
 **Kompatibilität:** Das Charakterschema bleibt Version 7. Bestehende Charakterdaten und Druckvorlagen bleiben bestehen. Vor dem Update empfehle ich unter „Datensicherung“ einen JSON-Export.
 
-**Teststatus:** TypeScript und SSR-Smoke-Tests bestanden, CSS parsebar. Der vollständige Vite-Build und die vollständige Testsuite sind in der aktuellen Linux-Umgebung wegen fehlender nativer Abhängigkeiten nicht ausführbar. Unter Windows nach `npm ci` bitte `npm run check:release` und `npm test` ausführen.
+**Teststatus RC10:** Der Produktionsbuild, 126 automatisierte Tests und die serverseitigen Oberflächentests liefen unter Windows erfolgreich.
 
 ## Charakteraufstieg
 

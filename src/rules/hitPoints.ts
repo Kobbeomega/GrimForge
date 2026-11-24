@@ -14,6 +14,17 @@ export type HitPointProgressionMode =
   | "average"
   | "maximum";
 
+export function ancestryHitPointsPerLevel(character: { ancestryId?: string; ancestryVariantId?: string }): number {
+  return character.ancestryId === "dwarf" && character.ancestryVariantId === "hill-dwarf" ? 1 : 0;
+}
+
+export function buildHitPointsPerLevel(character: {
+  classId?: string; subclassId?: string; ancestryId?: string; ancestryVariantId?: string;
+}): number {
+  return ancestryHitPointsPerLevel(character) +
+    (character.classId === "sorcerer" && character.subclassId === "draconic-bloodline" ? 1 : 0);
+}
+
 export function calculateFirstLevelHitPoints({
   hitDie,
   constitution,

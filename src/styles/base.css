@@ -47,7 +47,7 @@ body{
 
 .grim-symbol{
 
-    color:#a77b49;
+    color:var(--color-primary);
 
     font-size:3rem;
 
@@ -84,7 +84,7 @@ h1{
     background:linear-gradient(
         to right,
         transparent,
-        #a77b49,
+        var(--color-primary),
         transparent
     );
 

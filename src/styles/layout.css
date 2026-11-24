@@ -29,7 +29,7 @@ body{
   background:
     radial-gradient(
       circle at 50% 10%,
-      rgba(167, 123, 73, 0.13),
+      rgba(var(--accent-deep-rgb), 0.13),
       transparent 36%
     ),
     linear-gradient(
@@ -149,14 +149,14 @@ body{
   background:
     linear-gradient(
       180deg,
-      rgba(167, 123, 73, 0.1),
+      rgba(var(--accent-deep-rgb), 0.1),
       transparent 34%
     ),
     rgba(9, 9, 11, 0.82);
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.18);
+    rgba(var(--accent-rgb), 0.18);
 
   box-shadow:
     inset -1px 0 0 rgba(220, 207, 190, 0.05),
@@ -186,7 +186,7 @@ body{
 
   border-bottom:
     1px solid
-    rgba(167, 123, 73, 0.35);
+    rgba(var(--accent-deep-rgb), 0.35);
 }
 
 .book-nav__seal {
@@ -197,7 +197,7 @@ body{
   filter:
     drop-shadow(
       0 0 10px
-      rgba(210, 172, 118, 0.28)
+      rgba(var(--accent-rgb), 0.28)
     );
 
   transition:
@@ -212,7 +212,7 @@ body{
   filter:
     drop-shadow(
       0 0 15px
-      rgba(210, 172, 118, 0.55)
+      rgba(var(--accent-rgb), 0.55)
     );
 
   transform: rotate(5deg);
@@ -277,10 +277,10 @@ body{
   color: var(--color-paper);
 
   background:
-    rgba(167, 123, 73, 0.06);
+    rgba(var(--accent-deep-rgb), 0.06);
 
   border-color:
-    rgba(167, 123, 73, 0.25);
+    rgba(var(--accent-deep-rgb), 0.25);
 }
 
 .book-nav__item:hover::before {
@@ -323,12 +323,12 @@ body{
   background:
     linear-gradient(
       180deg,
-      rgba(167, 123, 73, 0.13),
-      rgba(167, 123, 73, 0.025)
+      rgba(var(--accent-deep-rgb), 0.13),
+      rgba(var(--accent-deep-rgb), 0.025)
     );
 
   border-color:
-    rgba(210, 172, 118, 0.34);
+    rgba(var(--accent-rgb), 0.34);
 }
 
 .book-nav__item--active .book-nav__marker {
@@ -339,7 +339,7 @@ body{
 
   box-shadow:
     0 0 10px
-    rgba(210, 172, 118, 0.55);
+    rgba(var(--accent-rgb), 0.55);
 }
 
 /* =======================================================
@@ -363,7 +363,7 @@ body{
     padding: var(--space-sm);
 
     border-color:
-      rgba(210, 172, 118, 0.22);
+      rgba(var(--accent-rgb), 0.22);
 
     backdrop-filter: blur(12px);
   }
@@ -376,7 +376,7 @@ body{
 
     border-right:
       1px solid
-      rgba(167, 123, 73, 0.35);
+      rgba(var(--accent-deep-rgb), 0.35);
 
     border-bottom: 0;
   }
@@ -450,14 +450,14 @@ body{
   background:
     linear-gradient(
       180deg,
-      rgba(167, 123, 73, 0.08),
+      rgba(var(--accent-deep-rgb), 0.08),
       transparent 42%
     ),
     rgba(0, 0, 0, 0.14);
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.18);
+    rgba(var(--accent-rgb), 0.18);
 }
 
 .character-creator-layout__editor {
@@ -469,14 +469,14 @@ body{
   background:
     linear-gradient(
       145deg,
-      rgba(167, 123, 73, 0.07),
+      rgba(var(--accent-deep-rgb), 0.07),
       transparent 45%
     ),
     rgba(9, 9, 11, 0.3);
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.2);
+    rgba(var(--accent-rgb), 0.2);
 
   box-shadow:
     inset 0 0 0 5px
@@ -603,7 +603,7 @@ body{
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.18);
+    rgba(var(--accent-rgb), 0.18);
 
   border-radius: 0;
 
@@ -620,10 +620,10 @@ body{
   color: var(--color-paper);
 
   background:
-    rgba(167, 123, 73, 0.1);
+    rgba(var(--accent-deep-rgb), 0.1);
 
   border-color:
-    rgba(210, 172, 118, 0.42);
+    rgba(var(--accent-rgb), 0.42);
 
   transform: translateX(2px);
 }
@@ -648,8 +648,8 @@ body{
   background:
     linear-gradient(
       90deg,
-      rgba(167, 123, 73, 0.22),
-      rgba(167, 123, 73, 0.03)
+      rgba(var(--accent-deep-rgb), 0.22),
+      rgba(var(--accent-deep-rgb), 0.03)
     );
 
   border-color:
@@ -670,14 +670,14 @@ body{
   background:
     linear-gradient(
       145deg,
-      rgba(167, 123, 73, 0.07),
+      rgba(var(--accent-deep-rgb), 0.07),
       transparent 46%
     ),
     rgba(0, 0, 0, 0.16);
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.2);
+    rgba(var(--accent-rgb), 0.2);
 }
 
 .sheet-content::before {
@@ -708,7 +708,7 @@ body{
 
   border-bottom:
     2px solid
-    rgba(210, 172, 118, 0.32);
+    rgba(var(--accent-rgb), 0.32);
 }
 
 .sheet-overview__header p {
@@ -761,7 +761,7 @@ body{
 
   border:
     1px solid
-    rgba(210, 172, 118, 0.18);
+    rgba(var(--accent-rgb), 0.18);
 }
 
 .sheet-overview__facts dt {
@@ -898,7 +898,7 @@ body{
 
     border-top:
       1px solid
-      rgba(210, 172, 118,.28);
+      rgba(var(--accent-rgb),.28);
 
     box-shadow:
       0 -8px 40px
@@ -941,11 +941,11 @@ body{
     border-radius: 10px;
 
     background:
-      rgba(167, 123, 73,.22);
+      rgba(var(--accent-deep-rgb),.22);
 
     box-shadow:
       0 0 18px
-      rgba(210, 172, 118,.22);
+      rgba(var(--accent-rgb),.22);
 
     inset: auto;
   }
@@ -1048,7 +1048,7 @@ body{
 
     backdrop-filter:blur(16px);
 
-    border-top:1px solid rgba(210, 172, 118,.25);
+    border-top:1px solid rgba(var(--accent-rgb),.25);
 
   }
 
@@ -1083,7 +1083,7 @@ body{
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgba(210, 172, 118, 0.4) transparent;
+  scrollbar-color: rgba(var(--accent-rgb), 0.4) transparent;
 }
 
 .character-creator-layout__navigation {
@@ -1217,7 +1217,7 @@ body{
   padding: clamp(24px, 6vw, 48px);
   color: var(--color-text);
   background: rgba(16, 14, 18, 0.96);
-  border: 1px solid rgba(210, 172, 118, 0.45);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
 }
 
@@ -1243,7 +1243,7 @@ body{
   margin-top: 16px;
   padding: 0 18px;
   color: var(--color-paper);
-  background: rgba(167, 123, 73, 0.25);
+  background: rgba(var(--accent-deep-rgb), 0.25);
   border: 1px solid var(--color-primary-light);
   cursor: pointer;
 }

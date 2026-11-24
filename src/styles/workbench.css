@@ -7,7 +7,7 @@
     justify-content: center;
     gap: clamp(.75rem, 2vw, 1.6rem);
     padding: clamp(.75rem, 3vw, 2.5rem);
-    background: radial-gradient(ellipse at top, #2b2220, var(--color-background) 55rem);
+    background: radial-gradient(ellipse at top, #331b23, var(--color-background) 55rem);
   }
   .app-layout::before, .app-layout::after, .app-layout__texture { display: none; }
   .app-layout .app-layout__content,

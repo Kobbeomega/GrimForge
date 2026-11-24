@@ -1,17 +1,18 @@
-/* GrimForge — Obsidian & Antique Brass, RC2.
-   A quiet neutral base with one restrained fantasy accent. */
+/* Nachtblut: oxblood surfaces, rose-ink text and a distinct keyboard ring. */
 :root {
-  --color-background: #111215;
+  --color-background: #120e11;
   --color-surface: #191a1e;
   --color-surface-light: #242329;
   --color-paper: #eee4d5;
   --color-paper-dark: #cabbab;
   --color-text: #f0eae1;
   --color-text-muted: #c6bdb3;
-  --color-border: #403b37;
-  --color-primary: #9a774e;
-  --color-primary-dark: #473727;
-  --color-primary-light: #d9b98b;
+  --color-border: #50353e;
+  --color-primary: #9d4054;
+  --color-primary-dark: #491c29;
+  --color-primary-light: #f1abb5;
+  --accent-rgb: 200, 99, 119;
+  --accent-deep-rgb: 143, 52, 73;
   --color-gold: var(--color-primary-light);
   --color-danger: #a65b58;
   --color-success: #7ca48a;
@@ -20,11 +21,11 @@
   --sheet-surface: #202024;
   --sheet-control: #2a282a;
   --sheet-hover: #353033;
-  --sheet-edge: #5e5145;
+  --sheet-edge: #80505d;
   --sheet-text: var(--color-text);
   --sheet-muted: var(--color-text-muted);
   --sheet-link: var(--color-primary-light);
-  --sheet-focus: #e9c28d;
+  --sheet-focus: #ffcad2;
   --sheet-paper: var(--color-paper);
   --sheet-paper-ink: var(--color-text);
   --sheet-radius: 6px;
@@ -37,7 +38,7 @@
   --space-xl: 32px;
   --space-xxl: 48px;
   --shadow-paper: 0 16px 42px rgba(0,0,0,.32);
-  --shadow-glow: 0 0 14px rgba(217,185,139,.1);
+  --shadow-glow: 0 0 14px rgba(var(--accent-rgb),.16);
   --border-thin: 1px solid var(--color-border);
   --border-primary: 2px solid var(--color-primary);
 }

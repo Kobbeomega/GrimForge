@@ -4,9 +4,8 @@ import {
   formatAbilityModifier,
 } from "../../../compendium/core";
 
-import {
-  getClassById,
-} from "../../../compendium/classes";
+import { getEquippedWeaponAttacks } from "../../sheet/utils/getWeaponAttack";
+import { getCharacterInventory } from "../../archives/utils/getCharacterInventory";
 
 import {
   ancestryTraits,
@@ -14,8 +13,6 @@ import {
 
 import {
   calculateCharacterRules,
-  calculateWeaponAttack,
-  resolveCharacterEquipment,
 } from "../../../rules";
 
 import {
@@ -34,12 +31,6 @@ interface CharacterRecordPreviewProps {
   status?: string;
 }
 
-const damageTypeLabels = {
-  slashing: "Hieb",
-  piercing: "Stich",
-  bludgeoning: "Wucht",
-} as const;
-
 export function CharacterRecordPreview({
   character,
   title,
@@ -51,14 +42,6 @@ export function CharacterRecordPreview({
     createCharacterRuleInput(character),
   );
 
-  const equipment = resolveCharacterEquipment(
-    character.inventory ?? {
-      items: [],
-      currency: { copper: 0, silver: 0, gold: 0 },
-    },
-  );
-
-  const classDefinition = getClassById(character.classId ?? "");
   const abilityScores = character.abilityScores ?? {
     strength: 10,
     dexterity: 10,
@@ -68,23 +51,7 @@ export function CharacterRecordPreview({
     charisma: 10,
   };
 
-  const attacks = equipment.weapons.slice(0, 3).map((weapon) => {
-    const proficient = classDefinition?.weaponProficiencies.some(
-      (entry) =>
-        entry.toLowerCase().includes("waffen") ||
-        entry.toLowerCase().includes(weapon.weaponCategory),
-    ) ?? false;
-
-    return {
-      weapon,
-      calculation: calculateWeaponAttack({
-        weapon,
-        abilityScores,
-        proficiencyBonus: rules.proficiencyBonus,
-        proficient,
-      }),
-    };
-  });
+  const attacks = getEquippedWeaponAttacks(character, getCharacterInventory(character)).slice(0, 3);
 
   const traitNames = (character.ancestryTraitIds ?? [])
     .map((traitId) => ancestryTraits.find((trait) => trait.id === traitId)?.name)
@@ -119,12 +86,12 @@ export function CharacterRecordPreview({
       </header>
 
       <section className="record-preview__combat-grid" aria-label="Kernwerte">
-        <PreviewStat label="RK" value={String(rules.armorClass.armorClass)} />
-        <PreviewStat label="TP" value={String(rules.maximumHitPoints)} />
-        <PreviewStat label="INIT" value={formatAbilityModifier(rules.initiativeModifier)} />
-        <PreviewStat label="BEW" value={`${rules.speed} m`} />
-        <PreviewStat label="ÜB" value={formatAbilityModifier(rules.proficiencyBonus)} />
-        <PreviewStat label="PASSIV" value={String(rules.passivePerception)} />
+        <PreviewStat label="Rüstungsklasse" value={String(rules.armorClass.armorClass)} />
+        <PreviewStat label="Max. Trefferpunkte" value={String(character.vitals?.maximumHitPoints ?? rules.maximumHitPoints)} />
+        <PreviewStat label="Initiative" value={formatAbilityModifier(rules.initiativeModifier)} />
+        <PreviewStat label="Bewegung" value={`${rules.speed} m`} />
+        <PreviewStat label="Übungsbonus" value={formatAbilityModifier(rules.proficiencyBonus)} />
+        <PreviewStat label="Passive Wahrnehmung" value={String(rules.passivePerception)} />
       </section>
 
       <section className="record-preview__section">
@@ -144,15 +111,15 @@ export function CharacterRecordPreview({
         <section className="record-preview__section">
           <PreviewSectionTitle title="Bewaffnung" />
           <div className="record-preview__attack-list">
-            {attacks.map(({ weapon, calculation }) => (
-              <div key={weapon.id} className="record-preview__attack">
+            {attacks.map(attack => (
+              <div key={attack.id} className="record-preview__attack">
                 <div>
-                  <strong>{weapon.name}</strong>
+                  <strong>{attack.name}</strong>
                   <small>
-                    {calculation.damage} {damageTypeLabels[weapon.damage.type]}
+                    {attack.damage} {attack.damageType}
                   </small>
                 </div>
-                <span>{calculation.attackBonusLabel}</span>
+                <span>{attack.attackBonusLabel}</span>
               </div>
             ))}
           </div>

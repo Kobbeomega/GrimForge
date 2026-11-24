@@ -125,17 +125,17 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
               </select>
             </label>}
           </div>
-          <p>KO-Modifikator auf der Zielstufe: {getAbilityModifier(targetScores.constitution)}</p>
+          <p>Dein Konstitutionsmodifikator ({getAbilityModifier(targetScores.constitution)}) wird automatisch eingerechnet. Gib beim Würfeln nur die Augenzahl an.</p>
           <strong>Maximale TP: {oldMaximum} → {Number.isFinite(newMaximum) ? newMaximum : "—"}{Number.isFinite(newMaximum) && ` (+${newMaximum - oldMaximum})`}</strong>
           <p>Aktuelle TP bleiben erhalten. Eine Heilung oder lange Rast kannst du anschließend im Charakterbogen ausführen.</p>
         </section>
 
         {level === 4 && <section className="level-up__card">
           <h3>Attributswerterhöhung oder Talent</h3>
-          <p>Auf Stufe 4 kannst du entweder zwei Attributspunkte verteilen oder ein Talent notieren.</p>
+          <p>Erhöhe ein Attribut um 2 oder zwei Attribute um je 1 (höchstens 20). Wenn eure Runde mit Talenten spielt, kannst du stattdessen eines wählen.</p>
           <div className="level-up__mode-options" role="radiogroup" aria-label="Stufe-4-Entscheidung">
             <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "increase"} onChange={() => setDraft({ ...draft, abilityScoreMode: "increase", featNote: "" })} /> Attribute erhöhen</label>
-            <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "feat"} onChange={() => setDraft({ ...draft, abilityScoreMode: "feat", abilityScoreIncreases: {} })} /> Talent statt ASI</label>
+            <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "feat"} onChange={() => setDraft({ ...draft, abilityScoreMode: "feat", abilityScoreIncreases: {} })} /> Talent wählen</label>
           </div>
           {draft.abilityScoreMode === "increase" ? <>
             <p><strong>Verteilt:</strong> {abilityIncreaseTotal}/2 Punkte</p>

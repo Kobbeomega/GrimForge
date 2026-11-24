@@ -12,6 +12,7 @@ interface ClassStepProps {
   selectedClassId: string;
   selectedSubclassId: string;
   level: number;
+  existingLevel?: number;
   pathChoices: CharacterPathChoices;
   onSelectClass: (classId: string) => void;
   onChangeLevel: (level: number) => void;
@@ -37,6 +38,7 @@ export function ClassStep({
   selectedClassId,
   selectedSubclassId,
   level,
+  existingLevel,
   pathChoices,
   onSelectClass,
   onChangeLevel,
@@ -72,12 +74,12 @@ export function ClassStep({
         <header className="creator-path-choices__header">
           <div>
             <span>Progression</span>
-            <h3>Startstufe</h3>
+            <h3>{existingLevel ? "Aktuelle Stufe" : "Startstufe"}</h3>
           </div>
-          <p>GrimForge bildet für den aktuellen Rules-Audit die Stufen 1 bis 3 vollständig ab.</p>
+          <p>{existingLevel ? `Stufe ${existingLevel} bleibt beim Bearbeiten erhalten. Zum Aufsteigen öffne den Charakterbogen.` : "Erste Figur? Starte auf Stufe 1. Beginnt eure Runde auf Stufe 2 oder 3, wähle diese direkt. Weitere Aufstiege bis Stufe 5 machst du im Charakterbogen."}</p>
         </header>
         <div className="creator-path-choice__options">
-          {[1, 2, 3].map((candidateLevel) => (
+          {(existingLevel ? [] : [1, 2, 3]).map((candidateLevel) => (
             <button
               key={candidateLevel}
               type="button"

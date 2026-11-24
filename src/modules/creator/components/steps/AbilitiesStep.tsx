@@ -19,6 +19,7 @@ import type {
 
 interface AbilitiesStepProps {
   values: AbilityScores;
+  campaignValues?: boolean;
   classId?: string;
   ancestryId?: string;
   ancestryVariantId?: string;
@@ -62,6 +63,7 @@ const pointBuyStart: AbilityScores = {
 
 export function AbilitiesStep({
   values,
+  campaignValues,
   classId,
   ancestryId,
   ancestryVariantId,
@@ -144,6 +146,12 @@ export function AbilitiesStep({
     );
   }
 
+  if (campaignValues) return <section className="creator-section">
+    <h2>Attribute aus deiner Kampagne</h2>
+    <p>Diese Basiswerte sind bereits in der Akte gespeichert. Sie werden nicht erneut mit den 27 Startpunkten gekauft. Abstammungsboni sind in den Endwerten enthalten.</p>
+    <dl className="point-buy-grid">{abilityIds.map(id => <div key={id}><dt>{abilityLabels[id]}</dt>
+      <dd>Basis {values[id]} · Endwert {values[id] + (ancestryBonuses[id] ?? 0)}</dd></div>)}</dl>
+  </section>;
   return (
     <section className="creator-section creator-dossier-step">
       <header className="creator-section__header creator-dossier-step__header">

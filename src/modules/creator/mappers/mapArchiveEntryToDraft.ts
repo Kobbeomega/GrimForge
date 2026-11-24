@@ -288,7 +288,8 @@ function inferStartingEquipmentSelections(character: CharacterArchiveEntry) {
 
   const inventoryQuantities = new Map<string, number>();
   for (const item of character.inventory.items) {
-    inventoryQuantities.set(item.id, (inventoryQuantities.get(item.id) ?? 0) + Math.max(0, item.quantity));
+    const id = item.catalogId ?? item.id;
+    inventoryQuantities.set(id, (inventoryQuantities.get(id) ?? 0) + Math.max(0, item.quantity));
   }
 
   return configuration.choices.flatMap((choice) => {

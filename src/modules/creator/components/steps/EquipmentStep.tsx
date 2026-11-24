@@ -19,6 +19,7 @@ import type {
 
 interface EquipmentStepProps {
   draft: CharacterCreatorDraft;
+  editing?: boolean;
 
   onSelectionsChange: (
     selections:
@@ -28,6 +29,7 @@ interface EquipmentStepProps {
 
 export function EquipmentStep({
   draft,
+  editing,
   onSelectionsChange,
 }: EquipmentStepProps) {
   const configuration =
@@ -93,10 +95,7 @@ export function EquipmentStep({
         <h2>Startausrüstung</h2>
 
         <p>
-          Wähle für jede Gruppe eine Option.
-          Mehrteilige Optionen werden beim
-          Versiegeln vollständig in das Inventar
-          übertragen.
+          {editing ? "Das Inventar deiner Kampagne bleibt erhalten. Bereits verbrauchte Startgegenstände werden beim Speichern nicht aufgefüllt." : "Wähle für jede Gruppe eine Option. Alle Bestandteile eines Pakets landen gemeinsam im Inventar."}
         </p>
       </header>
 

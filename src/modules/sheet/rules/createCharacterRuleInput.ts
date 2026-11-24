@@ -11,6 +11,7 @@ import type {
 } from "../../../rules";
 import { resolveInventoryItem } from "../../archives/utils/resolveInventoryItem";
 import { getClassMovementBonus } from "../../../rules/movement";
+import { ancestryHitPointsPerLevel } from "../../../rules/hitPoints";
 
 export function createCharacterRuleInput(
   character: CharacterArchiveEntry,
@@ -67,6 +68,7 @@ export function createCharacterRuleInput(
         .ancestryUsesReducedSpeed ??
       false,
     classMovementBonus: getClassMovementBonus(character.classId ?? "", character.level, armor),
+    hitPointBonusPerLevel: ancestryHitPointsPerLevel(character),
     armorClass: {
       armor: armorRules,
       shieldBonus,

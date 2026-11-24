@@ -9,7 +9,8 @@ import {
 
 
 import type { CharacterArchiveEntry } from "../modules/archives/types";
-import { isCharacterArchiveEntry } from "../modules/archives/io/characterArchiveIO";
+import { downloadArchiveText } from "../modules/archives/io/characterArchiveIO";
+import { readStoredArchive } from "./readStoredArchive";
 import { migrateCharacterArchiveEntries, migrateCharacterArchiveEntry } from "../migrations/characterSchema";
 
 interface CharacterContextValue {
@@ -29,6 +30,7 @@ interface CharacterContextValue {
 
   replaceCharacters: (
     characters: CharacterArchiveEntry[],
+    explicitlyReplace?: boolean,
   ) => void;
 
   resetCharacters: () => void;
@@ -47,13 +49,19 @@ interface CharacterProviderProps {
 export function CharacterProvider({
   children,
 }: CharacterProviderProps) {
-  const [characters, setCharacters] = useState<
-    CharacterArchiveEntry[]
-  >(() => loadCharacters());
+  const [loaded] = useState(() => {
+    try { return { ...readStoredArchive(window.localStorage.getItem(STORAGE_KEY)), unavailable: false }; }
+    catch { return { ...readStoredArchive(null), unavailable: true }; }
+  });
+  const [characters, setCharacters] = useState(loaded.characters);
+  const [protectedRaw, setProtectedRaw] = useState(loaded.protectedRaw);
+  const [writeFailed, setWriteFailed] = useState(false);
 
   useEffect(() => {
-    saveCharacters(characters);
-  }, [characters]);
+    if (protectedRaw !== null || loaded.unavailable) return;
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(characters)); setWriteFailed(false); }
+    catch { setWriteFailed(true); }
+  }, [characters, protectedRaw, loaded]);
 
   function createCharacter(
     character: CharacterArchiveEntry,
@@ -106,7 +114,9 @@ export function CharacterProvider({
 
   function replaceCharacters(
     nextCharacters: CharacterArchiveEntry[],
+    explicitlyReplace = false,
   ) {
+    if (explicitlyReplace) setProtectedRaw(null);
     setCharacters(migrateCharacterArchiveEntries(nextCharacters).characters);
   }
 
@@ -128,6 +138,11 @@ export function CharacterProvider({
 
   return (
     <CharacterContext.Provider value={value}>
+      {protectedRaw !== null ? <aside role="alert" className="archive-recovery">
+        <strong>Archiv geschützt · Nicht alle Akten konnten gelesen werden.</strong>
+        <p>Der Originalspeicher bleibt unverändert. Änderungen in dieser Sitzung sind nur vorläufig. Sichere zuerst die Rohdaten. Unter „Datensicherung“ kannst du anschließend eine geprüfte Datei mit „Archiv ersetzen“ wiederherstellen.</p>
+        <button type="button" onClick={() => downloadArchiveText(protectedRaw, "grimforge-originalspeicher.json")}>Originaldaten herunterladen</button>
+      </aside> : (writeFailed || loaded.unavailable) && <p role="alert" className="archive-recovery">Der Browser kann dein Archiv nicht speichern. Exportiere deine Akten unter „Datensicherung“, bevor du die Seite schließt.</p>}
       {children}
     </CharacterContext.Provider>
   );
@@ -145,40 +160,3 @@ export function useCharacterContext() {
   return context;
 }
 
-function loadCharacters(): CharacterArchiveEntry[] {
-  try {
-    const storedValue =
-      window.localStorage.getItem(STORAGE_KEY);
-
-    if (!storedValue) {
-  return [];
-}
-
-    const parsedValue: unknown =
-      JSON.parse(storedValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return [];
-    }
-
-    const validCharacters = parsedValue.filter(isCharacterArchiveEntry);
-    return migrateCharacterArchiveEntries(validCharacters).characters;
-  } catch {
-  return [];
-}
-  }
-
-
-function saveCharacters(
-  characters: CharacterArchiveEntry[],
-) {
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(characters),
-    );
-  } catch {
-    // Die App bleibt benutzbar, auch wenn der Browser
-    // lokalen Speicher blockiert oder das Limit erreicht ist.
-  }
-}

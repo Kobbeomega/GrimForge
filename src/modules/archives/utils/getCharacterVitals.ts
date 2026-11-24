@@ -1,6 +1,8 @@
 import {
   calculateMaximumHitPoints,
+  buildHitPointsPerLevel,
 } from "../../../rules/hitPoints";
+import { getFeatById } from "../../../compendium/feats";
 
 import type {
   CharacterArchiveEntry,
@@ -18,6 +20,7 @@ export function getCharacterVitals(
     calculateMaximumHitPoints({
       classId: character.classId ?? "",
       level: character.level,
+      bonusPerLevel: buildHitPointsPerLevel(character) + (character.featIds ?? []).reduce((n,id) => n + (getFeatById(id)?.bonuses?.hitPointsPerLevel ?? 0),0),
       constitution:
         character.abilityScores?.constitution ??
         character.baseAbilityScores?.constitution ??

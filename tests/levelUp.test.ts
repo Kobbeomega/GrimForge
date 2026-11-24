@@ -36,6 +36,94 @@ import { mapDraftToArchiveEntry } from "../src/modules/creator/mappers/mapDraftT
 import { resolveCharacterClassResources } from "../src/rules/classResources";
 import { calculateCharacterRules } from "../src/rules";
 import type { CharacterArchiveEntry } from "../src/modules/archives/types";
+import { readStoredArchive } from "../src/store/readStoredArchive";
+import { mergeCharacterArchives, readCharacterArchiveFile } from "../src/modules/archives/io/characterArchiveIO";
+import { CharacterRecordPreview } from "../src/modules/creator/components/CharacterRecordPreview";
+import { AbilitiesStep } from "../src/modules/creator/components/steps/AbilitiesStep";
+import { ClassStep } from "../src/modules/creator/components/steps/ClassStep";
+
+test("Gespielte Figur: numerische verbrauchte Ressourcen überleben Browserladen und Dateiimport",async () => {
+  const c = fixture();
+  const stored = readStoredArchive(JSON.stringify([c]));
+  assert.equal(stored.protectedRaw,null);
+  assert.deepEqual(stored.characters[0].spentClassResources,c.spentClassResources);
+  const backup = new File([JSON.stringify({format:"grimforge-character-archive",version:2,characters:[c]})],"test.json");
+  const imported = await readCharacterArchiveFile(backup);
+  assert.deepEqual(imported.characters[0].spentClassResources,c.spentClassResources);
+});
+
+test("Beschädigter oder neuerer Originalspeicher bleibt bytegenau zur Rettung verfügbar", () => {
+  for(const broken of ["", "{", "{}", JSON.stringify([{...fixture(),schemaVersion:999}])])
+    assert.equal(readStoredArchive(broken).protectedRaw,broken);
+  const raw=JSON.stringify([fixture(),{bad:true}]);
+  assert.equal(readStoredArchive(raw).protectedRaw,raw);
+  assert.equal(readStoredArchive(raw).characters.length,1);
+  assert.equal(readStoredArchive(null).protectedRaw,null);
+  assert.equal(readStoredArchive("[]").protectedRaw,null);
+});
+
+test("Alter Import überschreibt keine jüngere Figur durch einen Migrationszeitstempel",() => {
+  const c=fixture(); c.name="Am Spieltisch geändert";
+  const old={...c,schemaVersion:2,updatedAt:"2020-01-01",name:"Alte Sicherung",baseAbilityScores:undefined};
+  assert.equal(mergeCharacterArchives([c],[old])[0].name,c.name);
+});
+
+test("Altakte ohne Historie: maximale, fehlende und temporäre TP sowie Todesrettungen und Zustände bleiben erhalten",() => {
+  const c=fixture("fighter",4); c.schemaVersion=4; c.featIds=["tough"];
+  c.vitals={...c.vitals!,maximumHitPoints:45,currentHitPoints:0};
+  c.deathSaves={successes:1,failures:2}; c.exhaustionLevel=3; c.conditionIds=["exhaustion","unconscious"];
+  const migrated=migrateCharacterArchiveEntry(c).character;
+  const edited=mergeEditedCharacter(mapDraftToArchiveEntry(mapArchiveEntryToDraft(migrated)),migrated);
+  assert.deepEqual([edited.vitals!.maximumHitPoints,edited.vitals!.currentHitPoints,edited.vitals!.temporaryHitPoints],[45,0,3]);
+  assert.deepEqual(edited.deathSaves,c.deathSaves);
+  assert.deepEqual(edited.conditionIds,c.conditionIds); assert.equal(edited.exhaustionLevel,3);
+  const pdf=new TextDecoder().decode(makeGrimHollowPlayPdf(edited));
+  for(const value of ["Erfolge: 1/3 · Fehlschläge: 2/3","Stufe 3 / 6"])
+    assert.ok(pdf.includes(Buffer.from(value,"latin1").toString("hex")));
+});
+
+test("Bearbeiten vergibt keine verbrauchten Startpakete erneut",() => {
+  const d=createEmptyCharacterDraft("W"); d.classId="wizard";
+  d.startingEquipmentSelections=[{choiceId:"wizard-pack",optionId:"wizard-scholar"}];
+  const c=mapDraftToArchiveEntry(d);
+  assert.ok(c.inventory!.items.some(i=>i.id==="parchment"));
+  c.inventory!.items=c.inventory!.items.filter(i=>i.id!=="parchment");
+  const edited=mergeEditedCharacter(mapDraftToArchiveEntry(mapArchiveEntryToDraft(c)),c);
+  assert.deepEqual(edited.inventory,c.inventory);
+  assert.ok(!edited.equipmentIds?.includes("parchment"));
+});
+
+test("Hügelzwerg: feste TP bei Erstellung, Aufstieg und Wiederöffnen; kein Bonus beim Gebirgszwerg",() => {
+  for(const [variant,bonus] of [["hill-dwarf",1],["mountain-dwarf",0]] as const) {
+    const d=createEmptyCharacterDraft("Z"); d.ancestryId="dwarf"; d.ancestryVariantId=variant; d.classId="fighter";
+    d.baseAbilities={...defaultAbilityScores,constitution:12}; d.pathChoices={"fighter-fighting-style":"defense"};
+    let c=mapDraftToArchiveEntry(d);
+    assert.equal(c.vitals!.maximumHitPoints,12+bonus);
+    for(let level=2;level<=5;level++){
+      const draft=createLevelUpDraft(c); if(level===3) draft.subclassId="champion";
+      if(level===4) draft.abilityScoreIncreases={strength:2};
+      c=applyLevelUp(c,draft);
+      assert.equal(c.vitals!.maximumHitPoints,12+8*(level-1)+level*bonus);
+      assert.equal(mergeEditedCharacter(mapDraftToArchiveEntry(mapArchiveEntryToDraft(c)),c).vitals!.maximumHitPoints,c.vitals!.maximumHitPoints);
+    }
+  }
+});
+
+test("Erstellungsvorschau zeigt die tatsächlichen Kampagnen-TP und Waffenübung aus dem Spielbogen",() => {
+  const c=fixture("cleric",3); c.vitals!.maximumHitPoints=31;
+  c.inventory!.items=[{id:"greatsword",name:"Kampagnenklinge",equipped:true,quantity:1,weight:3,notes:"",category:"weapon",createdAt:"",updatedAt:""}];
+  const attack=getEquippedWeaponAttacks(c,c.inventory!)[0]; assert.equal(attack.proficient,false);
+  const html=renderToStaticMarkup(createElement(CharacterRecordPreview,{character:c,title:"",alignment:"",pronouns:""}));
+  assert.ok(html.includes("<strong>31</strong><small>Max. Trefferpunkte</small>"));
+  assert.ok(html.includes("<span>"+attack.attackBonusLabel+"</span>")); assert.match(html,/Kampagnenklinge/);
+});
+
+test("Bearbeitungsansicht auf Stufe 4 bietet weder Zurückstufen noch gekappte Kampagnenattribute an",() => {
+  const html=renderToStaticMarkup(createElement(ClassStep,{existingLevel:4,level:4,selectedClassId:"fighter",selectedSubclassId:"champion",pathChoices:{},onSelectClass(){},onChangeLevel(){},onSelectSubclass(){},onChangePathChoice(){}}));
+  assert.match(html,/Stufe 4 bleibt/);assert.doesNotMatch(html,/Beginn der Laufbahn/);
+  const abilities=renderToStaticMarkup(createElement(AbilitiesStep,{campaignValues:true,values:{...defaultAbilityScores,strength:17},onChange(){}}));
+  assert.match(abilities,/Basis 17 · Endwert 17/);assert.doesNotMatch(abilities,/Zurücksetzen/);
+});
 
 test("Grim-Hollow-Spielbogen: PDF enthält auch lange Listen und Zeichensätze",()=>{
   const c=fixture("wizard",5);
