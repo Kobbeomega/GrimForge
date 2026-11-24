@@ -1,3 +1,4 @@
+import { resolveCharacterTransformation } from "../../../compendium/transformations/activeRecord";
 import {
   defaultAbilityScores,
 } from "../../../compendium/core";
@@ -246,7 +247,7 @@ export function mapArchiveEntryToDraft(
      */
 
     transformationId:
-      character.transformationId ?? "",
+      resolveCharacterTransformation(character).definition?.id ?? character.transformationId ?? "",
 
     transformationStage:
       character.transformationStage ?? 0,
@@ -268,7 +269,7 @@ export function mapArchiveEntryToDraft(
       timestamp,
 
     updatedAt:
-      timestamp,
+      character.updatedAt ?? timestamp,
   };
 }
 function normalizeSkillChoice(value: import("../../../compendium/classes").CharacterPathChoiceValue | undefined): SkillId[] {

@@ -111,3 +111,8 @@ export type EquipmentDefinition =
   | WeaponItem
   | ArmorItem
   | GearItem;
+
+export function weaponDamageLabel(damage: DamageDice, label: string): string {
+  if (damage.dice === 0) return "Kein Schaden";
+  return (damage.die === 1 ? String(damage.dice) : `${damage.dice}W${damage.die}`) + " " + label;
+}

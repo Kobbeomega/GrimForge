@@ -86,6 +86,10 @@ export function SkillRulesPanel({
                   : skill.proficient
                     ? "Geübt"
                     : "Ungeübt"}
+                {" · "}{abilityLabels[skill.abilityId]} {formatModifier(rules.abilityModifiers[skill.abilityId])}
+                {skill.proficient || skill.expertise ? ` · Übung ${formatModifier(rules.proficiencyBonus * (skill.expertise ? 2 : 1))}` : ""}
+                {skill.bonus !== rules.abilityModifiers[skill.abilityId] + rules.proficiencyBonus * (skill.expertise ? 2 : skill.proficient ? 1 : 0) &&
+                  ` · sonstige ${formatModifier(skill.bonus - rules.abilityModifiers[skill.abilityId] - rules.proficiencyBonus * (skill.expertise ? 2 : skill.proficient ? 1 : 0))}`}
               </small>
             </article>
           ),

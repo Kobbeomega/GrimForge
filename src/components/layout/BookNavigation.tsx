@@ -14,27 +14,22 @@ const navigationItems: NavigationItem[] = [
   {
     id: "character",
     chapter: "I",
-    title: "Akte",
+    title: "Charaktere",
   },
   {
     id: "session",
     chapter: "II",
-    title: "Session",
-  },
-  {
-    id: "journal",
-    chapter: "III",
-    title: "Journal",
+    title: "Spieltisch",
   },
   {
     id: "compendium",
-    chapter: "IV",
-    title: "Codex",
+    chapter: "III",
+    title: "Kodex",
   },
   {
     id: "archive",
-    chapter: "V",
-    title: "Archiv",
+    chapter: "IV",
+    title: "Datensicherung",
   },
 ];
 
@@ -53,9 +48,10 @@ export function BookNavigation({
           className="book-nav__seal"
           title="Grimforge"
         />
+        <strong>GrimForge</strong>
       </div>
 
-      <nav className="book-nav__chapters">
+      <nav aria-label="Kapitel" className="book-nav__chapters">
         {navigationItems.map((item) => {
           const isActive = item.id === activeItemId;
 

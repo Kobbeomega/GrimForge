@@ -1,0 +1,197 @@
+/* GrimForge RC2: visual calm and clarity. Screen only, never exported print layouts. */
+@media screen {
+  html { color-scheme: dark; }
+  body { background: var(--color-background); }
+  .app-layout {
+    color: var(--sheet-text);
+    background: radial-gradient(ellipse 80% 29rem at 50% 0, #202027 0%, var(--color-background) 100%);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .app-layout :is(p,dd,li) { line-height: 1.52; }
+  .app-layout :is(h1,h2,h3,h4) { color: var(--color-text); letter-spacing: .012em; line-height: 1.24; }
+  .app-layout :is(button,input,select,textarea) { letter-spacing: normal; }
+  .app-layout :is(input,select,textarea) {
+    background: #242429;
+    color: var(--sheet-text);
+    border-color: #665849;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+  .app-layout :is(input,select,textarea)::placeholder { color: #c4b9aa; opacity: .9; }
+  .app-layout :is(input,select,textarea):disabled { opacity: .65; }
+  .app-layout :is(button,summary,input,select,textarea):focus-visible {
+    outline: 2px solid var(--sheet-focus);
+    outline-offset: 3px;
+  }
+  .app-layout .book-nav {
+    background: #1a1a1e;
+    border: 1px solid #403a36;
+    border-bottom-color: #635142;
+    border-radius: 7px;
+  }
+  .app-layout .book-nav__logo { color: var(--sheet-text); }
+  .app-layout .book-nav__item { border-radius: 4px; }
+  .app-layout .book-nav__item--active { background: #302920; color: #f5dfbe; }
+  .app-layout .paper-page {
+    background: #19191c;
+    border: 1px solid #4d443c;
+    border-radius: 7px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.28);
+  }
+  .app-layout .paper-page::before { border-color: rgba(217,185,139,.07); }
+  .app-layout .chapter-header__title { font-family: var(--sheet-heading); text-transform: none; }
+
+  /* Keep the game sheet visually quieter than its supporting reference cards. */
+  .app-layout .sheet-content {
+    background: #17171a;
+    border: 1px solid #423b37;
+    border-radius: 6px;
+  }
+  .app-layout .sheet-navigation {
+    background: #1a1a1d;
+    border: 1px solid #423b37;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+  .app-layout .sheet-navigation__button {
+    min-height: 45px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 4px;
+    transition: background-color .15s ease,border-color .15s ease;
+  }
+  .app-layout .sheet-navigation__button:hover { background: #2a292a; transform: none; }
+  .app-layout .sheet-navigation__button--active {
+    color: #f1e6d7;
+    background: #34302c;
+    border-color: #60513f;
+    box-shadow: inset 3px 0 0 var(--sheet-focus);
+  }
+  .app-layout .sheet-navigation__button > strong {
+    font-size: .92rem;
+    letter-spacing: .02em;
+    text-transform: none;
+    white-space: normal;
+    text-overflow: initial;
+  }
+  .app-layout .sheet-navigation__button > span { font-size: .8rem; }
+  .app-layout .sheet-toolbar { border-color: #49413b; }
+  .app-layout .sheet-toolbar__status { font-size: .87rem; text-transform: none; letter-spacing: 0; }
+  .app-layout :is(.sheet-overview__header,.magic-sheet__hero,.character-journal__hero) {
+    background: #242127;
+    border-color: #574739;
+    border-radius: 5px;
+  }
+  .app-layout :is(.table-board__hp,.table-board__metrics > div,.table-board__section,.table-board__status,
+                  .compact-passive-row,.ability-sheet-card,.compact-weapon-card,.compact-spell-record,
+                  .live-inventory-item,.feature-record,.class-resource-record) {
+    background: var(--sheet-surface);
+    border-color: #50463d;
+    box-shadow: none;
+    border-radius: 5px;
+  }
+  /* One deliberate parchment focal point — other stats stay neutral and dark. */
+  .app-layout .table-board__hp {
+    background: #e4d5bc;
+    color: #2e2925;
+    border-color: #cbb28d;
+    box-shadow: inset 3px 0 0 #a66b5c;
+  }
+  .app-layout .table-board__hp :is(h3,span,strong,label,output) { color: #2e2925; }
+  .app-layout .table-board__hp-line strong span { color: #53463a; }
+  .app-layout .table-board__hp :is(input,button) { color: var(--sheet-text); }
+  .app-layout .table-board__hp .table-board__temporary { color: #83453a; }
+  .app-layout .table-board__metrics > div:nth-child(-n+2) { background: #29282a; }
+  .app-layout .table-board__hp-line strong { color: #2e2925; }
+  .app-layout .table-board progress { accent-color: #b16a64; }
+  .app-layout .compact-weapon-card::after { opacity: .35; }
+  .app-layout .compact-weapon-card__sigil { color: var(--sheet-link); }
+  .app-layout .compact-weapon-row__primary > div { background: #262428; border-color: #494039; border-radius: 3px; }
+  .app-layout .ability-skill-row > output, .app-layout .ability-sheet-card__save > output {
+    font: 700 1.06rem/1.2 var(--sheet-body);
+    font-variant-numeric: tabular-nums;
+    color: var(--sheet-link);
+  }
+  .app-layout .ability-skill-row > strong { font-size: .97rem; }
+  .app-layout .ability-sheet-card__identity h3 { font-size: 1.15rem; }
+
+  /* Typography hierarchy: fantasy headings; functional labels in a plain readable sans. */
+  .app-layout :is(.table-board h2,.sheet-overview__header h2,.compact-combat__header h2,
+                  .magic-sheet__hero h2,.compact-spell-card__main h4,.gf-level-spell-card > header strong,
+                  .compact-spell-row__identity strong) { font-family: var(--sheet-heading); }
+  .app-layout :is(.table-board__metrics dt,.compact-weapon-row__primary small,.compact-spellcasting__stats dt,
+                  .sheet-overview__facts dt,.compact-class-card__facts dt,.gf-spell-quick dt) {
+    font-size: .86rem;
+    letter-spacing: normal;
+    line-height: 1.4;
+    color: var(--sheet-muted);
+    text-transform: none;
+  }
+  .app-layout :is(.compact-weapon-row__primary strong,.compact-spellcasting__stats dd,
+                  .table-board__metrics dd,.gf-spell-quick dd) { color: var(--sheet-text); }
+  .app-layout :is(.compact-weapon-row__secondary > span,.compact-spell-card__main footer span,
+                  .gf-spell-quick__tags span) { font-size: .86rem; letter-spacing: normal; line-height: 1.4; }
+
+  /* Spell selection: content first, fewer nested visual boxes. */
+  .app-layout .compact-spell-grid,
+  .app-layout .gf-level-spell-grid { gap: .7rem; }
+  .app-layout :is(.compact-spell-card,.gf-level-spell-card) {
+    background: #202024;
+    border: 1px solid #52483e;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+  .app-layout :is(.compact-spell-card--selected,.gf-level-spell-card:has(button[aria-pressed="true"])) {
+    border-color: #cba672;
+    box-shadow: inset 3px 0 0 #cba672;
+  }
+  .app-layout .gf-spell-quick__facts > div {
+    background: #29272a;
+    border: 0;
+    border-left: 2px solid #695740;
+    padding: .42rem .6rem;
+    border-radius: 3px;
+  }
+  .app-layout .gf-spell-quick__effect {
+    padding: .2rem 0;
+    color: var(--sheet-text);
+    font-size: .96rem;
+  }
+  .app-layout .gf-level-spell-card > header { border: 0; padding: 0; }
+  .app-layout .gf-level-spell-details { border-color: #51463a; }
+  .app-layout .gf-granted-spell { background: #252428; border-color: #4d453d; border-radius: 5px; }
+  .app-layout :is(.gf-death-saves,.gf-exhaustion,.gf-status-disclosure,.gf-action-feedback) {
+    background: #222125;
+    border: 1px solid #51483f;
+    border-radius: 6px;
+  }
+  .app-layout .gf-action-feedback { background: #282528; }
+  .app-layout .gf-death-saves__tracks > div { border: 0; border-top: 1px solid #574b3e; background: transparent; }
+
+  /* Sensible interaction styling, not a wall of rectangular gold borders. */
+  .app-layout :is(.grim-button,.gf-death-saves button,.gf-action-feedback button,
+                  .gf-cast-control button,.table-board button) {
+    border-radius: 5px;
+    font-family: var(--sheet-body);
+    font-size: .95rem;
+    line-height: 1.3;
+  }
+  .app-layout .grim-button { padding: .65rem .95rem; border: 1px solid #80684c; color: #f1e7da; background: #302b28; }
+  .app-layout .grim-button::before { display:none; }
+  .app-layout .grim-button:hover { background: #3c322b; box-shadow: none; transform: none; }
+  .app-layout .gf-death-saves button { min-height: 40px; }
+  .app-layout .gf-manual-hit-die { display: grid; gap: .3rem; font: 600 .92rem/1.4 var(--sheet-body); color: var(--sheet-muted); }
+  .app-layout .gf-manual-hit-die input { width: min(100%, 7rem); min-height: 42px; padding: .45rem .6rem; }
+
+  .app-layout .table-board__hp-actions button:first-of-type { background: #613338; border-color: #965c60; }
+  .app-layout .table-board__hp-actions button:last-of-type { background: #26342c; border-color: #4e765b; color: #e0f0e5; }
+}
+@media screen and (max-width: 750px) {
+  .app-layout .sheet-layout { gap: .8rem; }
+  .app-layout .compact-spell-grid,.app-layout .gf-level-spell-grid { grid-template-columns: 1fr; }
+  .app-layout .book-nav { border-radius: 5px; }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  .app-layout *, .app-layout *::before, .app-layout *::after { scroll-behavior: auto; transition-duration: .01ms; animation-duration: .01ms; }
+}

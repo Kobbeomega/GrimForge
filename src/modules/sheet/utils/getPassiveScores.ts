@@ -11,6 +11,7 @@ import type {
 import type {
   SkillId,
 } from "../../../compendium/skills";
+import { getSubclassSkillProficiencies } from "../../../compendium/classes";
 
 import type {
   CharacterArchiveEntry,
@@ -86,11 +87,9 @@ function calculatePassiveScore(
       character.level,
     );
 
-  const rawLoreSkills = character.pathChoices?.["lore-bonus-skills"];
-  const loreSkills = Array.isArray(rawLoreSkills) ? rawLoreSkills : rawLoreSkills ? [rawLoreSkills] : [];
   const proficient =
     (character.skillProficiencies?.includes(definition.skillId) ?? false) ||
-    (character.classId === "bard" && character.subclassId === "college-of-lore" && character.level >= 3 && loreSkills.includes(definition.skillId));
+    getSubclassSkillProficiencies(character.classId ?? "", character.subclassId, character.level, character.pathChoices).includes(definition.skillId);
 
   const expertise =
     character.skillExpertise

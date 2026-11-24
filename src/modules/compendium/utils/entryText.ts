@@ -1,3 +1,4 @@
+import { weaponDamageLabel } from "../../../compendium/equipment";
 import type { CompendiumEntry } from "../types";
 
 const schoolLabels: Record<string, string> = {
@@ -67,7 +68,7 @@ export function formatCompendiumEntryText(entry: CompendiumEntry): string {
     lines.push("", `Gewicht: ${entry.weight} lb`, `Preis: ${formatPrice(entry.price)}`);
     if (entry.category === "weapon") {
       lines.push(
-        `Schaden: ${entry.damage.dice}W${entry.damage.die} ${damageTypeLabels[entry.damage.type] ?? entry.damage.type}`,
+        `Schaden: ${weaponDamageLabel(entry.damage,damageTypeLabels[entry.damage.type] ?? entry.damage.type)}`,
         `Eigenschaften: ${entry.properties.join(", ") || "—"}`,
       );
     }

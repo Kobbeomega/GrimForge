@@ -1,3 +1,6 @@
+import { weapons } from "../equipment/equipment";
+import { getWeaponMastery2024 } from "../equipment/weaponMasteries2024";
+
 export type CharacterPathChoiceValue = string | string[];
 export type CharacterPathChoices = Record<string, CharacterPathChoiceValue>;
 
@@ -5,6 +8,8 @@ export interface CharacterPathChoiceOption {
   id: string;
   name: string;
   description: string;
+  minimumLevel?: number;
+  requiredPact?: string;
 }
 
 export interface CharacterPathChoiceDefinition {
@@ -19,7 +24,46 @@ export interface CharacterPathChoiceDefinition {
   requires?: { choiceId: string; optionId: string };
 }
 
+const monsterLanguages: ReadonlyArray<readonly [id: string, name: string, ...languages: string[]]> = [
+  ["aberration", "Aberration", "Tiefensprache", "Untergemeinsprache"],
+  ["beast", "Tier", "Sylvanisch"], ["celestial", "Celestisches Wesen", "Celestisch"],
+  ["construct", "Konstrukt", "Drakonisch"], ["dragon", "Drache", "Drakonisch"],
+  ["elemental", "Elementar", "Primordial"], ["fey", "Feenwesen", "Sylvanisch"],
+  ["fiend", "Unhold", "Abyssisch", "Infernalisch"], ["giant", "Riese", "Riesisch"],
+  ["monstrosity", "Monstrosität", "Tiefensprache"], ["ooze", "Schlick", "Tiefensprache", "Untergemeinsprache"],
+  ["plant", "Pflanze", "Sylvanisch"], ["undead", "Untoter", "Abyssisch", "Infernalisch"],
+] as const;
+
 export const characterPathChoices: CharacterPathChoiceDefinition[] = [
+  {
+    id: "monster-hunter-grimoire-types", classId: "monster-hunter", name: "Monstergrimoire · Kreaturentypen",
+    description: "Wähle zwei Kreaturentypen für dein Grimoire.", level: 1, choose: 2,
+    options: monsterLanguages.map(([id, name]) => ({ id, name, description: "Dieser Typ erhält einen Eintrag in deinem Grimoire." })),
+  },
+  {
+    id: "monster-hunter-grimoire-language", classId: "monster-hunter", name: "Monstergrimoire · Sprache",
+    description: "Wähle eine Sprache, die zu einem der gewählten Kreaturentypen gehört.", level: 1, choose: 1,
+    options: [...new Set(monsterLanguages.flatMap((entry) => entry.slice(2)))].map((name) => ({ id: name, name, description: "Du lernst diese Sprache." })),
+  },
+  {
+    id: "monster-hunter-weapon-mastery", classId: "monster-hunter", name: "Waffenmeisterschaften",
+    description: "Wähle vertraute Waffenarten, deren Meisterschaft du einsetzen kannst.", level: 1, choose: 2,
+    options: weapons.flatMap((weapon) => {
+      const mastery = getWeaponMastery2024(weapon.id);
+      return mastery ? [{ id: weapon.id, name: `${weapon.name} · ${mastery}`, description: "Waffenmeisterschaft nach 2024er-Regeln." }] : [];
+    }),
+  },
+  {
+    id: "monster-hunter-fighting-style", classId: "monster-hunter", name: "Kampfstil",
+    description: "Wähle ein Kampfstiltalent für deinen Monsterjäger.", level: 2, choose: 1,
+    options: [
+      ["archery", "Bogenschießen"], ["defense", "Verteidigung"], ["dueling", "Duellieren"],
+      ["great-weapon-fighting", "Kampf mit großen Waffen"], ["interception", "Abfangen"],
+      ["protection", "Schutz"], ["two-weapon-fighting", "Kampf mit zwei Waffen"],
+      ["thrown-weapon-fighting", "Kampf mit Wurfwaffen"], ["unarmed-fighting", "Waffenloser Kampf"],
+      ["blind-fighting", "Blindkampf"], ["opportunist", "Opportunist"],
+    ].map(([id, name]) => ({ id, name, description: "Kampfstiltalent nach 2024er-Regeln und Kampagnenfreigabe." })),
+  },
 
   {
     id: "fighter-fighting-style", classId: "fighter", name: "Kampfstil", description: "Wähle deinen Kampfstil.", level: 1, choose: 1,
@@ -84,7 +128,7 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
     ],
   },
   {
-    id: "warlock-invocations", classId: "warlock", name: "Unheimliche Anrufungen", description: "Wähle auf Stufe 2 zwei Anrufungen ohne höhere Stufen- oder Paktvoraussetzung.", level: 2, choose: 2,
+    id: "warlock-invocations", classId: "warlock", name: "Unheimliche Anrufungen", description: "Wähle Anrufungen, deren Stufen- und Paktvoraussetzungen du erfüllst.", level: 2, choose: 2,
     options: [
       {id:"agonizing-blast",name:"Qualvoller Strahl",description:"Addiere deinen CH-Modifikator zum Schaden von Unheimlicher Strahl."},
       {id:"armor-of-shadows",name:"Rüstung der Schatten",description:"Du kannst Magierrüstung beliebig oft auf dich selbst wirken."},
@@ -100,6 +144,12 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
       {id:"misty-visions",name:"Neblige Visionen",description:"Du kannst Lautloses Trugbild beliebig oft wirken."},
       {id:"repelling-blast",name:"Abstoßender Strahl",description:"Treffer mit Unheimlicher Strahl können das Ziel 3 m wegstoßen."},
       {id:"thief-five-fates",name:"Dieb der fünf Schicksale",description:"Du kannst einmal pro langer Rast Verderben mit einem Paktplatz wirken."},
+      {id:"book-of-ancient-secrets",name:"Buch der uralten Geheimnisse",description:"Dein Buch der Schatten kann Ritualzauber aufnehmen.",minimumLevel:3,requiredPact:"tome"},
+      {id:"voice-of-the-chain-master",name:"Stimme des Kettenmeisters",description:"Du kannst auf derselben Ebene mit deinem Vertrauten kommunizieren und durch ihn sprechen.",minimumLevel:3,requiredPact:"chain"},
+      {id:"one-with-shadows",name:"Eins mit den Schatten",description:"In dämmrigem Licht oder Dunkelheit kannst du dich als Aktion unsichtbar machen, bis du dich bewegst oder eine Aktion oder Reaktion einsetzt.",minimumLevel:5},
+      {id:"sign-of-ill-omen",name:"Zeichen des schlechten Omens",description:"Du kannst einmal pro langer Rast Fluch mit einem Paktplatz wirken.",minimumLevel:5},
+      {id:"mire-the-mind",name:"Den Geist lähmen",description:"Du kannst einmal pro langer Rast Verlangsamen mit einem Paktplatz wirken.",minimumLevel:5},
+      {id:"thirsting-blade",name:"Dürstende Klinge",description:"Mit der Paktwaffe kannst du bei deiner Angriffsaktion zweimal angreifen.",minimumLevel:5,requiredPact:"blade"},
     ],
   },
   {
@@ -315,6 +365,22 @@ export function getCharacterPathChoices(classId: string, subclassId?: string, le
     const raw = selectedChoices?.[choice.requires.choiceId];
     const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
     return values.includes(choice.requires.optionId);
+  }).map((choice) => {
+    if (choice.id === "monster-hunter-weapon-mastery") return { ...choice, choose: level >= 17 ? 5 : level >= 11 ? 4 : level >= 5 ? 3 : 2 };
+    if (choice.id === "monster-hunter-grimoire-language") {
+      const rawTypes = selectedChoices?.["monster-hunter-grimoire-types"];
+      const types = Array.isArray(rawTypes) ? rawTypes : rawTypes ? [rawTypes] : [];
+      const languages = new Set(monsterLanguages.filter(([id]) => types.includes(id)).flatMap((entry) => entry.slice(2)));
+      return { ...choice, options: choice.options.filter((option) => languages.has(option.id)) };
+    }
+    if (choice.id !== "warlock-invocations") return choice;
+    const pact = selectedChoices?.["warlock-pact-boon"];
+    return {
+      ...choice,
+      choose: level >= 5 ? 3 : 2,
+      options: choice.options.filter((option) =>
+        (option.minimumLevel ?? 2) <= level && (!option.requiredPact || option.requiredPact === pact)),
+    };
   });
 }
 

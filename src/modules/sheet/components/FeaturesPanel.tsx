@@ -2,7 +2,10 @@ import { getBackgroundById } from "../../../compendium/backgrounds";
 import {
   classes,
   getCharacterPathChoiceSummary,
+  getSubclassProficiencyPackage,
+  getSubclassSpellcastingProfile,
 } from "../../../compendium/classes";
+import { getAbilityModifier, getProficiencyBonus } from "../../../compendium/core";
 
 import {
   getFeatById,
@@ -56,6 +59,8 @@ export function FeaturesPanel({
 
   const savingThrows =
     classDefinition?.savingThrows ?? [];
+  const subclassProficiencies = getSubclassProficiencyPackage(character.classId ?? "", character.subclassId, character.level);
+  const isTrapper = character.classId === "monster-hunter" && character.subclassId === "monster-hunter-trapper-guild" && character.level >= 3;
 
   const pathChoiceSummary = getCharacterPathChoiceSummary(character.pathChoices);
   const chosenFeats =
@@ -244,7 +249,8 @@ export function FeaturesPanel({
               {
                 label: "Zauberwirker",
                 value:
-                  classDefinition?.spellcasting
+                  classDefinition?.spellcasting ||
+                  (getSubclassSpellcastingProfile(character.classId ?? "", character.subclassId)?.startsAtLevel ?? Infinity) <= character.level
                     ? "Ja"
                     : "Nein",
               },
@@ -279,6 +285,10 @@ export function FeaturesPanel({
 
       </div>
 
+      {isTrapper && <section className="features-proficiencies">
+        <h3>Fallengeräte</h3>
+        <p>Geräte-SG <strong>{8 + getAbilityModifier(character.abilityScores?.intelligence ?? 10) + getProficiencyBonus(character.level)}</strong></p>
+      </section>}
       {classDefinition && (
         <section className="features-proficiencies">
           <header>
@@ -290,26 +300,17 @@ export function FeaturesPanel({
           <div className="features-proficiencies__grid">
             <ProficiencyList
               title="Rüstungen"
-              entries={
-                classDefinition
-                  .armorProficiencies
-              }
+              entries={[...new Set([...classDefinition.armorProficiencies, ...(subclassProficiencies?.armor ?? [])])]}
             />
 
             <ProficiencyList
               title="Waffen"
-              entries={
-                classDefinition
-                  .weaponProficiencies
-              }
+              entries={[...new Set([...classDefinition.weaponProficiencies, ...(subclassProficiencies?.weapons ?? [])])]}
             />
 
             <ProficiencyList
               title="Werkzeuge"
-              entries={
-                classDefinition
-                  .toolProficiencies
-              }
+              entries={[...new Set([...classDefinition.toolProficiencies, ...(subclassProficiencies?.tools ?? [])])]}
             />
           </div>
         </section>

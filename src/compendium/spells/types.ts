@@ -63,9 +63,13 @@ export interface SpellDice {
 }
 
 export interface SpellDamageDefinition {
+  flatModifier?: number;
   dice?: SpellDice;
+  addsCastingModifier?: boolean;
 
   damageType: SpellDamageType;
+  alternativeDamageType?: SpellDamageType;
+  selectableTypes?: SpellDamageType[];
 
   /**
    * Bei manchen Zaubern wird kein Angriffswurf,
@@ -81,6 +85,7 @@ export interface SpellDamageDefinition {
 
 export interface SpellHealingDefinition {
   dice: SpellDice;
+  addsCastingModifier?: boolean;
 }
 
 export interface SpellScalingEntry {
@@ -128,12 +133,19 @@ export interface SpellDefinition {
 
   sourceLabel?: string;
   sourcePage?: number;
+  mechanicsReview?: "checked" | "source-excerpt";
 
   higherLevels?: string;
 
   damage?: SpellDamageDefinition;
 
   healing?: SpellHealingDefinition;
+  /** Ausschließlich tatsächliche Zauberangriffe, keine Waffenangriffe. */
+  attackRoll?: boolean;
+  savingThrowAbility?: AbilityId;
+  numberOfAttacks?: (characterLevel: number) => number;
+  damageNote?: string;
+  savingThrowNote?: string;
 
   /**
    * Skalierung von Zaubertricks nach

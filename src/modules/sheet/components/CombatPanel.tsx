@@ -22,6 +22,7 @@ import {
 import {
   SpellcastingPanel,
 } from "./SpellcastingPanel";
+import { SubclassStats } from "./SubclassStats";
 
 interface CombatPanelProps {
   character: CharacterArchiveEntry;
@@ -69,6 +70,7 @@ export function CombatPanel({
         </div>
       </header>
 
+      <SubclassStats character={character} />
       <section className="compact-passives">
         <PassiveScoreRow
           abbreviation="WE"
@@ -149,6 +151,8 @@ export function CombatPanel({
                     label="Schaden"
                     value={`${weapon.damage} ${weapon.damageType}`}
                   />
+
+                  {weapon.criticalMinimum < 20 && <WeaponValue label="Kritisch" value={`${weapon.criticalMinimum}–20`} />}
 
                   {weapon.versatileDamage && (
                     <WeaponValue

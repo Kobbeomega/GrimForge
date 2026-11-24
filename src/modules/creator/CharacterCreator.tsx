@@ -21,7 +21,7 @@ import {
 import { getBackgroundById } from "../../compendium/backgrounds";
 
 import {
-  startingEquipment,
+  getStartingEquipment,
 } from "../../compendium/equipment";
 
 import {
@@ -346,11 +346,7 @@ export function CharacterCreator({
     }
 
     const equipmentConfiguration =
-      startingEquipment.find(
-        (entry) =>
-          entry.classId ===
-          creator.draft.classId,
-      );
+      getStartingEquipment(creator.draft);
 
     if (equipmentConfiguration) {
       const completedEquipmentChoices =
@@ -362,8 +358,7 @@ export function CharacterCreator({
                 .startingEquipmentSelections
                 .some(
                   (selection) =>
-                    selection.choiceId ===
-                    choice.id,
+                    selection.choiceId === choice.id && choice.options.some(o => o.id === selection.optionId),
                 ),
           )
           .length;
@@ -487,6 +482,7 @@ export function CharacterCreator({
             updatedAt: new Date().toISOString(),
           };
 
+    creator.clearDraft();
     onFinished(
       sealedCharacter,
     );
@@ -1053,7 +1049,7 @@ export function CharacterCreator({
               <div className="creator-footer__group">
                 <GrimButton
                   type="button"
-                  onClick={onCancel}
+                  onClick={() => { creator.clearDraft(); onCancel(); }}
                 >
                   Abbrechen
                 </GrimButton>

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import "./compact-choices.css";
 import { backgrounds } from "../../../../compendium/backgrounds";
 import { skillsById } from "../../../../compendium/skills";
 
@@ -26,6 +28,9 @@ export function BackgroundStep({
   selectedBackgroundId,
   onSelectBackground,
 }: BackgroundStepProps) {
+  const [query, setQuery] = useState("");
+  const term = query.trim().toLocaleLowerCase("de");
+  const visible = backgrounds.filter(b => [b.name, sourceLabels[b.source], b.feature.name, ...b.skillProficiencies.map(id => skillsById[id].name)].join(" ").toLocaleLowerCase("de").includes(term));
   const selectedBackground = backgrounds.find(
     (background) => background.id === selectedBackgroundId,
   );
@@ -49,8 +54,10 @@ export function BackgroundStep({
         </div>
       </header>
 
+      <label className="gf-spell-search">Hintergründe suchen<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Name, Quelle oder Fertigkeit …" /></label>
+      <p aria-live="polite">{visible.length} von {backgrounds.length} Hintergründen{visible.length === 0 && " · Keine Treffer"}</p>
       <div className="creator-dossier-grid creator-dossier-grid--backgrounds">
-        {backgrounds.map((background, index) => {
+        {visible.map(background => {
           const selected = background.id === selectedBackgroundId;
           const skillNames = background.skillProficiencies.map(
             (skillId) => skillsById[skillId].name,
@@ -58,38 +65,13 @@ export function BackgroundStep({
           const sourceLabel = sourceLabels[background.source] ?? "Hintergrund";
 
           return (
-            <button
-              key={background.id}
-              type="button"
-              className={[
-                "creator-dossier-card",
-                "creator-dossier-card--background",
-                selected ? "creator-dossier-card--selected" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-pressed={selected}
-              onClick={() => onSelectBackground(background.id)}
-            >
-              <span className="creator-dossier-card__index" aria-hidden="true">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-
-              <header className="creator-dossier-card__header">
-                <div className="creator-dossier-card__sigil" aria-hidden="true">
-                  {background.name.slice(0, 1)}
-                </div>
-
-                <div>
-                  <span className="creator-dossier-card__eyebrow">{sourceLabel}</span>
-                  <h3>{background.name}</h3>
-                </div>
-
-                <span className="creator-dossier-card__state">
-                  {selected ? "Gewählt" : "Öffnen"}
-                </span>
-              </header>
-
+            <article className="gf-choice" key={background.id} data-selected={selected}>
+              <button type="button" className="gf-choice__pick" aria-pressed={selected} onClick={() => onSelectBackground(background.id)}>
+                <span className="gf-choice__copy"><strong>{background.name}</strong><small>{sourceLabel} · {skillNames.join(" · ")}</small></span>
+                <span className="gf-choice__state">{selected ? "✓ Gewählt" : "Wählen"}</span>
+              </button>
+              <details className="gf-choice__details">
+                <summary>Merkmal und Startausrüstung</summary>
               <p className="creator-dossier-card__description">
                 {background.description}
               </p>
@@ -137,7 +119,8 @@ export function BackgroundStep({
                 <strong>{background.feature.name}</strong>
                 <p>{background.feature.description}</p>
               </section>
-            </button>
+              </details>
+            </article>
           );
         })}
       </div>

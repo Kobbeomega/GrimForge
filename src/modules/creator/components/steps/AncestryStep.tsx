@@ -1,3 +1,4 @@
+import "./compact-choices.css";
 import {
   ancestries,
   ancestryTraits,
@@ -89,7 +90,7 @@ export function AncestryStep({
         </p>
       </header>
 
-      <div className="ancestry-reforged__selector" role="list">
+      <div className="ancestry-reforged__selector">
         {ancestries.map((ancestry) => {
           const isSelected = ancestry.id === selectedId;
           const traits = resolveTraits(ancestry);
@@ -98,7 +99,6 @@ export function AncestryStep({
             <button
               key={ancestry.id}
               type="button"
-              role="listitem"
               className={[
                 "ancestry-choice-card",
                 isSelected ? "ancestry-choice-card--selected" : "",
@@ -114,7 +114,6 @@ export function AncestryStep({
               <span className="ancestry-choice-card__copy">
                 <small>{getAncestryEyebrow(ancestry)}</small>
                 <strong>{ancestry.name}</strong>
-                <span>{ancestry.description}</span>
               </span>
               <span className="ancestry-choice-card__facts">
                 <span>{formatSpeed(ancestry.speed)} Bewegung</span>

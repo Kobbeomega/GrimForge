@@ -1,6 +1,7 @@
 import {
   getCharacterClassFeatures,
   getCharacterPathChoices,
+  getSubclassFeatures,
   type CharacterPathChoices,
 } from "../compendium/classes";
 
@@ -30,6 +31,7 @@ export function resolveCharacterClassFeatures({
   level: number;
   pathChoices?: CharacterPathChoices;
 }): ResolvedClassFeature[] {
+  const subclassFeatureIds = new Set(getSubclassFeatures(classId, subclassId ?? "", level).map(({ id }) => id));
   const baseFeatures = getCharacterClassFeatures({
     classId,
     subclassId,
@@ -37,7 +39,7 @@ export function resolveCharacterClassFeatures({
   }).map((feature) =>
     resolveFeature(
       feature,
-      subclassId && feature.id.startsWith(`${subclassId}-`)
+      subclassFeatureIds.has(feature.id)
         ? "subclass"
         : "class",
     ),
@@ -58,7 +60,7 @@ export function resolveCharacterClassFeatures({
           description: option.description,
           level: definition.level,
           kind: "passive" as const,
-          source: "subclass" as const,
+          source: definition.subclassId ? "subclass" as const : "class" as const,
         }];
       });
     });

@@ -1,78 +1,43 @@
-:root{
+/* GrimForge — Obsidian & Antique Brass, RC2.
+   A quiet neutral base with one restrained fantasy accent. */
+:root {
+  --color-background: #111215;
+  --color-surface: #191a1e;
+  --color-surface-light: #242329;
+  --color-paper: #eee4d5;
+  --color-paper-dark: #cabbab;
+  --color-text: #f0eae1;
+  --color-text-muted: #c6bdb3;
+  --color-border: #403b37;
+  --color-primary: #9a774e;
+  --color-primary-dark: #473727;
+  --color-primary-light: #d9b98b;
+  --color-gold: var(--color-primary-light);
+  --color-danger: #a65b58;
+  --color-success: #7ca48a;
+  --color-warning: #caa66c;
 
-    /* ==========
-       Farben
-    ========== */
-
-    --color-background:#09090B;
-
-    --color-surface:#141317;
-
-    --color-surface-light:#1D1A22;
-
-    --color-paper:#DCCFBE;
-
-    --color-paper-dark:#B5A999;
-
-    --color-primary:#6A3C92;
-
-    --color-primary-dark:#36204F;
-
-    --color-primary-light:#9C69D3;
-
-    --color-text:#ECE8E1;
-
-    --color-text-muted:#AAA29A;
-
-    --color-border:#2D2933;
-
-    --color-danger:#8E223F;
-
-    --color-success:#51744D;
-
-    --color-warning:#A88232;
-
-
-    /* ==========
-       Abstände
-    ========== */
-
-    --space-xs:4px;
-
-    --space-sm:8px;
-
-    --space-md:16px;
-
-    --space-lg:24px;
-
-    --space-xl:32px;
-
-    --space-xxl:48px;
-
-
-    /* ==========
-       Schatten
-    ========== */
-
-    --shadow-paper:
-
-        0 0 24px rgba(0,0,0,.45);
-
-    --shadow-glow:
-
-        0 0 16px rgba(106,60,146,.25);
-
-
-    /* ==========
-       Rahmen
-    ========== */
-
-    --border-thin:
-
-        1px solid var(--color-border);
-
-    --border-primary:
-
-        2px solid var(--color-primary);
-
+  --sheet-surface: #202024;
+  --sheet-control: #2a282a;
+  --sheet-hover: #353033;
+  --sheet-edge: #5e5145;
+  --sheet-text: var(--color-text);
+  --sheet-muted: var(--color-text-muted);
+  --sheet-link: var(--color-primary-light);
+  --sheet-focus: #e9c28d;
+  --sheet-paper: var(--color-paper);
+  --sheet-paper-ink: var(--color-text);
+  --sheet-radius: 6px;
+  --sheet-heading: Georgia, 'Times New Roman', serif;
+  --sheet-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --shadow-paper: 0 16px 42px rgba(0,0,0,.32);
+  --shadow-glow: 0 0 14px rgba(217,185,139,.1);
+  --border-thin: 1px solid var(--color-border);
+  --border-primary: 2px solid var(--color-primary);
 }

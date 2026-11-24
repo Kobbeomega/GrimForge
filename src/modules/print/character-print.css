@@ -6,7 +6,7 @@
   html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #root { display: none !important; }
-  body > *:not(#root):not(.character-print-root) { display: none !important; }
+  body:has(> .character-print-root) > *:not(#root):not(.character-print-root) { display: none !important; }
   .character-print-root { display: block !important; position: static !important; color: #15110e; font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif; }
 
   .print-sheet { width: 196mm; min-height: 283mm; page-break-after: always; break-after: page; padding: 4.5mm; border: 1.5px solid #1d1712; position: relative; background: #fff; overflow: hidden; }

@@ -12,6 +12,7 @@ import {
   getExpandedSubclassSpellIds,
   getGrantedSubclassSpellIds,
   getSubclassSpellcastingProfile,
+  getThirdCasterSlots,
   type CharacterPathChoices,
 } from "../../../compendium/classes";
 import type { AbilityId, AbilityScores } from "../../../compendium/core";
@@ -35,6 +36,7 @@ export interface SpellSelectionRules {
   forcedCantripIds: string[];
   restrictedSchools?: SpellSchool[];
   restrictedSpellCount?: number;
+  canReplaceCantrip?: boolean;
 }
 
 export interface SpellSelectionValidation {
@@ -72,12 +74,13 @@ export function getSpellSelectionRules({
       cantripsRequired: Math.max(0, cantripsKnown - forcedCantripIds.length),
       levelledSpellsRequired: spellsKnown,
       preparedSpellsRequired: 0,
-      maximumSpellLevel: getMaximumSpellLevel(subclassProfile.sourceClassId, level),
+      maximumSpellLevel: Math.max(0, ...Object.keys(getThirdCasterSlots(level)).map(Number)),
       grantedSpellIds: [...new Set([...grantedSpellIds, ...forcedCantripIds])],
       expandedSpellIds,
       forcedCantripIds,
       restrictedSchools: subclassProfile.restrictedSchools,
-      restrictedSpellCount: subclassProfile.restrictedSpellCount,
+      restrictedSpellCount: Math.max(0, spellsKnown - (subclassProfile.unrestrictedSpellCount ?? spellsKnown) - [8, 14, 20].filter((unlock) => level >= unlock).length),
+      canReplaceCantrip: subclassProfile.canReplaceCantrip,
     };
   }
 

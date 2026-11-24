@@ -1,3 +1,4 @@
+import { resolveCharacterTransformation } from "../../../compendium/transformations/activeRecord";
 import type { CharacterArchiveEntry } from "../../archives/types";
 import { calculateMaximumHitPoints } from "../../../rules/hitPoints";
 import { getFeatById } from "../../../compendium/feats";
@@ -58,8 +59,11 @@ export function mergeEditedCharacter(
   const newMaximum = Math.max(1, (preview.vitals?.maximumHitPoints ?? oldMaximum) +
     (preserveRolledHitPoints ? oldMaximum - originalCalculatedMaximum : 0));
 
+  const previousTransformation=resolveCharacterTransformation(original);
+  const preserveUnknownTransformation=Boolean(previousTransformation.name && !previousTransformation.definition && !preview.transformationId);
   return {
     ...preview,
+    ...(preserveUnknownTransformation ? { transformation: original.transformation, transformationId: original.transformationId, transformationStage: original.transformationStage, transformationFeatureIds: original.transformationFeatureIds } : {}),
     status: original.status,
     createdAt: original.createdAt ?? preview.createdAt,
     updatedAt: new Date().toISOString(),

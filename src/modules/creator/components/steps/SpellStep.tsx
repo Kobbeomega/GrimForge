@@ -22,14 +22,13 @@ import type {
   SpellDefinition,
 } from "../../../../compendium/spells";
 
-import {
-  getSpellDisplayValues,
-} from "../../../sheet/utils/getSpellDisplayValues";
+import { SpellQuickFacts } from "../../../sheet/components/SpellQuickFacts";
 
 import {
-  getSpellSelectionRules,
+  getSpellSelectionRules, validateSpellSelection,
 } from "../../utils/getSpellSelectionRules";
 
+import { SpellBrowser,spellRoles } from "../../../../components/spells/SpellBrowser";
 const spellSchoolLabels = {
   abjuration: "Bannmagie",
   conjuration: "Beschwörung",
@@ -41,9 +40,6 @@ const spellSchoolLabels = {
   transmutation: "Verwandlung",
 } as const;
 
-type SpellSchoolFilter =
-  | "all"
-  | keyof typeof spellSchoolLabels;
 
 interface SpellsStepProps {
   classId: string;
@@ -70,15 +66,7 @@ export function SpellsStep({
   value,
   onChange,
 }: SpellsStepProps) {
-  const [searchQuery, setSearchQuery] =
-    useState("");
-
-  const [schoolFilter, setSchoolFilter] =
-    useState<SpellSchoolFilter>("all");
-
-  const [selectedOnly, setSelectedOnly] =
-    useState(false);
-
+  const [suggest,showSuggestion]=useState(false);
   const rules =
     getSpellSelectionRules({
       classId,
@@ -139,50 +127,6 @@ export function SpellsStep({
     .filter((spell) => !grantedIds.has(spell.id))
     .filter((spell) => spell.level === 0 || spell.level <= rules.maximumSpellLevel);
 
-  const normalizedSearch =
-    searchQuery.trim().toLocaleLowerCase("de");
-
-  const filteredSpells =
-    availableSpells.filter((spell) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        spell.name
-          .toLocaleLowerCase("de")
-          .includes(normalizedSearch) ||
-        spell.description
-          .toLocaleLowerCase("de")
-          .includes(normalizedSearch);
-
-      const matchesSchool =
-        schoolFilter === "all" ||
-        spell.school === schoolFilter;
-
-      const matchesSelection =
-        !selectedOnly ||
-        value.spellIds.some(
-          (selection) =>
-            selection.spellId === spell.id,
-        );
-
-      return (
-        matchesSearch &&
-        matchesSchool &&
-        matchesSelection
-      );
-    });
-
-  const cantrips =
-    filteredSpells.filter(
-      (spell) =>
-        spell.level === 0,
-    );
-
-  const levelledSpells =
-    filteredSpells.filter(
-      (spell) =>
-        spell.level > 0,
-    );
-
   const selectedCantrips =
     countSelectedSpells(
       value,
@@ -217,6 +161,32 @@ export function SpellsStep({
       },
     ).length;
 
+  const early = selectedCantrips < rules.cantripsRequired;
+  const pending = early || selectedLevelledSpells < rules.levelledSpellsRequired;
+  const restricted = rules.restrictedSchools;
+  const unrestrictedCount = availableSpells.filter(s=>isSelected(s.id) && s.level>0 && restricted && !restricted.includes(s.school)).length;
+  const rawInvocations=pathChoices?.["warlock-invocations"];
+  const invocations=Array.isArray(rawInvocations)?rawInvocations:rawInvocations?[rawInvocations]:[];
+  const needsBlast=classId==="warlock" && invocations.some(id=>["agonizing-blast","eldritch-spear","repelling-blast"].includes(id)) && !isSelected("eldritch-blast");
+  const candidates=availableSpells.filter(s=>!isSelected(s.id) && (s.level===0)===early && (!early || !needsBlast || rules.cantripsRequired-selectedCantrips>1 || s.id==="eldritch-blast") && (early || !restricted || restricted.includes(s.school) || unrestrictedCount<rules.levelledSpellsRequired-(rules.restrictedSpellCount??0)));
+  function proposal() {
+    const entries=[...value.spellIds];
+    const used=new Set(entries.map(x=>x.spellId));
+    const featured=["eldritch-blast","fire-bolt","sacred-flame","vicious-mockery","guidance","light","mage-hand","minor-illusion","cure-wounds","healing-word","shield","magic-missile","faerie-fire","detect-magic"];
+    for(const trick of [true,false]) {
+      let needed=trick?rules.cantripsRequired-selectedCantrips:rules.levelledSpellsRequired-selectedLevelledSpells;
+      const pool=availableSpells.filter(s=>!used.has(s.id) && (s.level===0)===trick);
+      const rank=(s:SpellDefinition)=>{const i=featured.indexOf(s.id);return (restricted && !trick && !restricted.includes(s.school)?1000:0)+(i<0?100:i)};
+      for(const s of pool.sort((a,b)=>rank(a)-rank(b)||a.name.localeCompare(b.name,"de"))){
+        if(needed--<=0)break;
+        entries.push({spellId:s.id,prepared:trick || rules.mode!=="spellbook" || entries.filter(x=>x.prepared && (getSpellById(x.spellId)?.level??0)>0).length<rules.preparedSpellsRequired});
+      }
+    }
+    const draft={...value,spellIds:entries};
+    if(needsBlast && !entries.some(x=>x.spellId==="eldritch-blast"))return null;
+    return validateSpellSelection({classId,subclassId,level,abilityScores,pathChoices,spellcasting:draft}).valid?draft:null;
+  }
+  const proposed=suggest?proposal():null;
   function isSelected(
     spellId: string,
   ): boolean {
@@ -277,7 +247,7 @@ export function SpellsStep({
         spellId: spell.id,
 
         prepared:
-          rules.mode !==
+          spell.level === 0 || rules.mode !==
             "spellbook" ||
           preparedSpells <
             rules.preparedSpellsRequired,
@@ -391,8 +361,11 @@ export function SpellsStep({
             <h3>Automatisch bekannte / vorbereitete Zauber</h3>
             <p>Diese Zauber zählen nicht gegen deine normale Zauberauswahl.</p>
           </header>
-          <div className="compact-empty-state">
-            <strong>{grantedSpells.map((spell) => spell.name).join(" · ")}</strong>
+          <div className="gf-granted-spells">
+            {grantedSpells.map((spell) => <details key={spell.id} className="gf-granted-spell">
+              <summary>{spell.name} · {spell.level === 0 ? "Zaubertrick" : `Grad ${spell.level}`}</summary>
+              <SpellQuickFacts spell={spell} characterLevel={level} abilityModifier={spellcastingAbilityModifier} />
+            </details>)}
           </div>
         </section>
       )}
@@ -404,111 +377,15 @@ export function SpellsStep({
         </div>
       ) : null}
 
-      <section className="creator-spell-toolbar" aria-label="Zauber filtern">
-        <label className="creator-spell-toolbar__search">
-          <span>Zauber durchsuchen</span>
-          <input
-            type="search"
-            value={searchQuery}
-            placeholder="Name oder Beschreibung …"
-            onChange={(event) =>
-              setSearchQuery(event.target.value)
-            }
-          />
-        </label>
-
-        <label>
-          <span>Schule</span>
-          <select
-            value={schoolFilter}
-            onChange={(event) =>
-              setSchoolFilter(
-                event.target.value as SpellSchoolFilter,
-              )
-            }
-          >
-            <option value="all">Alle Schulen</option>
-            {Object.entries(spellSchoolLabels).map(
-              ([school, label]) => (
-                <option key={school} value={school}>
-                  {label}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-
-        <button
-          type="button"
-          className={[
-            "creator-spell-toolbar__toggle",
-            selectedOnly
-              ? "creator-spell-toolbar__toggle--active"
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          aria-pressed={selectedOnly}
-          onClick={() =>
-            setSelectedOnly((current) => !current)
-          }
-        >
-          Nur gewählte
-        </button>
-
-        <span className="creator-spell-toolbar__result">
-          {filteredSpells.length} von {availableSpells.length}
-        </span>
+      <section className="compact-spell-section">
+        <h3 aria-live="polite">{early ? "Zaubertricks wählen · noch "+(rules.cantripsRequired-selectedCantrips) : pending ? (rules.mode==="spellbook"?"Ins Zauberbuch eintragen":rules.mode==="prepared"?"Für heute vorbereiten":"Zauber lernen")+" · noch "+(rules.levelledSpellsRequired-selectedLevelledSpells) : rules.mode==="spellbook" && preparedSpells<rules.preparedSpellsRequired ? "Wähle unten deine vorbereiteten Zauber" : "Deine Zauberauswahl ist vollständig"}</h3>
+        {pending && <><button className="creator-spell-toolbar__toggle" type="button" onClick={()=>showSuggestion(!suggest)}>Startvorschlag {suggest?"schließen":"ansehen"}</button>
+        {suggest && <aside className="compact-empty-state"><strong>Vorschlag für die offenen Plätze</strong>{proposed ? <><ul>{proposed.spellIds.filter(x=>!isSelected(x.spellId)).map(x=>{const s=getSpellById(x.spellId)!;return <li key={s.id}>{s.name} · {spellRoles(s).join(" / ") || spellSchoolLabels[s.school]}</li>})}</ul><button type="button" onClick={()=>{onChange(proposed);showSuggestion(false)}}>Vorschlag übernehmen</button></> : <p>Für diese Kombination ist kein vollständiger Vorschlag verfügbar. Deine Auswahl bleibt erhalten.</p>}</aside>}
+        <SpellBrowser key={early?"tricks":"zauber"} candidates={candidates} context={{characterLevel:level,spellcastingAbilityModifier, invocations}} onAdd={id=>{const s=candidates.find(x=>x.id===id);if(s)toggleSpell(s)}}/></>}
       </section>
-
-      <CompactSpellSection
-        title="Zaubertricks"
-        counter={`${selectedCantrips} von ${rules.cantripsRequired}`}
-        spells={cantrips}
-        characterLevel={level}
-        spellcastingAbilityModifier={
-          spellcastingAbilityModifier
-        }
-        isSelected={isSelected}
-        isPrepared={isPrepared}
-        onToggle={toggleSpell}
-        onTogglePrepared={
-          togglePrepared
-        }
-        showPreparedToggle={
-          false
-        }
-      />
-
-      {rules.maximumSpellLevel >
-        0 && (
-        <CompactSpellSection
-          title="Zauber"
-          counter={`${selectedLevelledSpells} von ${rules.levelledSpellsRequired}`}
-          spells={levelledSpells}
-          characterLevel={level}
-          spellcastingAbilityModifier={
-            spellcastingAbilityModifier
-          }
-          isSelected={
-            isSelected
-          }
-          isPrepared={
-            isPrepared
-          }
-          onToggle={
-            toggleSpell
-          }
-          onTogglePrepared={
-            togglePrepared
-          }
-          showPreparedToggle={
-            rules.mode ===
-            "spellbook"
-          }
-        />
-      )}
-
+      {value.spellIds.length>0 && <details key={pending?"choosing":"review"} open={!pending}><summary>Meine Auswahl bearbeiten · {value.spellIds.length}</summary>
+        <CompactSpellSection title="Gewählte Zauber" counter={String(value.spellIds.length)} spells={availableSpells.filter(s=>isSelected(s.id))} characterLevel={level} spellcastingAbilityModifier={spellcastingAbilityModifier} isSelected={isSelected} isPrepared={isPrepared} onToggle={toggleSpell} onTogglePrepared={togglePrepared} showPreparedToggle={rules.mode==="spellbook"}/>
+      </details>}
       {rules.maximumSpellLevel ===
         0 && (
         <div className="compact-empty-state">
@@ -625,14 +502,7 @@ function CompactSpellSection({
                 spell.id,
               );
 
-            const displayValues =
-              getSpellDisplayValues({
-                spell,
 
-                characterLevel,
-
-                spellcastingAbilityModifier,
-              });
 
             return (
               <article
@@ -651,118 +521,31 @@ function CompactSpellSection({
                   .filter(Boolean)
                   .join(" ")}
               >
-                <button
-                  type="button"
-                  className="compact-spell-card__main"
-                  aria-pressed={
-                    selected
-                  }
-                  onClick={() =>
-                    onToggle(spell)
-                  }
-                >
-                  <header>
-                    <div>
-                      <span>
-                        {spell.level === 0
-                          ? "Zaubertrick"
-                          : `Grad ${spell.level}`}
-                        {" · "}
-                        {spellSchoolLabels[spell.school]}
+                <div className="compact-spell-card__main">
+                  <button
+                    type="button"
+                    className="gf-spell-card-select"
+                    aria-pressed={selected}
+                    onClick={() => onToggle(spell)}
+                  >
+                    <span className="gf-spell-card-select__layout">
+                      <span className="gf-spell-card-select__heading">
+                        <span>{spell.level === 0 ? "Zaubertrick" : `Grad ${spell.level}`} · {spellSchoolLabels[spell.school]}</span>
+                        <strong className="gf-spell-card-select__name">{spell.name}</strong>
                       </span>
-
-                      <h4>
-                        {spell.name}
-                      </h4>
-                    </div>
-
-                    <strong>
-                      {selected
-                        ? "Gewählt"
-                        : "Wählen"}
-                    </strong>
-                  </header>
-
-                  <div className="compact-spell-card__combat">
-                    {displayValues
-                      .damage && (
-                      <SpellValue
-                        label="Schaden"
-                        value={`${displayValues.damage.dice} ${displayValues.damage.type}`}
-                      />
-                    )}
-
-                    {displayValues
-                      .healing && (
-                      <SpellValue
-                        label="Heilung"
-                        value={
-                          displayValues
-                            .healing
-                            .formatted
-                        }
-                      />
-                    )}
-
-                    {displayValues
-                      .savingThrow && (
-                      <SpellValue
-                        label="Rettung"
-                        value={
-                          displayValues
-                            .savingThrow
-                            .abilityLabel
-                        }
-                      />
-                    )}
-                  </div>
-
-                  <dl className="compact-spell-card__facts">
-                    <SpellFact
-                      label="Zeit"
-                      value={
-                        spell.castingTime
-                      }
-                    />
-
-                    <SpellFact
-                      label="Reichweite"
-                      value={
-                        spell.range
-                      }
-                    />
-
-                    <SpellFact
-                      label="Dauer"
-                      value={
-                        spell.duration
-                      }
-                    />
-                  </dl>
-
-                  <p className="compact-spell-card__description">
-                    {
-                      spell.description
-                    }
-                  </p>
-
-                  {(spell.concentration ||
-                    spell.ritual) && (
-                    <footer>
-                      {spell.concentration && (
-                        <span>
-                          Konzentration
-                        </span>
-                      )}
-
-                      {spell.ritual && (
-                        <span>
-                          Ritual
-                        </span>
-                      )}
-                    </footer>
+                      <strong className="gf-spell-card-select__status">{selected ? "Gewählt ✓" : "+ Wählen"}</strong>
+                    </span>
+                  </button>
+                  <SpellQuickFacts spell={spell} characterLevel={characterLevel}
+                    abilityModifier={spellcastingAbilityModifier} compact />
+                  {((spell.mechanicsSummary ?? spell.description).length > 240 || spell.higherLevels || spell.rulesText) && (
+                    <details className="gf-spell-full"><summary>Vollständige Wirkung und Regeln</summary>
+                      <p>{spell.description}</p>
+                      {spell.higherLevels && <p><strong>Höhere Grade:</strong> {spell.higherLevels}</p>}
+                      {spell.rulesText && <details><summary>Regeltext (Englisch)</summary><p lang="en">{spell.rulesText}</p></details>}
+                    </details>
                   )}
-                </button>
+                </div>
 
                 {showPreparedToggle &&
                   selected &&
@@ -790,36 +573,6 @@ function CompactSpellSection({
         </div>
       )}
     </section>
-  );
-}
-
-function SpellValue({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <span>
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </span>
-  );
-}
-
-function SpellFact({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
   );
 }
 

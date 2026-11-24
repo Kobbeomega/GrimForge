@@ -23,9 +23,9 @@
   text-align: left;
   color: var(--color-text);
   background:
-    linear-gradient(145deg, rgba(106, 60, 146, 0.1), transparent 48%),
+    linear-gradient(145deg, rgba(167, 123, 73, 0.1), transparent 48%),
     rgba(16, 14, 18, 0.82);
-  border: 1px solid rgba(156, 105, 211, 0.28);
+  border: 1px solid rgba(210, 172, 118, 0.28);
   cursor: pointer;
   overflow: hidden;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
@@ -44,7 +44,7 @@
 .compendium-entry-card:hover {
   transform: translateY(-3px);
   border-color: rgba(190, 140, 235, 0.64);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28), 0 0 22px rgba(106, 60, 146, 0.12);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28), 0 0 22px rgba(167, 123, 73, 0.12);
 }
 
 .compendium-category-card__symbol {
@@ -103,7 +103,7 @@
   padding: 0 16px;
   color: var(--color-paper);
   background: transparent;
-  border: 1px solid rgba(156, 105, 211, 0.38);
+  border: 1px solid rgba(210, 172, 118, 0.38);
   cursor: pointer;
 }
 
@@ -126,13 +126,13 @@
   padding: 0 14px;
   color: var(--color-text);
   background: rgba(7, 6, 8, 0.64);
-  border: 1px solid rgba(156, 105, 211, 0.34);
+  border: 1px solid rgba(210, 172, 118, 0.34);
   outline: none;
 }
 
 .compendium-search input:focus {
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(106, 60, 146, 0.14);
+  box-shadow: 0 0 0 3px rgba(167, 123, 73, 0.14);
 }
 
 .compendium-result-count {
@@ -171,9 +171,9 @@
   padding: 26px;
   overflow-y: auto;
   background:
-    radial-gradient(circle at 100% 0, rgba(106, 60, 146, 0.2), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(167, 123, 73, 0.2), transparent 40%),
     #100e12;
-  border: 1px solid rgba(156, 105, 211, 0.46);
+  border: 1px solid rgba(210, 172, 118, 0.46);
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
 }
 
@@ -194,7 +194,7 @@
   height: 34px;
   color: var(--color-text);
   background: rgba(0, 0, 0, 0.34);
-  border: 1px solid rgba(156, 105, 211, 0.3);
+  border: 1px solid rgba(210, 172, 118, 0.3);
   cursor: pointer;
 }
 
@@ -254,7 +254,7 @@
   font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(156, 105, 211, 0.24);
+  border-bottom: 1px solid rgba(210, 172, 118, 0.24);
 }
 
 .compendium-detail-section ul {
@@ -277,7 +277,7 @@
   gap: 7px;
   padding: 14px;
   background: rgba(0, 0, 0, 0.18);
-  border-left: 2px solid rgba(156, 105, 211, 0.5);
+  border-left: 2px solid rgba(210, 172, 118, 0.5);
 }
 
 .compendium-feature-list strong,
@@ -298,7 +298,7 @@
   padding: 30px;
   text-align: center;
   color: var(--color-text-muted);
-  border: 1px dashed rgba(156, 105, 211, 0.34);
+  border: 1px dashed rgba(210, 172, 118, 0.34);
 }
 
 @media (max-width: 960px) {
@@ -368,7 +368,7 @@
   height: 34px;
   color: var(--color-text-muted);
   background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(156, 105, 211, 0.32);
+  border: 1px solid rgba(210, 172, 118, 0.32);
   cursor: pointer;
 }
 
@@ -383,7 +383,7 @@
   padding: 0 14px;
   color: var(--color-text-muted);
   background: rgba(7, 6, 8, 0.48);
-  border: 1px solid rgba(156, 105, 211, 0.34);
+  border: 1px solid rgba(210, 172, 118, 0.34);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -398,7 +398,7 @@
   display: grid;
   gap: 10px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(156, 105, 211, 0.22);
+  border-bottom: 1px solid rgba(210, 172, 118, 0.22);
 }
 
 .compendium-action-button {
@@ -406,7 +406,7 @@
   padding: 0 14px;
   color: var(--color-paper);
   background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(156, 105, 211, 0.38);
+  border: 1px solid rgba(210, 172, 118, 0.38);
   cursor: pointer;
 }
 
@@ -416,7 +416,7 @@
 }
 
 .compendium-action-button--primary {
-  background: linear-gradient(135deg, rgba(106, 60, 146, 0.52), rgba(63, 31, 90, 0.72));
+  background: linear-gradient(135deg, rgba(167, 123, 73, 0.52), rgba(63, 31, 90, 0.72));
   border-color: rgba(190, 140, 235, 0.65);
 }
 
@@ -437,7 +437,7 @@
   padding: 0 10px;
   color: var(--color-text);
   background: rgba(7, 6, 8, 0.7);
-  border: 1px solid rgba(156, 105, 211, 0.34);
+  border: 1px solid rgba(210, 172, 118, 0.34);
 }
 
 .compendium-action-hint {
@@ -453,7 +453,7 @@
   max-width: min(420px, calc(100vw - 48px));
   padding: 14px 18px;
   color: var(--color-paper);
-  background: #171119;
+  background: #201b1b;
   border: 1px solid rgba(190, 140, 235, 0.68);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
 }
@@ -491,7 +491,7 @@
   height: 34px;
   color: var(--color-text-muted);
   background: rgba(7, 6, 8, 0.82);
-  border: 1px solid rgba(156, 105, 211, 0.3);
+  border: 1px solid rgba(210, 172, 118, 0.3);
   cursor: pointer;
 }
 
@@ -499,7 +499,7 @@
 .compendium-entry-card__compare.is-active {
   color: var(--color-paper);
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 16px rgba(106, 60, 146, 0.2);
+  box-shadow: 0 0 16px rgba(167, 123, 73, 0.2);
 }
 
 .compendium-compare-bar {
@@ -557,7 +557,7 @@
 
 .compendium-compare-bar__actions .is-primary {
   color: #fff;
-  background: linear-gradient(135deg, rgba(106, 60, 146, 0.95), rgba(68, 34, 94, 0.95));
+  background: linear-gradient(135deg, rgba(167, 123, 73, 0.95), rgba(68, 34, 94, 0.95));
   border-color: rgba(190, 140, 235, 0.72);
 }
 
@@ -585,7 +585,7 @@
   padding: 26px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 100% 0, rgba(106, 60, 146, 0.22), transparent 42%),
+    radial-gradient(circle at 100% 0, rgba(167, 123, 73, 0.22), transparent 42%),
     #100e12;
   border: 1px solid rgba(190, 140, 235, 0.55);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.62);
@@ -617,7 +617,7 @@
   height: 38px;
   color: var(--color-text);
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(156, 105, 211, 0.3);
+  border: 1px solid rgba(210, 172, 118, 0.3);
   cursor: pointer;
 }
 
@@ -641,7 +641,7 @@
 
 .compendium-compare-table thead th {
   color: var(--color-paper);
-  background: rgba(106, 60, 146, 0.16);
+  background: rgba(167, 123, 73, 0.16);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -687,25 +687,25 @@
 }
 
 @media print {
-  body > *:not(.compendium-print-root) {
+  body:has(> .compendium-print-root) > *:not(.compendium-print-root) {
     display: none !important;
   }
 
   .compendium-print-root {
     display: block !important;
-    width: 210mm;
-    min-height: 297mm;
+    page: kodex;
+    width: auto;
     margin: 0;
-    padding: 16mm;
-    color: #171318;
+    padding: 0;
+    color: #241e1c;
     background: #fff;
     font-family: Georgia, "Times New Roman", serif;
   }
 
   .compendium-print-header {
-    padding-bottom: 8mm;
-    text-align: center;
-    border-bottom: 2px solid #34233f;
+    padding-block: 3mm;
+    text-align: left;
+    border-block: .35mm solid #695a4d;
   }
 
   .compendium-print-header span {
@@ -721,28 +721,14 @@
   }
 
   .compendium-print-header p {
-    margin: 0 auto;
+    margin: 0;
     max-width: 160mm;
     font-size: 10.5pt;
     line-height: 1.5;
   }
 
-  .compendium-print-sigil {
-    width: 18mm;
-    height: 18mm;
-    margin: 8mm auto;
-    display: grid;
-    place-items: center;
-    font-size: 24pt;
-    border: 1.5px solid #34233f;
-    transform: rotate(45deg);
-  }
-
-  .compendium-print-sigil::first-letter {
-    transform: rotate(-45deg);
-  }
-
   .compendium-print-table {
+    margin-top: 5mm;
     width: 100%;
     border-collapse: collapse;
   }
@@ -762,8 +748,7 @@
   }
 
   .compendium-print-section {
-    margin-top: 9mm;
-    break-inside: avoid;
+    margin-top: 6mm;
   }
 
   .compendium-print-section h2 {
@@ -771,7 +756,7 @@
     font-size: 13pt;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    border-bottom: 1px solid #34233f;
+    border-bottom: 1px solid #352924;
   }
 
   .compendium-print-section article {
@@ -785,9 +770,9 @@
     line-height: 1.5;
   }
 
-  @page {
+  @page kodex {
     size: A4 portrait;
-    margin: 0;
+    margin: 13mm;
   }
 }
 
@@ -802,7 +787,7 @@
   gap: 16px;
   padding: 22px;
   background: rgba(10, 9, 12, 0.68);
-  border: 1px solid rgba(156, 105, 211, 0.24);
+  border: 1px solid rgba(210, 172, 118, 0.24);
 }
 
 .compendium-shelf__header {
@@ -844,7 +829,7 @@
   padding: 9px 12px;
   color: var(--color-text-muted);
   background: transparent;
-  border: 1px solid rgba(156, 105, 211, 0.28);
+  border: 1px solid rgba(210, 172, 118, 0.28);
   cursor: pointer;
 }
 
@@ -916,8 +901,8 @@
   min-height: 36px;
   padding: 7px 11px;
   color: var(--color-paper);
-  background: rgba(106, 60, 146, 0.16);
-  border: 1px solid rgba(156, 105, 211, 0.34);
+  background: rgba(167, 123, 73, 0.16);
+  border: 1px solid rgba(210, 172, 118, 0.34);
   cursor: pointer;
 }
 
@@ -928,7 +913,7 @@
   gap: 10px;
   padding: 28px;
   background: rgba(0, 0, 0, 0.18);
-  border: 1px dashed rgba(156, 105, 211, 0.32);
+  border: 1px dashed rgba(210, 172, 118, 0.32);
 }
 
 @media (max-width: 760px) {

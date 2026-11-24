@@ -1,5 +1,6 @@
 import { getAncestryAbilityBonuses, applyAbilityBonuses, getAncestryById } from "../compendium/ancestries";
 import { getBackgroundById } from "../compendium/backgrounds";
+import { getSubclassProficiencyPackage, getSubclassSkillProficiencies } from "../compendium/classes";
 import { defaultAbilityScores, type AbilityScores } from "../compendium/core";
 import { calculateMaximumHitPoints } from "../rules/hitPoints";
 import { getEquipmentById, equipment } from "../compendium/equipment";
@@ -39,6 +40,7 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
   }
 
   const background = getBackgroundById(input.backgroundId ?? "");
+  const subclassProficiencies = getSubclassProficiencyPackage(input.classId ?? "", input.subclassId, input.level);
 
   if (
     background?.feature &&
@@ -53,10 +55,12 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
   const skillProficiencies = Array.from(new Set([
     ...(input.skillProficiencies ?? []),
     ...(background?.skillProficiencies ?? []),
+    ...getSubclassSkillProficiencies(input.classId ?? "", input.subclassId, input.level, input.pathChoices),
   ]));
   const toolProficiencies = Array.from(new Set([
     ...(input.toolProficiencies ?? []),
     ...(background?.toolProficiencies ?? []),
+    ...(subclassProficiencies?.tools ?? []),
   ]));
 
   const inventory = {
@@ -83,9 +87,16 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
 
   const ancestry = getAncestryById(input.ancestryId ?? "");
   const variant = ancestry?.variants.find((entry) => entry.id === input.ancestryVariantId);
-  const speed = input.ancestryUsesReducedSpeed
+  const ancestrySpeed = input.ancestryUsesReducedSpeed
     ? 7.5
-    : (ancestry?.speed ?? input.vitals?.speed ?? 9) + (variant?.speedBonus ?? 0);
+    : (ancestry?.speed ?? 9) + (variant?.speedBonus ?? 0);
+  const storedSpeed = input.vitals?.speed;
+  const hasLegacyFastMovement = input.movementBaseVersion === undefined &&
+    input.classId === "barbarian" && input.level >= 5 &&
+    input.levelUpHistory?.some(({ toLevel }) => toLevel === 5) &&
+    storedSpeed === ancestrySpeed + 3;
+  const speed = hasLegacyFastMovement ? ancestrySpeed : storedSpeed ?? ancestrySpeed;
+  if (hasLegacyFastMovement) notes.push("Gespeicherter Barbarenbonus wird jetzt aus der getragenen Rüstung berechnet.");
 
   const calculatedMaximumHitPoints = calculateMaximumHitPoints({
     classId: input.classId ?? "",
@@ -121,6 +132,7 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
 
   const migrated: CharacterArchiveEntry = {
     ...input,
+    movementBaseVersion: 1,
     schemaVersion: CURRENT_CHARACTER_SCHEMA_VERSION,
     migratedFromSchemaVersion: previousVersion < CURRENT_CHARACTER_SCHEMA_VERSION
       ? previousVersion
@@ -142,7 +154,11 @@ export function migrateCharacterArchiveEntry(input: CharacterArchiveEntry): Char
       ...(input.equipmentIds ?? []),
       ...inventory.items.map((item) => item.id),
     ])),
-    spellcasting: input.spellcasting ?? {
+    spellcasting: input.spellcasting ? { ...input.spellcasting, spellIds: Array.from(input.spellcasting.spellIds.reduce((acc, entry) => {
+      const id = entry.spellId === "hunters-mark" ? "hunter-s-mark" : entry.spellId;
+      acc.set(id, { ...entry, spellId: id, prepared: !!(entry.prepared || acc.get(id)?.prepared) });
+      return acc;
+    }, new Map<string, (typeof input.spellcasting.spellIds)[number]>()).values()) } : {
       spellIds: [],
       slots: { spentSlots: {}, spentPactSlots: 0 },
     },
@@ -213,7 +229,7 @@ function scoresEqual(left: AbilityScores | undefined, right: AbilityScores): boo
   );
 }
 
-function resolveBackgroundInventory(labels: string[], timestamp: string): CharacterInventoryItem[] {
+export function resolveBackgroundInventory(labels: string[], timestamp: string): CharacterInventoryItem[] {
   return labels.flatMap((rawLabel, index) => {
     if (/^\d+\s*(?:GM|GP)$/i.test(rawLabel.trim())) {
       return [];
@@ -228,7 +244,7 @@ function resolveBackgroundInventory(labels: string[], timestamp: string): Charac
         quantity: parsed.quantity,
         weight: definition.weight * 0.45359237,
         equipped: false,
-        notes: "Automatisch aus dem Hintergrund ergänzt.",
+        notes: "Startausrüstung aus dem Hintergrund.",
         createdAt: timestamp,
         updatedAt: timestamp,
       }];
@@ -237,7 +253,7 @@ function resolveBackgroundInventory(labels: string[], timestamp: string): Charac
     // Auch nicht normalisierte Hintergrundgegenstände bleiben sichtbar und exportierbar.
     return [{
       id: `background-${slugify(rawLabel)}-${index + 1}`,
-      name: rawLabel,
+      name: parsed.name,
       category: "other" as const,
       quantity: parsed.quantity,
       weight: 0,
@@ -258,9 +274,10 @@ function parseEquipmentLabel(value: string): { name: string; quantity: number } 
 
 function findEquipmentDefinition(name: string) {
   const normalized = normalizeLabel(name);
-  return equipment.find((entry) => {
+  const alias: Record<string,string> = {reisekleidung:"travelers-clothes", reisekleider:"travelers-clothes", alltagskleidung:"common-clothes", gürtelbeutel:"pouch", beutel:"pouch", "set gewöhnlicher kleidung":"common-clothes", kräuterkundeaustattung:"herbalism-kit", kräuterkundeausstattung:"herbalism-kit"};
+  return getEquipmentById(alias[normalized] ?? "") ?? equipment.find((entry) => {
     const candidate = normalizeLabel(entry.name);
-    return candidate === normalized || normalized.includes(candidate) || candidate.includes(normalized);
+    return candidate === normalized;
   }) ?? getEquipmentById(slugify(name));
 }
 
@@ -285,9 +302,9 @@ function mapInventoryCategory(category: string): InventoryItemCategory {
     case "shield": return "armor";
     case "consumable": return "consumable";
     case "tool": return "tool";
+    case "ammunition": return "consumable";
     case "gear":
-    case "focus":
-    case "ammunition": return "adventuring-gear";
+    case "focus": return "adventuring-gear";
     default: return "other";
   }
 }

@@ -1,0 +1,74 @@
+/* Screen chrome only: printed pages have their own type scale and margins. */
+@media screen {
+  .app-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 80rem);
+    align-content: start;
+    justify-content: center;
+    gap: clamp(.75rem, 2vw, 1.6rem);
+    padding: clamp(.75rem, 3vw, 2.5rem);
+    background: radial-gradient(ellipse at top, #2b2220, var(--color-background) 55rem);
+  }
+  .app-layout::before, .app-layout::after, .app-layout__texture { display: none; }
+  .app-layout .app-layout__content,
+  .app-layout .app-layout__content:has(.character-creator-layout) { width: 100%; max-width: none; min-width: 0; }
+  .app-layout .book-nav {
+    position: relative; inset: auto; display: flex; flex-flow: row wrap; align-items: center;
+    justify-content: space-between; width: 100%; min-height: 0; padding: .5rem 1rem;
+    gap: .5rem 1rem; border: 0; border-bottom: 1px solid var(--sheet-edge); box-shadow: none; background: var(--color-surface);
+  }
+  .book-nav::before, .book-nav__item::before, .book-nav__marker { display: none; }
+  .app-layout .book-nav__logo {
+    display: flex; align-items: center; gap: .6rem; width: auto; min-height: 0; margin: 0;
+    padding: 0; border: 0; color: var(--sheet-paper); font: small-caps 700 1.4rem Georgia, serif;
+  }
+  .book-nav__logo .book-nav__seal { width: 2rem; height: 2rem; color: var(--sheet-link); filter: none; }
+  .app-layout .book-nav__chapters { display: flex; flex: 0 1 auto; flex-direction: row; width: auto; gap: .25rem; }
+  .app-layout .book-nav__item {
+    display: flex; align-items: center; justify-content: center; gap: .5rem; flex-direction: row;
+    width: auto; min-height: 44px; padding: .45rem .85rem; border: 0; border-bottom: 2px solid transparent;
+    border-radius: 0; font-family: system-ui, sans-serif;
+  }
+  .book-nav .book-nav__title { writing-mode: horizontal-tb; transform: none; font-size: .88rem; letter-spacing: normal; text-transform: none; }
+  .book-nav .book-nav__chapter { font-size: .7rem; letter-spacing: normal; }
+  .app-layout .book-nav__item--active { border-bottom-color: var(--sheet-link); color: var(--sheet-link); background: var(--sheet-control); }
+  .app-layout :focus-visible { outline: 2px solid var(--sheet-focus); outline-offset: 2px; }
+  .app-layout .paper-page { border: 1px solid var(--sheet-edge); background: var(--color-surface); box-shadow: 0 8px 24px #120e0d55; }
+  .app-layout .paper-page::after { display: none; }
+  .app-layout .paper-page__inner { padding: clamp(1rem, 3vw, 2.6rem); }
+  .app-layout .chapter-header__title { letter-spacing: .045em; font-size: clamp(1.65rem, 3vw, 2.5rem); overflow-wrap: anywhere; }
+  .app-layout .chapter-header__subtitle, .session-roster { font: 1rem/1.55 system-ui, sans-serif; }
+  .app-layout :is(.codex-card, .archive-management-card, .compendium-category-card, .compendium-entry-card) {
+    border: 1px solid var(--color-border); border-top: 2px solid var(--color-primary); box-shadow: none; background: var(--sheet-surface);
+  }
+  .session-roster { display: grid; gap: .6rem; list-style: none; padding: 0; }
+  .session-roster li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: .75rem; padding: 1rem; border-inline-start: 3px solid var(--sheet-edge); background: var(--sheet-control); overflow-wrap: anywhere; }
+  .session-roster small { color: var(--sheet-muted); }
+  .session-roster h3 { font: bold 1.3rem Georgia, serif; }
+}
+@media screen and (max-width: 760px) {
+  .app-layout .book-nav { padding: .5rem; }
+  .app-layout .book-nav__chapters { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; }
+  .app-layout .book-nav__item { flex-direction: column; padding: .25rem 0; gap: 2px; }
+  .book-nav .book-nav__title { font-size: clamp(.7rem, 2.6vw, .88rem); overflow-wrap: anywhere; }
+}
+
+/* Visual Style Guide v1: shared screen-only control material. */
+@media screen {
+  .app-layout :is(input, select, textarea) { accent-color: var(--color-primary-light); }
+  .app-layout :is(button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--sheet-focus);
+    outline-offset: 2px;
+  }
+  .app-layout .sheet-navigation__button--active {
+    color: var(--color-paper);
+    background: var(--sheet-control);
+    border-color: var(--sheet-edge);
+    box-shadow: inset 3px 0 0 var(--color-primary-light);
+  }
+  .app-layout .sheet-navigation__button:hover:not(.sheet-navigation__button--active) {
+    background: var(--sheet-surface);
+    border-color: var(--sheet-edge);
+  }
+}

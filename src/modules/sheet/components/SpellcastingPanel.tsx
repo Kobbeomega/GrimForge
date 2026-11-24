@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   abilityLabels,
   formatAbilityModifier,
@@ -6,6 +7,8 @@ import {
 import {
   getSpellById,
 } from "../../../compendium/spells";
+import type { SpellDefinition } from "../../../compendium/spells";
+import { spellFact } from "../../../compendium/spells/spellFact";
 
 import { getGrantedSubclassSpellIds } from "../../../compendium/classes";
 
@@ -156,52 +159,38 @@ export function SpellcastingPanel({
     });
   }
 
-  function castSpell(spellLevel: number) {
-    if (spellLevel <= 0) return;
-
-    if (stats.pactSlots && stats.pactSlots.slotLevel >= spellLevel && spellcasting.slots.spentPactSlots < stats.pactSlots.slots) {
-      onChange({
-        ...spellcasting,
-        slots: {
-          ...spellcasting.slots,
-          spentPactSlots: spellcasting.slots.spentPactSlots + 1,
-        },
-      }, `Zauber gewirkt: ein Paktplatz Grad ${stats.pactSlots.slotLevel} verbraucht.`);
+  function castSpell(spell: SpellDefinition, choice: string) {
+    if (!spell || spell.level < 1) return;
+    const [kind, rawLevel] = choice.split(":");
+    const level = Number(rawLevel);
+    if (!Number.isSafeInteger(level) || level < spell.level) return;
+    const details = level > spell.level ? " · höherer Grad: Skalierung im Zaubertext prüfen." : "";
+    const concentration = spell.concentration ? " · Konzentration beachten." : "";
+    if (kind === "pact" && stats.pactSlots?.slotLevel === level &&
+        spellcasting.slots.spentPactSlots < stats.pactSlots.slots) {
+      onChange({ ...spellcasting, slots: { ...spellcasting.slots,
+        spentPactSlots: spellcasting.slots.spentPactSlots + 1 } },
+      `${spell.name}: Paktplatz Grad ${level} verbraucht${details}${concentration}`);
       return;
     }
-
-    const slotLevel = normalSpellLevels.find((level) => {
-      const maximum = stats.spellSlots[level] ?? 0;
-      const spent = spellcasting.slots.spentSlots[level] ?? 0;
-      return level >= spellLevel && spent < maximum;
-    });
-
-    if (slotLevel) {
-      onChange({
-        ...spellcasting,
-        slots: {
-          ...spellcasting.slots,
-          spentSlots: {
-            ...spellcasting.slots.spentSlots,
-            [slotLevel]: (spellcasting.slots.spentSlots[slotLevel] ?? 0) + 1,
-          },
-        },
-      }, `Zauber gewirkt: ein Slot Grad ${slotLevel} verbraucht.`);
-    }
+    if (kind !== "normal" || !normalSpellLevels.some((entry) => entry === level) ||
+        (stats.spellSlots[level as NormalSpellLevel] ?? 0) <= (spellcasting.slots.spentSlots[level as NormalSpellLevel] ?? 0)) return;
+    const normalLevel = level as NormalSpellLevel;
+    onChange({ ...spellcasting, slots: { ...spellcasting.slots, spentSlots: {
+      ...spellcasting.slots.spentSlots,
+      [normalLevel]: (spellcasting.slots.spentSlots[normalLevel] ?? 0) + 1,
+    } } }, `${spell.name}: Zauberplatz Grad ${level} verbraucht${details}${concentration}`);
   }
 
-  function canCastSpell(spellLevel: number) {
-    if (spellLevel <= 0) return true;
-
-    if (stats.pactSlots && stats.pactSlots.slotLevel >= spellLevel && spellcasting.slots.spentPactSlots < stats.pactSlots.slots) {
-      return true;
+  function availableSlots(spellLevel: number): Array<{ value: string; label: string }> {
+    const normal = normalSpellLevels.flatMap((level) => level >= spellLevel &&
+      (stats.spellSlots[level] ?? 0) > (spellcasting.slots.spentSlots[level] ?? 0)
+      ? [{ value: `normal:${level}`, label: `Grad ${level} · ${(stats.spellSlots[level] ?? 0) - (spellcasting.slots.spentSlots[level] ?? 0)} frei` }] : []);
+    if (stats.pactSlots && stats.pactSlots.slotLevel >= spellLevel &&
+        stats.pactSlots.slots > spellcasting.slots.spentPactSlots) {
+      normal.push({ value: `pact:${stats.pactSlots.slotLevel}`, label: `Pakt Grad ${stats.pactSlots.slotLevel} · ${stats.pactSlots.slots - spellcasting.slots.spentPactSlots} frei` });
     }
-
-    return normalSpellLevels.some((level) => {
-      const maximum = stats.spellSlots[level] ?? 0;
-      const spent = spellcasting.slots.spentSlots[level] ?? 0;
-      return level >= spellLevel && spent < maximum;
-    });
+    return normal;
   }
 
   return (
@@ -340,7 +329,7 @@ export function SpellcastingPanel({
         character={character}
         stats={stats}
         onCast={castSpell}
-        canCast={canCastSpell}
+        availableSlots={availableSlots}
       />
 
       <CompactSpellList
@@ -349,7 +338,7 @@ export function SpellcastingPanel({
         character={character}
         stats={stats}
         onCast={castSpell}
-        canCast={canCastSpell}
+        availableSlots={availableSlots}
       />
     </section>
   );
@@ -499,14 +488,14 @@ function CompactSpellList({
   character,
   stats,
   onCast,
-  canCast,
+  availableSlots,
 }: {
   title: string;
   spells: ResolvedSpell[];
   character: CharacterArchiveEntry;
   stats: SpellcastingStats;
-  onCast: (spellLevel: number) => void;
-  canCast: (spellLevel: number) => boolean;
+  onCast: (spell: SpellDefinition, slot: string) => void;
+  availableSlots: (spellLevel: number) => Array<{value: string; label: string}>;
 }) {
   return (
     <section className="compact-character-spells">
@@ -542,9 +531,18 @@ function CompactSpellList({
                 spell,
                 selection,
               }) => {
+                const pact = character.pathChoices?.["warlock-pact-boon"];
+                const pactRitual = character.classId === "warlock" && character.level >= 3 &&
+                  (pact === "chain" || (Array.isArray(pact) && pact.includes("chain"))) && spell.id === "find-familiar";
+                const spiritRitual = character.classId === "barbarian" && character.subclassId === "totem-warrior" &&
+                  character.level >= 3 && ["beast-sense", "speak-with-animals"].includes(spell.id);
+                const shadowKi = character.classId === "monk" && character.subclassId === "way-of-shadow" &&
+                  character.level >= 3 && ["darkness", "darkvision", "pass-without-trace", "silence"].includes(spell.id);
                 const displayValues =
                   getSpellDisplayValues({
                     spell,
+                    invocations: character.pathChoices?.["warlock-invocations"],
+        lifeDomainHealing: character.classId === "cleric" && character.subclassId === "life-domain",
 
                     characterLevel:
                       character.level,
@@ -585,7 +583,7 @@ function CompactSpellList({
                         {displayValues
                           .spellAttackLabel && (
                           <span>
-                            Angriff{" "}
+                            {displayValues.attackCount && displayValues.attackCount > 1 ? `${displayValues.attackCount} Angriffe` : "Angriff"}{" "}
                             <strong>
                               {
                                 displayValues
@@ -610,6 +608,7 @@ function CompactSpellList({
                                 .damage
                                 .type
                             }
+                            {displayValues.damage.note ? ` · ${displayValues.damage.note}` : ""}
                           </span>
                         )}
 
@@ -638,53 +637,39 @@ function CompactSpellList({
                                   .abilityLabel
                               }
                             </strong>
+                            {displayValues.savingThrow.difficultyClass !== undefined ? ` · SG ${displayValues.savingThrow.difficultyClass}` : ""}
                           </span>
                         )}
                       </div>
 
                       {selection.prepared && (
                         <span className="compact-spell-row__prepared">
-                          Vorbereitet
+                          {pactRitual ? "Pakt-Ritual" : spiritRitual ? "Nur als Ritual" : shadowKi ? "2 Ki · keine Materialkomponenten" : "Vorbereitet"}
                         </span>
                       )}
 
-                      {spell.level > 0 && selection.prepared && (
-                        <button
-                          type="button"
-                          className="compact-spell-row__cast"
-                          disabled={!canCast(spell.level)}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            onCast(spell.level);
-                          }}
-                        >
-                          Wirken
-                        </button>
+                      {spell.level > 0 && selection.prepared && !pactRitual && !spiritRitual && !shadowKi && (
+                        <SpellCastControl spell={spell} options={availableSlots(spell.level)} onCast={onCast} />
                       )}
                     </summary>
 
                     <div className="compact-spell-row__details">
+                      {displayValues.savingThrow?.resultOnSuccess && <p>{displayValues.savingThrow.resultOnSuccess}</p>}
+                      {spell.mechanicsReview === "source-excerpt" && <p><small>Regelauszug. Bei Sonderfällen gilt die verlinkte Regelquelle im Kompendium.</small></p>}
                       <dl>
                         <SpellFact
                           label="Zeit"
-                          value={
-                            spell.castingTime
-                          }
+                          value={spellFact(spell.castingTime)}
                         />
 
                         <SpellFact
                           label="Reichweite"
-                          value={
-                            spell.range
-                          }
+                          value={spellFact(spell.range)}
                         />
 
                         <SpellFact
                           label="Dauer"
-                          value={
-                            spell.duration
-                          }
+                          value={spellFact(spell.duration)}
                         />
 
                         <SpellFact
@@ -731,6 +716,26 @@ function CompactSpellList({
       )}
     </section>
   );
+}
+
+function SpellCastControl({ spell, options, onCast }: {
+  spell: SpellDefinition;
+  options: Array<{ value: string; label: string }>;
+  onCast: (spell: SpellDefinition, slot: string) => void;
+}) {
+  const [requested, setRequested] = useState("");
+  const chosen = options.some((entry) => entry.value === requested) ? requested : (options[0]?.value ?? "");
+  const selectedLevel = Number(chosen.split(":")[1] ?? 0);
+  return <span className="gf-cast-control" onClick={(event) => event.stopPropagation()}>
+    <label><span>Zauberplatz</span><select value={chosen} aria-label={`Zauberplatz für ${spell.name}`}
+      disabled={!options.length} onClick={(event) => event.stopPropagation()}
+      onChange={(event) => setRequested(event.target.value)}>
+      {options.length ? options.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>) : <option value="">Keine Plätze</option>}
+    </select></label>
+    <button type="button" className="compact-spell-row__cast" disabled={!chosen}
+      title={selectedLevel > spell.level ? "Höherer Grad: Skalierung in der Beschreibung beachten" : undefined}
+      onClick={(event) => { event.preventDefault(); event.stopPropagation(); onCast(spell, chosen); }}>Wirken</button>
+  </span>;
 }
 
 function SpellFact({

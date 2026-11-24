@@ -1,0 +1,203 @@
+/* GrimForge 1.2 — screen-only legibility and session controls.
+   These rules intentionally never affect PDFs or the printed folio. */
+@media screen {
+  .app-layout { font: 400 16px/1.55 system-ui, sans-serif; color: var(--sheet-text); }
+  .app-layout :is(p, li, dd, label, summary) { line-height: 1.5; }
+  .app-layout :is(button, input, select, textarea) { font-family: system-ui, sans-serif; }
+  .app-layout :is(input, select, textarea) { font-size: max(16px, 1rem); background-color: var(--sheet-control); color: var(--sheet-text); }
+  .app-layout :is(button, select, input[type=number], input[type=search]) { min-height: 42px; }
+  .app-layout :is(button, select, input, textarea):focus-visible { outline: 3px solid var(--sheet-focus); outline-offset: 2px; }
+  .app-layout :is(h1,h2,h3,h4) { line-height: 1.25; }
+  .app-layout :is(.level-up__spell-facts dt, .gf-spell-quick dt, .gf-exhaustion label) { color: var(--sheet-muted); }
+  .app-layout :is(.level-up__spell-facts dd, .gf-spell-quick dd) { color: var(--sheet-text); }
+
+  /* Creator: previous 7–11px captions made spells almost impossible to compare. */
+  .compact-spell-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 335px), 1fr)); gap: .9rem; }
+  .compact-spell-card { background: var(--sheet-surface); border-color: var(--sheet-edge); border-radius: 6px; }
+  .compact-spell-card__main { font: 400 1rem/1.5 system-ui, sans-serif; padding: 1rem; gap: .85rem; }
+  .compact-spell-card__main h4 { font: 700 1.25rem/1.25 Georgia, serif; letter-spacing: 0; }
+  .compact-spell-card__main :is(header span, header > strong) { font-size: .82rem; line-height: 1.4; }
+  .compact-spell-section__header :is(p, span), .compact-spell-card__main footer span { font-size: .9rem; }
+  .compact-spell-section__header h3 { font-size: 1.28rem; }
+  .compact-spell-card__main footer span { padding: .35rem .55rem; border: 1px solid var(--sheet-edge); }
+  .compact-spell-card__prepare { font-size: .95rem; min-height: 44px; }
+  .creator-spell-toolbar { gap: .8rem; }
+  .creator-spell-toolbar :is(label, span, button, input, select), .compact-spell-summary :is(dt, dd) { font-size: max(.9rem, 14px); }
+  .gf-granted-spells { display: grid; gap: .6rem; }
+  .gf-granted-spell { background: var(--sheet-surface); border: 1px solid var(--sheet-edge); padding: .8rem; }
+  .gf-granted-spell summary { color: var(--sheet-link); cursor: pointer; font-weight: 700; }
+
+  /* Compact spell synopsis with high-contrast effect, no content dependency on tiny icons. */
+  .gf-spell-quick { display: grid; gap: .65rem; min-width: 0; font: 400 .97rem/1.5 system-ui, sans-serif; color: var(--sheet-text); }
+  .gf-spell-quick__facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+  .gf-spell-quick__facts > div { min-width: 0; display: grid; gap: .12rem; padding: .55rem .65rem; background: #352b27; border: 1px solid #604c3c; border-radius: 3px; }
+  .gf-spell-quick dt { font-size: .83rem; font-weight: 650; }
+  .gf-spell-quick dd { margin: 0; font-size: .98rem; font-weight: 600; overflow-wrap: anywhere; }
+  .gf-spell-quick__effect { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--sheet-text); }
+  .gf-spell-quick__effect strong { color: var(--sheet-link); }
+  .gf-spell-quick__tags { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .gf-spell-quick__tags:empty { display: none; }
+  .gf-spell-quick__tags span { border: 1px solid var(--sheet-edge); border-radius: 3px; color: var(--sheet-link); padding: .2rem .45rem; font-size: .86rem; }
+
+  /* Level-up: searchable option cards show a summary without a dropdown/hover. */
+  .gf-spell-search { font-weight: 700; }
+  .gf-spell-search input { width: 100%; padding: .7rem .85rem; border: 1px solid var(--sheet-edge); border-radius: 4px; }
+  .gf-spell-count { margin: 0; color: var(--sheet-muted); font-size: .95rem; }
+  .gf-level-spell-grid { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 335px), 1fr)); gap: .85rem; }
+  .gf-level-spell-card { display: flex; flex-direction: column; align-items: stretch; gap: .75rem; padding: 1rem; min-width: 0; border: 1px solid var(--sheet-edge); border-radius: 5px; background: #241e1c; }
+  .gf-level-spell-card > header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem .8rem; }
+  .gf-level-spell-card > header strong { font: 700 1.25rem/1.3 Georgia, serif; }
+  .gf-level-spell-card > header span { color: var(--sheet-link); font-size: .94rem; }
+  .gf-level-spell-card > .grim-button { align-self: start; margin-top: auto; }
+  .gf-level-spell-details { border-top: 1px solid var(--sheet-edge); padding-top: .5rem; }
+  .gf-level-spell-details > summary { font-size: .96rem; font-weight: 700; color: var(--sheet-link); cursor: pointer; }
+  .level-up__spell-preview { line-height: 1.6; font-size: 1rem; }
+  .level-up__spell-facts dt { font-size: .87rem; }
+  .level-up__spell-facts dd { font-size: 1rem; }
+  .level-up__spell-effect { font-size: 1rem; }
+  .level-up__spell-list :is(summary, button, label) { font-size: .95rem; }
+  .level-up__card { line-height: 1.65; }
+
+  /* Play mode: legible reference values, without app-based dice rolls. */
+  .ability-sheet-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: .85rem; }
+  .ability-sheet-card { grid-template-rows: auto auto minmax(0,1fr) auto; padding: 1rem; gap: .7rem; }
+  .ability-sheet-card__identity h3 { font-size: 1.1rem; }
+  .ability-sheet-card__identity > span, .ability-sheet-card__skills > header span, .ability-sheet-card__save small { font-size: .84rem; }
+  .ability-sheet-card__skills > header strong { font-size: .95rem; }
+  .ability-skill-row { grid-template-columns: 21px minmax(0,1fr) auto; min-height: 44px; gap: .5rem; padding: .35rem .5rem; }
+  .ability-skill-row > strong { font-size: .96rem; line-height: 1.3; }
+  .ability-skill-row__marker, .ability-sheet-card__save strong { font-size: .94rem; }
+  .ability-sheet-card__save { flex-wrap: wrap; }
+  .ability-sheet-card__empty { font-size: .94rem; }
+
+  /* Grimoire used sub-10px labels; restore readable type. */
+  .compact-spell-row > summary { grid-template-columns: minmax(140px,.85fr) minmax(180px,1.4fr) auto; gap: .65rem; padding: .85rem; font-size: 1rem; }
+  .compact-spell-row__identity strong { font-size: 1.12rem; line-height: 1.25; }
+  .compact-spell-row__identity span, .compact-spell-row__prepared { font-size: .84rem; }
+  .compact-spell-row__values span { font-size: .94rem; }
+  .compact-spell-row__details { padding: 1rem; }
+  .compact-spell-row__details dt { font-size: .84rem; }
+  .compact-spell-row__details dd, .compact-spell-row__details p, .compact-spell-row__details small { font-size: .97rem; line-height: 1.55; }
+  .compact-spell-row__details dl { grid-template-columns: repeat(auto-fit, minmax(min(100%,140px),1fr)); gap: .8rem; }
+  .compact-character-spells h4 { font-size: 1.2rem; }
+  .gf-cast-control { display: flex; flex-wrap: wrap; align-items: end; gap: .45rem; }
+  .gf-cast-control label { display: grid; gap: .15rem; font-size: .82rem; color: var(--sheet-muted); }
+  .gf-cast-control select { width: min(100%, 190px); font-size: .95rem; min-height: 42px; padding: .4rem; border: 1px solid var(--sheet-edge); }
+  .gf-cast-control button { min-height: 42px; padding: .4rem .65rem; font-size: .95rem; }
+
+  /* Death saves, exhaustion, immediate recovery after accidental clicks. */
+  .gf-action-feedback { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem; border: 1px solid var(--sheet-edge); background: #302724; color: var(--sheet-text); padding: .8rem 1rem; font-size: 1rem; line-height: 1.5; }
+  .gf-action-feedback > span { flex: 1 1 220px; }
+  .gf-action-feedback button, .gf-death-saves button { min-height: 44px; border: 1px solid var(--sheet-edge); background: var(--sheet-control); color: var(--sheet-text); cursor: pointer; padding: .45rem .75rem; font: 650 .95rem/1.3 system-ui, sans-serif; border-radius: 4px; }
+  .gf-action-feedback button:hover, .gf-death-saves button:hover:not(:disabled) { background: var(--sheet-hover); border-color: var(--sheet-focus); }
+  .gf-death-saves button:disabled { opacity: .5; cursor: not-allowed; }
+  .gf-death-saves, .gf-exhaustion { display: grid; gap: .65rem; margin-block: .8rem; padding: 1rem; background: var(--sheet-surface); border: 1px solid var(--sheet-edge); border-radius: 4px; font: 400 .98rem/1.5 system-ui, sans-serif; }
+  .gf-death-saves__head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .35rem; }
+  .gf-death-saves h3, .gf-exhaustion h3 { margin: 0; font: 700 1.18rem Georgia,serif; }
+  .gf-death-saves__head > span { color: var(--sheet-link); font-weight: 600; }
+  .gf-death-saves__tracks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .8rem; }
+  .gf-death-saves__tracks > div { display: grid; gap: .55rem; padding: .75rem; border: 1px solid var(--sheet-edge); background: var(--sheet-control); }
+  .gf-death-saves__tracks > div > span { display: flex; gap: .45rem; }
+  .gf-death-saves__tracks > div > span > span { width: 19px; height: 19px; border: 2px solid #bba58b; border-radius: 50%; }
+  .gf-death-saves__tracks .gf-death-saves__success { background: #6c997b; border-color: #a6cbb1; }
+  .gf-death-saves__tracks .gf-death-saves__failure { background: #aa4a4c; border-color: #dd9999; }
+  .gf-death-saves__actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .gf-death-saves > p, .gf-exhaustion p { margin: 0; color: var(--sheet-muted); }
+  .gf-exhaustion { grid-template-columns: 1fr auto; align-items: center; }
+  .gf-exhaustion label { display: grid; gap: .2rem; min-width: 90px; font-weight: 600; }
+  .gf-exhaustion select { padding: .4rem; border: 1px solid var(--sheet-edge); }
+  .gf-exhaustion__effect { grid-column: 1/-1; color: var(--sheet-link) !important; }
+}
+@media screen and (max-width: 840px) {
+  .compact-spell-row > summary { grid-template-columns: 1fr; }
+  .gf-cast-control { justify-content: flex-start; }
+}
+@media screen and (max-width: 520px) {
+  .gf-spell-quick__facts { grid-template-columns: 1fr 1fr; }
+  .gf-death-saves__tracks { grid-template-columns: 1fr; }
+  .ability-skill-row { grid-template-columns: 18px minmax(0,1fr); }
+}
+
+/* Consistent information hierarchy throughout creator, inventory, archive and navigation. */
+@media screen {
+  .app-layout :is(.creator-section__chapter, .creator-step-nav__copy small,
+    .creator-step-nav__header p, .compact-class-card__header span,
+    .compact-class-card__tags span, .compact-class-card__facts dt,
+    .creator-class-dossier__die span, .creator-class-dossier__facts dt,
+    .creator-class-dossier__features li small,
+    .creator-class-dossier__footer, .creator-class-facts dt,
+    .creator-ability-card__modifier small, .creator-subclass-card span,
+    .sheet-navigation__button > span, .character-sheet-header__identity small,
+    .character-sheet-header__metadata dt, .character-sheet-header__file-number,
+    .compact-sheet-header__eyebrow > span,
+    .compact-sheet-header__eyebrow > strong, .compact-sheet-header__identity dt,
+    .sheet-overview__section-heading p, .sheet-overview__facts dt,
+    .live-inventory-summary dt, .live-inventory-summary small,
+    .live-inventory-item__header > span, .live-inventory-item__facts dt,
+    .equipment-live-facts dt, .inventory-filters__button,
+    .compact-weapon-row__identity span, .compact-weapon-row__primary small,
+    .compact-weapon-row__secondary span, .spell-creator-card__select dt,
+    .spell-creator-card__select header span, .spell-creator-card__select footer span,
+    .feature-record__facts dt, .spell-creator-section > header p) {
+    font-size: .87rem; line-height: 1.45; letter-spacing: normal;
+  }
+  .app-layout :is(.creator-step-nav__copy strong, .compact-class-card__description,
+    .compact-class-card__facts dd, .creator-class-dossier__facts dd,
+    .creator-class-dossier__features li p, .creator-class-facts dd,
+    .creator-subclass-card p, .sheet-navigation__button > strong,
+    .compact-sheet-header__main > p, .compact-sheet-header__identity dd,
+    .sheet-overview__header > span, .sheet-overview__facts dd,
+    .live-inventory-item__header p, .live-inventory-item__facts dd,
+    .equipment-live-facts dd, .live-inventory-item__actions button,
+    .compact-weapon-row__primary strong,
+    .spell-creator-card__select header strong, .spell-creator-card__select dd,
+    .feature-record__facts dd, .sheet-toolbar__status, .sheet-toolbar button,
+    .inventory-filters__button strong, .creator-spell-toolbar label > span,
+    .creator-spell-toolbar__toggle, .creator-spell-toolbar__result) {
+    font-size: .98rem; line-height: 1.5; letter-spacing: normal;
+  }
+  .app-layout :is(.compact-class-card, .creator-class-dossier, .spell-creator-card,
+    .live-inventory-item, .compact-weapon-row, .creator-subclass-card,
+    .compact-weapon-list, .creator-section__header) { line-height: 1.55; }
+  .app-layout :is(.sheet-navigation__button, .live-inventory-item__actions button,
+    .inventory-filters__button, .creator-step-nav button, .compact-weapon-row button) {
+    min-height: 44px;
+  }
+  .app-layout :is(.compact-weapon-row__identity h4, .compact-class-card__header h3,
+    .creator-class-dossier__header h3, .creator-section__header h2) {
+    font-size: clamp(1.12rem, 2vw, 1.55rem); line-height: 1.3;
+  }
+  .app-layout :is(.sheet-navigation, .sheet-content, .creator-section, .compact-combat, .magic-sheet) {
+    min-width: 0;
+  }
+}
+@media screen {
+  .gf-spell-card-select { display: block; width: 100%; padding: .3rem 0 .65rem; background: transparent; border: 0; border-bottom: 1px solid var(--sheet-edge); color: var(--sheet-text); cursor: pointer; text-align: left; }
+  .gf-spell-card-select > header { display: flex; justify-content: space-between; gap: .7rem; flex-wrap: wrap; align-items: start; }
+  .gf-spell-card-select > header > div { display: grid; gap: .2rem; min-width: 0; }
+  .gf-spell-card-select h4 { font: 700 1.22rem/1.3 Georgia, serif; color: var(--sheet-text); }
+  .gf-spell-card-select header span, .gf-spell-card-select header > strong { font-size: .9rem; color: var(--sheet-link); font-weight: 700; }
+  .gf-spell-card-select:hover, .gf-spell-card-select:focus-visible { background: var(--sheet-control); }
+  .gf-spell-card-select[aria-pressed=true] { border-bottom-color: var(--sheet-focus); }
+  .gf-spell-full { border-top: 1px solid var(--sheet-edge); padding-top: .55rem; font-size: 1rem; }
+  .gf-spell-full > summary { cursor: pointer; color: var(--sheet-link); font-size: .97rem; font-weight: 700; }
+  .gf-spell-full p { margin: .6rem 0; color: var(--sheet-text); line-height: 1.6; }
+  .compact-empty-state :is(strong, span) { font-size: 1rem; line-height: 1.55; }
+}
+
+@media screen {
+  .gf-spell-card-select__layout { display: flex; justify-content: space-between; gap: .7rem; flex-wrap: wrap; align-items: start; }
+  .gf-spell-card-select__heading { display: grid; gap: .2rem; min-width: 0; }
+  .gf-spell-card-select__name { font: 700 1.22rem/1.3 Georgia, serif; color: var(--sheet-text); }
+  .gf-spell-card-select__heading > span, .gf-spell-card-select__status { font-size: .9rem; color: var(--sheet-link); font-weight: 700; }
+  .compact-spell-row > summary { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+  .compact-spell-row__identity { flex: 1 1 145px; }
+  .compact-spell-row__values { flex: 1 1 170px; }
+  .gf-cast-control { flex: 0 1 280px; }
+}
+
+@media screen {
+  .gf-status-disclosure { border: 1px solid var(--sheet-edge); background: var(--sheet-surface); border-radius: 4px; }
+  .gf-status-disclosure > summary { padding: .7rem 1rem; cursor: pointer; color: var(--sheet-link); font: 650 .98rem/1.4 system-ui, sans-serif; }
+  .gf-status-disclosure > .gf-death-saves { margin: 0; border: 0; border-top: 1px solid var(--sheet-edge); }
+}

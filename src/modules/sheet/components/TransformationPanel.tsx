@@ -1,14 +1,7 @@
-import {
-  getActiveTransformationStages,
-  getTransformationById,
-  getTransformationStageAutomaticFeatures,
-  getTransformationStageBoons,
-  getTransformationStageFeatures,
-  getTransformationStageFlaws,
-} from "../../../compendium/transformations";
+import { getTransformationStageFeatures } from "../../../compendium/transformations";
+import { resolveCharacterTransformation, transformationApplicationLabels, transformationGroupLabels, type ActiveTransformationFeature } from "../../../compendium/transformations/activeRecord";
 
 import type {
-  TransformationFeature,
   TransformationFeatureKind,
 } from "../../../compendium/transformations";
 
@@ -31,27 +24,12 @@ const featureKindLabels: Record<
   reaction: "Reaktion",
 };
 
-interface ResolvedTransformationFeature
-  extends TransformationFeature {
-  stage: number;
-}
 
 export function TransformationPanel({
   character,
 }: TransformationPanelProps) {
-  const transformation =
-    getTransformationById(
-      character.transformationId ?? "",
-    );
-
-  const currentStage =
-    Math.max(
-      0,
-      Math.min(
-        4,
-        character.transformationStage ?? 0,
-      ),
-    );
+  const record=resolveCharacterTransformation(character);
+  const {definition:transformation,stage:currentStage,activeStages,features:activeFeatures,warning}=record;
 
   if (
     !transformation ||
@@ -64,13 +42,11 @@ export function TransformationPanel({
             <p>Wandlung</p>
 
             <h3>
-              Keine Transformation
+              {record.name || "Keine Transformation"}
             </h3>
 
             <span>
-              Dieser Charakter trägt
-              aktuell keine aktive
-              übernatürliche Wandlung.
+              {warning ?? "Dieser Charakter trägt aktuell keine aktive übernatürliche Wandlung."}
             </span>
           </div>
 
@@ -94,12 +70,6 @@ export function TransformationPanel({
     );
   }
 
-  const activeStages =
-    getActiveTransformationStages(
-      transformation.id,
-      currentStage,
-    );
-
   const currentStageDefinition =
     transformation.stages.find(
       (stage) =>
@@ -113,81 +83,8 @@ export function TransformationPanel({
         currentStage + 1,
     );
 
-  const selectedFeatureIds =
-    new Set(
-      character
-        .transformationFeatureIds ?? [],
-    );
-
-  const automaticFeatures:
-    ResolvedTransformationFeature[] =
-    activeStages.flatMap(
-      (stage) =>
-        getTransformationStageAutomaticFeatures(
-          stage,
-        ).map(
-          (feature) => ({
-            ...feature,
-            stage: stage.stage,
-          }),
-        ),
-    );
-
-  const selectedBoons:
-    ResolvedTransformationFeature[] =
-    activeStages.flatMap(
-      (stage) =>
-        getTransformationStageBoons(
-          stage,
-        )
-          .filter(
-            (feature) =>
-              selectedFeatureIds.has(
-                feature.id,
-              ),
-          )
-          .map(
-            (feature) => ({
-              ...feature,
-              stage: stage.stage,
-            }),
-          ),
-    );
-
-  const selectedFlaws:
-    ResolvedTransformationFeature[] =
-    activeStages.flatMap(
-      (stage) =>
-        getTransformationStageFlaws(
-          stage,
-        )
-          .filter(
-            (feature) =>
-              selectedFeatureIds.has(
-                feature.id,
-              ),
-          )
-          .map(
-            (feature) => ({
-              ...feature,
-              stage: stage.stage,
-            }),
-          ),
-    );
-
-  const activeFeatures = [
-    ...automaticFeatures,
-    ...selectedBoons,
-    ...selectedFlaws,
-  ];
-
-  const benefits = [
-    ...automaticFeatures,
-    ...selectedBoons,
-  ];
-
-  const drawbacks =
-    selectedFlaws;
+  const benefits=activeFeatures.filter(f=>f.group!=="flaw");
+  const drawbacks=activeFeatures.filter(f=>f.group==="flaw");
 
   return (
     <section className="transformation-sheet">
@@ -209,6 +106,8 @@ export function TransformationPanel({
         </strong>
       </header>
 
+      {warning && <p role="status">{warning}</p>}
+      <p>Automatisch erhaltene Merkmale stehen hier bereits in der Liste. Ihre Effekte sind nicht in die Grundwerte eingerechnet.</p>
       <dl className="transformation-sheet__summary">
         <SummaryValue
           label="Thema"
@@ -413,7 +312,7 @@ function TransformationFeatureSection({
   title: string;
 
   features:
-    ResolvedTransformationFeature[];
+    ActiveTransformationFeature[];
 
   emptyText: string;
 
@@ -461,7 +360,7 @@ function TransformationFeatureSection({
                 <header>
                   <div>
                     <span>
-                      Stufe {feature.stage}
+                      Stufe {feature.stage} · {transformationGroupLabels[feature.group]}
                     </span>
 
                     <h5>
@@ -479,7 +378,7 @@ function TransformationFeatureSection({
                 </header>
 
                 <p>
-                  {feature.description}
+                  <strong>{transformationApplicationLabels[feature.application]}:</strong> {feature.description}
                 </p>
               </article>
             ),

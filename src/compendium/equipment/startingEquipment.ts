@@ -1,3 +1,4 @@
+import { getEquipmentById, weapons } from "./equipment";
 export interface StartingEquipmentItem {
   equipmentId: string;
   quantity: number;
@@ -29,6 +30,19 @@ export interface StartingEquipmentDefinition {
   guaranteedPacks: string[];
 }
 
+function simpleOptions(prefix:string, excluded:string[] = [], melee = false) {
+  return weapons.filter(w => w.weaponCategory === "simple" && !excluded.includes(w.id) &&
+    (!melee || (!w.properties.includes("ammunition") && w.id !== "dart")))
+    .map(w => option(prefix + "-" + w.id, w.name, [[w.id,1]]));
+}
+
+function weaponPairs(prefix: string, martial: boolean): StartingEquipmentOption[] {
+  const pool = weapons.filter(w => martial ? w.weaponCategory === "martial" : w.weaponCategory === "simple" && !w.properties.includes("ammunition") && w.id !== "dart");
+  const result = pool.flatMap((a,i) => pool.slice(i).filter(b => !(a.id === b.id && a.id === (martial ? "longsword" : "handaxe"))).map(b =>
+    option(prefix + "-" + a.id + "-" + b.id, a.name + " + " + b.name, a.id === b.id ? [[a.id,2]] : [[a.id,1],[b.id,1]])));
+  return martial ? [...pool.filter(w => !["longsword","greatsword"].includes(w.id)).map(w => option(prefix+"-"+w.id+"-shield",w.name+" und Schild",[[w.id,1],["shield",1]])), ...result] : result;
+}
+
 export const startingEquipment:
   StartingEquipmentDefinition[] = [
     {
@@ -48,11 +62,17 @@ export const startingEquipment:
               "Großschwert",
               [["greatsword", 1]],
             ),
+            ...weapons.filter(w => w.weaponCategory === "martial" && !w.properties.includes("ammunition") && !["greataxe","greatsword","zweihandaxt","zweihandschwert","netz"].includes(w.id))
+              .map(w => option("barbarian-primary-"+w.id,w.name,[[w.id,1]])),
           ],
         },
+        { id: "barbarian-secondary", title: "Zweitwaffe", options: [
+          option("barbarian-two-axes","Zwei Handäxte",[["handaxe",2]]),
+          ...weapons.filter(w => w.weaponCategory === "simple" && !["beil","zweihandkeule"].includes(w.id))
+            .map(w => option("barbarian-secondary-"+w.id,w.name,[[w.id,1]])),
+        ] },
       ],
       guaranteedEquipment: [
-        item("handaxe", 2),
         item("javelin", 4),
       ],
       guaranteedPacks: [
@@ -63,9 +83,12 @@ export const startingEquipment:
       classId: "bard",
       choices: [
         {
+          id: "bard-instrument", title:"Musikinstrument", options:["lute","bagpipes","drum","dulcimer","flute","lyre","horn","pan-flute","shawm","viol"].map(id=>option("bard-"+id,getEquipmentById(id)!.name,[[id,1]])) },
+        {
           id: "bard-weapon",
           title: "Waffe",
           options: [
+            ...simpleOptions("bard-weapon",[],false),
             option(
               "bard-rapier",
               "Rapier",
@@ -96,7 +119,6 @@ export const startingEquipment:
         },
       ],
       guaranteedEquipment: [
-        item("lute", 1),
         item("leather", 1),
         item("dagger", 1),
       ],
@@ -125,6 +147,7 @@ export const startingEquipment:
           id: "cleric-armor",
           title: "Rüstung",
           options: [
+            option("cleric-chain-mail","Kettenrüstung",[["chain-mail",1]]),
             option(
               "cleric-scale-mail",
               "Schuppenpanzer",
@@ -141,6 +164,7 @@ export const startingEquipment:
           id: "cleric-secondary",
           title: "Sekundärwaffe",
           options: [
+            ...simpleOptions("cleric-secondary",["spear","light-crossbow"],false),
             option(
               "cleric-crossbow",
               "Leichte Armbrust",
@@ -186,9 +210,10 @@ export const startingEquipment:
           id: "druid-defense",
           title: "Schutz oder Waffe",
           options: [
+            ...simpleOptions("druid-defense",["spear"],false),
             option(
               "druid-shield",
-              "Schild",
+              "Holzschild",
               [["shield", 1]],
             ),
             option(
@@ -202,6 +227,7 @@ export const startingEquipment:
           id: "druid-weapon",
           title: "Nahkampfwaffe",
           options: [
+            ...simpleOptions("druid-weapon",["quarterstaff"],true),
             option(
               "druid-scimitar",
               "Krummsäbel",
@@ -237,8 +263,8 @@ export const startingEquipment:
             ),
             option(
               "fighter-leather",
-              "Lederrüstung",
-              [["leather", 1]],
+              "Lederrüstung, Langbogen und 20 Pfeile",
+              [["leather", 1], ["longbow", 1], ["arrows",20]],
             ),
           ],
         },
@@ -246,6 +272,7 @@ export const startingEquipment:
           id: "fighter-primary",
           title: "Bewaffnung",
           options: [
+            ...weaponPairs("fighter",true),
             option(
               "fighter-longsword-shield",
               "Langschwert und Schild",
@@ -261,8 +288,8 @@ export const startingEquipment:
             ),
             option(
               "fighter-greatsword",
-              "Großschwert",
-              [["greatsword", 1]],
+              "Großschwert und Schild",
+              [["greatsword", 1], ["shield",1]],
             ),
           ],
         },
@@ -312,6 +339,7 @@ export const startingEquipment:
           id: "monk-weapon",
           title: "Waffe",
           options: [
+            ...simpleOptions("monk-weapon",["quarterstaff"],false),
             option(
               "monk-shortsword",
               "Kurzschwert",
@@ -353,6 +381,7 @@ export const startingEquipment:
           id: "paladin-weapons",
           title: "Bewaffnung",
           options: [
+            ...weaponPairs("paladin",true),
             option(
               "paladin-longsword-shield",
               "Langschwert und Schild",
@@ -368,8 +397,8 @@ export const startingEquipment:
             ),
             option(
               "paladin-greatsword",
-              "Großschwert",
-              [["greatsword", 1]],
+              "Großschwert und Schild",
+              [["greatsword", 1], ["shield",1]],
             ),
           ],
         },
@@ -377,6 +406,7 @@ export const startingEquipment:
           id: "paladin-secondary",
           title: "Sekundärwaffen",
           options: [
+            ...simpleOptions("paladin-secondary",["spear"],true),
             option(
               "paladin-javelins",
               "Fünf Wurfspeere",
@@ -435,6 +465,7 @@ export const startingEquipment:
           id: "ranger-weapons",
           title: "Nahkampfwaffen",
           options: [
+            ...weaponPairs("ranger",false),
             option(
               "ranger-shortswords",
               "Zwei Kurzschwerter",
@@ -513,6 +544,8 @@ export const startingEquipment:
           title: "Ausrüstungspaket",
           options: [
             packOption(
+              "rogue-explorer", "Entdeckerpaket", "explorers-pack"),
+            packOption(
               "rogue-burglar",
               "Einbrecherpaket",
               "burglars-pack",
@@ -539,6 +572,7 @@ export const startingEquipment:
           id: "sorcerer-weapon",
           title: "Waffe",
           options: [
+            ...simpleOptions("sorcerer-weapon",["quarterstaff","light-crossbow"],false),
             option(
               "sorcerer-crossbow",
               "Leichte Armbrust",
@@ -596,9 +630,12 @@ export const startingEquipment:
       classId: "warlock",
       choices: [
         {
+          id: "warlock-weapon", title: "Zusätzliche einfache Waffe", options: simpleOptions("warlock-extra") },
+        {
           id: "warlock-ranged",
-          title: "Fernkampfwaffe",
+          title: "Leichte Armbrust oder einfache Waffe",
           options: [
+            ...simpleOptions("warlock-ranged",["shortbow","light-crossbow"],false),
             option(
               "warlock-crossbow",
               "Leichte Armbrust",
@@ -612,7 +649,6 @@ export const startingEquipment:
               "Kurzbogen",
               [
                 ["shortbow", 1],
-                ["arrows", 20],
               ],
             ),
           ],
@@ -652,7 +688,7 @@ export const startingEquipment:
       ],
       guaranteedEquipment: [
         item("leather", 1),
-        item("quarterstaff", 1),
+
         item("dagger", 2),
       ],
       guaranteedPacks: [],
@@ -852,4 +888,12 @@ function packOption(
     title,
     packIds: [packId],
   };
+}
+
+export function getStartingEquipment(draft: {classId?: string; subclassId?: string; ancestryId?: string}) {
+  const config = startingEquipment.find(v => v.classId === draft.classId);
+  if (config?.classId !== "cleric") return config;
+  return {...config, choices:config.choices.map(c=>({...c,options:c.options.filter(o =>
+    (o.id !== "cleric-chain-mail" || ["war-domain","life-domain"].includes(draft.subclassId ?? "")) &&
+    (o.id !== "cleric-warhammer" || draft.subclassId === "war-domain" || draft.ancestryId === "dwarf"))}))};
 }

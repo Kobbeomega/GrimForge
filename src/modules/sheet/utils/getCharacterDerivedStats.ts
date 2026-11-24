@@ -1,20 +1,11 @@
-import {
-  getAbilityModifier,
-  getProficiencyBonus,
-} from "../../../compendium/core";
-
-import {
-  getEquipmentById,
-} from "../../../compendium/equipment";
-
-import type {
-  ArmorItem,
-} from "../../../compendium/equipment";
+import { getProficiencyBonus } from "../../../compendium/core";
 
 import type {
   CharacterArchiveEntry,
   CharacterInventory,
 } from "../../archives/types";
+import { calculateCharacterRules } from "../../../rules";
+import { createCharacterRuleInput } from "../rules/createCharacterRuleInput";
 
 import {
   getPassiveScores,
@@ -34,6 +25,7 @@ import type {
 
 export interface CharacterDerivedStats {
   armorClass: number;
+  speed: number;
 
   /**
    * Bleibt aus Kompatibilitätsgründen bestehen.
@@ -69,14 +61,6 @@ export function getCharacterDerivedStats(
     character.abilityScores
       ?.strength ?? 10;
 
-  const dexterity =
-    character.abilityScores
-      ?.dexterity ?? 10;
-
-  const dexterityModifier =
-    getAbilityModifier(
-      dexterity,
-    );
 
   const proficiencyBonus =
     getProficiencyBonus(
@@ -97,14 +81,7 @@ export function getCharacterDerivedStats(
   const passivePerception =
     passiveScores.perception;
 
-  const equippedArmorPresent = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "armor" && getEquipmentById(item.id)?.category === "armor");
-  const normalArmorClass = calculateArmorClass(inventory, dexterityModifier);
-  const fightingStyle = character.pathChoices?.[`${character.classId}-fighting-style`];
-  const defenseBonus = equippedArmorPresent && fightingStyle === "defense" ? 1 : 0;
-  const armorClass =
-    (character.classId === "sorcerer" && character.subclassId === "draconic-bloodline" && !equippedArmorPresent
-      ? Math.max(normalArmorClass, 13 + dexterityModifier)
-      : normalArmorClass) + defenseBonus;
+  const rules = calculateCharacterRules(createCharacterRuleInput({ ...character, inventory }));
 
   const totalWeight =
     inventory.items.reduce(
@@ -160,7 +137,8 @@ export function getCharacterDerivedStats(
     );
 
   return {
-    armorClass,
+    armorClass: rules.armorClass.armorClass,
+    speed: rules.speed,
 
     passivePerception,
 
@@ -178,119 +156,6 @@ export function getCharacterDerivedStats(
   };
 }
 
-function calculateArmorClass(
-  inventory: CharacterInventory,
-  dexterityModifier: number,
-): number {
-  const equippedDefinitions =
-    inventory.items.flatMap(
-      (inventoryItem) => {
-        if (
-          !inventoryItem.equipped ||
-          inventoryItem.quantity <= 0 ||
-          inventoryItem.category !==
-            "armor"
-        ) {
-          return [];
-        }
-
-        const definition =
-          getEquipmentById(
-            inventoryItem.id,
-          );
-
-        if (
-          !definition ||
-          (
-            definition.category !==
-              "armor" &&
-            definition.category !==
-              "shield"
-          )
-        ) {
-          return [];
-        }
-
-        return [
-          definition,
-        ];
-      },
-    );
-
-  const equippedArmor =
-    equippedDefinitions.find(
-      (definition) =>
-        definition.category ===
-        "armor",
-    );
-
-  const equippedShields =
-    equippedDefinitions.filter(
-      (definition) =>
-        definition.category ===
-        "shield",
-    );
-
-  const baseArmorClass =
-    equippedArmor
-      ? getArmorClassFromArmor(
-          equippedArmor,
-          dexterityModifier,
-        )
-      : 10 +
-        dexterityModifier;
-
-  const shieldBonus =
-    equippedShields.reduce(
-      (
-        sum,
-        shield,
-      ) =>
-        sum +
-        shield.armorClass,
-      0,
-    );
-
-  return Math.max(
-    0,
-    baseArmorClass +
-      shieldBonus,
-  );
-}
-
-function getArmorClassFromArmor(
-  armor: ArmorItem,
-  dexterityModifier: number,
-): number {
-  if (
-    armor.category ===
-    "shield"
-  ) {
-    return armor.armorClass;
-  }
-
-  if (
-    !armor.dexterityModifier
-  ) {
-    return armor.armorClass;
-  }
-
-  const dexterityBonus =
-    typeof armor
-      .maximumDexterityBonus ===
-      "number"
-      ? Math.min(
-          dexterityModifier,
-          armor
-            .maximumDexterityBonus,
-        )
-      : dexterityModifier;
-
-  return (
-    armor.armorClass +
-    dexterityBonus
-  );
-}
 
 function poundsToKilograms(
   pounds: number,

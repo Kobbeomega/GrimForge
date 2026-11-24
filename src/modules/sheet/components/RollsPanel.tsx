@@ -10,6 +10,7 @@ import {
 
 import {
   classes,
+  getSubclassSkillProficiencies,
 } from "../../../compendium/classes";
 
 import {
@@ -71,7 +72,7 @@ export function RollsPanel({
 
   const skillProficiencies =
     new Set<SkillId>(
-      character.skillProficiencies ?? [],
+      [...(character.skillProficiencies ?? []), ...getSubclassSkillProficiencies(character.classId ?? "", character.subclassId, character.level, character.pathChoices)],
     );
 
   const skillExpertise =
@@ -541,3 +542,4 @@ function calculatePassiveSkill({
     featBonus
   );
 }
+

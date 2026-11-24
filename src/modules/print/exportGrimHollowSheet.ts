@@ -2,10 +2,10 @@ import { abilityIds, defaultAbilityScores, formatAbilityModifier } from "../../c
 import { getClassById } from "../../compendium/classes";
 import { getSpellById } from "../../compendium/spells";
 import { getGrantedSubclassSpellIds } from "../../compendium/classes";
-import { getTransformationById } from "../../compendium/transformations";
-import { getActiveTransformationStages, getTransformationStageBoons, getTransformationStageFlaws } from "../../compendium/transformations";
+import { resolveCharacterTransformation, transformationApplicationLabels, transformationGroupLabels } from "../../compendium/transformations/activeRecord";
 import { calculateCharacterRules } from "../../rules";
 import type { CharacterArchiveEntry } from "../archives/types";
+import { makeGrimHollowPlayPdf } from "./grimHollowPlayPdf";
 import { getCharacterInventory } from "../archives/utils/getCharacterInventory";
 import { getCharacterVitals } from "../archives/utils/getCharacterVitals";
 import { createCharacterRuleInput } from "../sheet/rules/createCharacterRuleInput";
@@ -24,6 +24,7 @@ type PageContext = {
   ctx: CanvasRenderingContext2D;
   sx: number;
   sy: number;
+  overflow: Array<[string,string]>;
 };
 
 function safeName(name: string): string {
@@ -61,7 +62,7 @@ function drawTextInRect(
   page: PageContext,
   rect: PdfRect,
   value: unknown,
-  options: { size?: number; align?: CanvasTextAlign; bold?: boolean; multiline?: boolean; valign?: "middle" | "top" } = {},
+  options: { size?: number; align?: CanvasTextAlign; bold?: boolean; multiline?: boolean; valign?: "middle" | "top"; label?: string } = {},
 ): void {
   const text = String(value ?? "").trim();
   if (!text) return;
@@ -91,12 +92,14 @@ function drawTextInRect(
     // when maxWidth is smaller than the natural text width. That made short
     // values such as +1 / -2 and ability scores visibly stretched or squashed.
     // Instead, reduce the font size until the text naturally fits.
-    while (fontSize > 3.2 * page.sy && page.ctx.measureText(text).width > targetWidth) {
+    while (fontSize > 6.2 * page.sy && page.ctx.measureText(text).width > targetWidth) {
       fontSize -= 0.25 * page.sy;
       setFont();
     }
     const tx = align === "left" ? x + 3 * page.sx : align === "right" ? x + width - 3 * page.sx : x + width / 2;
-    page.ctx.fillText(text, tx, yTop + height / 2);
+    const shortened=fitCanvasText(page.ctx,text,targetWidth);
+    if(shortened!==text)page.overflow.push([options.label??"Langer Feldeintrag",text]);
+    page.ctx.fillText(shortened, tx, yTop + height / 2);
   } else {
     const words = text.split(/\s+/);
     const lines: string[] = [];
@@ -110,15 +113,23 @@ function drawTextInRect(
     const lineHeight = fontSize * 1.15;
     const maxLines = Math.max(1, Math.floor(height / lineHeight));
     const visible = lines.slice(0, maxLines);
+    if(lines.length>maxLines || lines.some(line=>page.ctx.measureText(line).width>targetWidth))page.overflow.push([options.label??"Langer Feldeintrag",text]);
     const startY = options.valign === "top"
       ? yTop + lineHeight * 0.75
       : yTop + Math.max(lineHeight / 2, (height - visible.length * lineHeight) / 2 + lineHeight / 2);
     visible.forEach((line, index) => {
       const tx = align === "left" ? x + 3 * page.sx : x + width / 2;
-      page.ctx.fillText(line, tx, startY + index * lineHeight);
+      page.ctx.fillText(fitCanvasText(page.ctx,line,targetWidth), tx, startY + index * lineHeight);
     });
   }
   page.ctx.restore();
+}
+
+function fitCanvasText(ctx:CanvasRenderingContext2D,text:string,width:number) {
+  if(ctx.measureText(text).width<=width)return text;
+  let shortened=text;
+  while(shortened.length && ctx.measureText(shortened+"…").width>width)shortened=shortened.slice(0,-1);
+  return shortened.trimEnd()+"…";
 }
 
 function drawListTopRect(
@@ -145,18 +156,23 @@ function drawListTopRect(
   page.ctx.textAlign = "left";
   page.ctx.textBaseline = "middle";
 
-  visibleLines.slice(0, maxLines).forEach((line, index) => {
+  const shown=visibleLines.length>maxLines?maxLines-1:maxLines;
+  if(visibleLines.length>shown)page.overflow.push(["Weitere Ausrüstung",visibleLines.slice(shown).join("\n")]);
+  const display=visibleLines.length>shown?[...visibleLines.slice(0,shown),"... siehe Anhang"]:visibleLines;
+  display.forEach((line, index) => {
     let fontSize = baseSize;
     const setFont = () => {
       page.ctx.font = `${options.bold ? "600" : "400"} ${fontSize}px ${family}`;
     };
     setFont();
     const targetWidth = Math.max(8, width - 4 * page.sx);
-    while (fontSize > 3.2 * page.sy && page.ctx.measureText(line).width > targetWidth) {
+    while (fontSize > 6.2 * page.sy && page.ctx.measureText(line).width > targetWidth) {
       fontSize -= 0.25 * page.sy;
       setFont();
     }
-    page.ctx.fillText(line, x + 2 * page.sx, y + lineHeight * (index + 0.65));
+    const fitted=fitCanvasText(page.ctx,line,targetWidth);
+    if(fitted!==line)page.overflow.push(["Ausrüstung",line]);
+    page.ctx.fillText(fitted, x + 2 * page.sx, y + lineHeight * (index + 0.78));
   });
 
   page.ctx.restore();
@@ -175,7 +191,6 @@ function drawFeatureListTopRect(
   const y = y0 * page.sy;
   const width = (x1 - x0) * page.sx;
   const height = (y1 - y0) * page.sy;
-  const family = '"Arial Narrow", Arial, sans-serif';
   const left = x + 3 * page.sx;
   const targetWidth = Math.max(12, width - 6 * page.sx);
   const bottom = y + height - 2 * page.sy;
@@ -186,36 +201,15 @@ function drawFeatureListTopRect(
   page.ctx.textAlign = "left";
   page.ctx.textBaseline = "top";
 
+  const size=8 * page.sy, step=size*1.38;
+  page.ctx.font = `600 ${size}px Arial, sans-serif`;
   for (const feature of features) {
-    if (cursorY >= bottom) break;
-
-    const headingSize = 5.2 * page.sy;
-    page.ctx.font = `600 ${headingSize}px ${family}`;
-    const heading = feature.resourceText
-      ? `${feature.name} · ${feature.resourceText}`
-      : feature.name;
-    const headingLines = wrapCanvasText(page.ctx, heading, targetWidth);
-    const headingLineHeight = headingSize * 1.12;
-
-    for (const line of headingLines) {
-      if (cursorY + headingLineHeight > bottom) break;
-      page.ctx.fillText(line, left, cursorY);
-      cursorY += headingLineHeight;
-    }
-
-    const bodySize = 4.45 * page.sy;
-    const bodyLineHeight = bodySize * 1.18;
-    page.ctx.font = `400 ${bodySize}px ${family}`;
-    const bodyLines = wrapCanvasText(page.ctx, feature.description, targetWidth);
-    for (const line of bodyLines) {
-      if (cursorY + bodyLineHeight > bottom) break;
-      page.ctx.fillText(line, left, cursorY);
-      cursorY += bodyLineHeight;
-    }
-
-    cursorY += 1.5 * page.sy;
+    const heading=feature.name+(feature.resourceText?" · "+feature.resourceText:"");
+    const shown=fitCanvasText(page.ctx,heading,targetWidth);
+    if(cursorY+step<=bottom){page.ctx.fillText(shown,left,cursorY);cursorY+=step;}
+    page.overflow.push([heading,feature.description]);
   }
-
+  if(cursorY+step<=bottom)page.ctx.fillText("Details im Anhang",left,cursorY);
   page.ctx.restore();
 }
 
@@ -262,7 +256,7 @@ function drawTextTopRect(
   page: PageContext,
   rect: PdfRect,
   value: unknown,
-  options: { size?: number; align?: CanvasTextAlign; bold?: boolean; multiline?: boolean; valign?: "middle" | "top" } = {},
+  options: { size?: number; align?: CanvasTextAlign; bold?: boolean; multiline?: boolean; valign?: "middle" | "top"; label?: string } = {},
 ): void {
   const [x0, y0, x1, y1] = rect;
   // Template maps are measured directly from the approved 612 x 792 page render.
@@ -298,7 +292,7 @@ function drawValueTopRect(
   setFont();
 
   const targetWidth = Math.max(6, width - 2 * page.sx);
-  while (fontSize > 3.0 * page.sy && page.ctx.measureText(text).width > targetWidth) {
+  while (fontSize > 6.2 * page.sy && page.ctx.measureText(text).width > targetWidth) {
     fontSize -= 0.2 * page.sy;
     setFont();
   }
@@ -311,7 +305,9 @@ function drawValueTopRect(
   // numbers and +/- modifiers from looking vertically shifted inside circles/boxes.
   const visualHeight = ascent + descent;
   const baselineY = y + (height - visualHeight) / 2 + ascent;
-  page.ctx.fillText(text, x + width / 2, baselineY);
+  const fitted=fitCanvasText(page.ctx,text,targetWidth);
+  if(fitted!==text)page.overflow.push(["Langer Zahlenwert",text]);
+  page.ctx.fillText(fitted, x + width / 2, baselineY);
   page.ctx.restore();
 }
 
@@ -340,7 +336,7 @@ function drawRowListTop(
       align: "left",
       bold: false,
     });
-    if (options.circleX && prepared) markCircle(page, options.circleX, y - 5.0, true);
+    if (options.circleX && prepared) markCircle(page, options.circleX, y - 4.1, true);
   });
 }
 
@@ -365,39 +361,36 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
   const classDefinition = character.classId ? getClassById(character.classId) : undefined;
 
   // Header - measured from the approved German template, not estimated from form coordinates.
-  drawTextTopRect(page, [188, 40, 398, 61], character.name, { size: 8.2 });
-  drawTextTopRect(page, [39, 40, 169, 61], `${character.className || ""} ${character.level}`.trim(), { size: 6.4 });
-  drawTextTopRect(page, [401, 40, 558, 61], character.ancestry, { size: 5.8 });
-  drawTextTopRect(page, [39, 82, 169, 101], character.backgroundName, { size: 6.2 });
-  drawTextTopRect(page, [285, 82, 373, 101], character.alignment, { size: 5.8 });
+  drawTextTopRect(page, [201, 38, 399, 66], character.name, { size: 13, label: "Charaktername" });
+  drawTextTopRect(page, [49, 44, 174, 63], `${character.className || ""} ${character.level}`.trim(), { size: 9, label: "Klasse und Stufe" });
+  drawTextTopRect(page, [431, 44, 541, 63], character.ancestry, { size: 9, label: "Abstammung" });
+  drawTextTopRect(page, [49, 84, 174, 103], character.backgroundName, { size: 9, label: "Hintergrund" });
+  drawTextTopRect(page, [325, 87, 409, 107], character.alignment, { size: 9, label: "Gesinnung" });
 
-  // Core combat values.
-  drawValueTopRect(page, [409, 125, 443, 140], vitals.maximumHitPoints, { size: 7.0 });
-  drawValueTopRect(page, [286, 244, 327, 265], formatBonus(rules.initiativeModifier), { size: 8.0 });
-  drawValueTopRect(page, [283, 301, 330, 320], derived.armorClass, { size: 8.4 });
-  drawValueTopRect(page, [282, 388, 333, 408], `${rules.speed} m`, { size: 6.4 });
-  drawValueTopRect(page, [281, 445, 335, 468], classDefinition ? `W${classDefinition.hitDie}` : "", { size: 7.4 });
-  drawValueTopRect(page, [38, 577, 63, 601], rules.passivePerception, { size: 6.6 });
+  // Core combat fields: place glyphs on the clear interior of the original artwork.
+  drawValueTopRect(page, [390, 147, 435, 161], vitals.currentHitPoints, { size: 11 });
+  drawValueTopRect(page, [468, 146, 514, 162], vitals.temporaryHitPoints, { size: 10 });
+  if(character.inspiration)drawValueTopRect(page,[340,181,367,201],"Ja",{size:9});
+  drawValueTopRect(page,[294,474,318,492],character.level,{size:9});
+  drawValueTopRect(page, [415, 127, 438, 135], vitals.maximumHitPoints, { size: 7.0 });
+  drawValueTopRect(page, [292, 242, 320, 255], formatBonus(rules.initiativeModifier), { size: 8.0 });
+  drawValueTopRect(page, [286, 314, 325, 339], derived.armorClass, { size: 8.4 });
+  drawValueTopRect(page, [291, 384, 321, 407], `${rules.speed} m`, { size: 6.4 });
+  drawValueTopRect(page, [291, 442, 322, 469], classDefinition ? `W${classDefinition.hitDie}` : "", { size: 7.4 });
+  drawValueTopRect(page, [36, 582, 60, 602], rules.passivePerception, { size: 6.6 });
   // Proficiency is a fixed character value; inspiration/current resources stay handwritten.
-  drawValueTopRect(page, [236, 165, 275, 185], formatBonus(derived.proficiencyBonus), { size: 6.0 });
+  drawValueTopRect(page, [234, 181, 273, 201], formatBonus(derived.proficiencyBonus), { size: 6.0 });
 
   // Ability blocks on the official sheet use the large rectangle for the RAW
   // ability score and the overlapping circle for the MODIFIER. Earlier export
   // versions had those two values reversed. The rows are also spaced by 50 pt
   // on the approved 612x792 template; using 48 pt made every following ability
   // drift upward and pushed Charisma outside its intended field.
-  const abilityRows: Record<string, { score: PdfRect; modifier: PdfRect }> = {
-    strength:     { score:[34,230.5,62,252.5], modifier:[41,253,62,272] },
-    dexterity:    { score:[34,280.5,62,302.5], modifier:[41,303,62,322] },
-    constitution: { score:[34,330.5,62,352.5], modifier:[41,353,62,372] },
-    intelligence: { score:[34,380.5,62,402.5], modifier:[41,403,62,422] },
-    wisdom:       { score:[34,430.5,62,452.5], modifier:[41,453,62,472] },
-    charisma:     { score:[34,480.5,62,502.5], modifier:[41,503,62,522] },
-  };
-  abilityIds.forEach((id) => {
+  const abilityRows = [230,280,330,380,430,480];
+  abilityIds.forEach((id,index) => {
     const score = scores[id];
-    drawValueTopRect(page, abilityRows[id].score, score, { size: 7.0 });
-    drawValueTopRect(page, abilityRows[id].modifier, formatAbilityModifier(Math.floor((score - 10) / 2)), { size: 5.0 });
+    drawValueTopRect(page, [35,abilityRows[index]+2,60,abilityRows[index]+16], score, { size: 10 });
+    drawValueTopRect(page, [40,abilityRows[index]+20,55,abilityRows[index]+32], formatAbilityModifier(Math.floor((score - 10) / 2)), { size: 7.8 });
   });
 
   // Saving throws: bonuses sit on the short lines; proficiency is marked in the circle.
@@ -407,7 +400,7 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
   };
   const proficientSaves = new Set(classDefinition?.savingThrows ?? []);
   abilityIds.forEach((id) => {
-    drawValueAboveLine(page, saveRows[id].value[0], saveRows[id].value[2], saveRows[id].circle[1], formatBonus(rules.savingThrows[id]), 4.15, false);
+    drawValueAboveLine(page, saveRows[id].value[0], saveRows[id].value[2], saveRows[id].circle[1], formatBonus(rules.savingThrows[id]), 7.0, false);
     markCircle(page, saveRows[id].circle[0], saveRows[id].circle[1], proficientSaves.has(id));
   });
 
@@ -425,7 +418,7 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
   };  rules.skillBonuses.forEach((skill) => {
     const row = skillRows[skill.id];
     if (!row) return;
-    drawValueAboveLine(page, row.value[0] - 1, row.value[2] + 1, row.circle[1], formatBonus(skill.bonus), 4.35, true);
+    drawValueAboveLine(page, row.value[0] - 1, row.value[2] + 1, row.circle[1] + 3, formatBonus(skill.bonus), 6.8, true);
     markCircle(page, row.circle[0], row.circle[1], skill.proficient);
   });
 
@@ -445,7 +438,7 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
         : undefined,
     };
   });
-  drawFeatureListTopRect(page, [84, 397, 272, 666], printableClassFeatures);
+  drawFeatureListTopRect(page, [92, 396, 260, 521], printableClassFeatures);
 
   // Journal areas at the bottom.
   // Ideale / Bindungen / Makel bleiben im Export bewusst frei: die dekorative Fläche ist für Handschrift gedacht.
@@ -454,13 +447,13 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
     ...(character.toolProficiencies ?? []),
     character.languageChoices ? `${character.languageChoices} zusätzliche Sprache${character.languageChoices === 1 ? "" : "n"}` : "",
   ].filter(Boolean).join(" · ");
-  drawTextTopRect(page, [350, 390, 548, 455], toolsAndLanguages, { size: 5.2, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [352, 396, 540, 446], toolsAndLanguages, { size: 5.2, align: "left", multiline: true, bold: false, valign: "top" });
 
   const journal = character.journal;
-  drawTextTopRect(page, [72, 672, 303, 702], cleanExportText(journal?.personality), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
-  drawTextTopRect(page, [309, 672, 548, 702], cleanExportText(journal?.ideals), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
-  drawTextTopRect(page, [72, 707, 303, 737], cleanExportText(journal?.bonds), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
-  drawTextTopRect(page, [309, 707, 548, 737], cleanExportText(journal?.flaws), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [92, 675, 250, 705], cleanExportText(journal?.personality), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [326, 684, 537, 705], cleanExportText(journal?.ideals), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [92, 724, 272, 746], cleanExportText(journal?.bonds), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [331, 724, 537, 748], cleanExportText(journal?.flaws), { size: 5.0, align: "left", multiline: true, bold: false, valign: "top" });
 
   // Equipment & currency. The inventory panel on the official sheet is intentionally
   // free-form, so we render a compact one-line list rather than forcing table columns.
@@ -475,59 +468,56 @@ function populatePage1(page: PageContext, character: CharacterArchiveEntry): voi
   ].filter(Boolean).join(" · ");
   const equipmentLines = [currencyLine, ...inventoryItems].filter(Boolean);
   // The decorative sword occupies the left half of this panel; keep text in the free right column.
-  drawListTopRect(page, [140, 222, 260, 409], equipmentLines, { size: 5.9, bold: false });
+  drawListTopRect(page, [124, 222, 218, 369], equipmentLines, { size: 8, bold: false });
 
   // Attacks & spellcasting table: export up to three equipped weapon attacks using the
   // same calculation engine as the live character sheet.
-  const attacks = getEquippedWeaponAttacks(character, inventory).slice(0, 3);
+  const allAttacks = getEquippedWeaponAttacks(character, inventory);
+  const attacks=allAttacks.slice(0,3);
+  if(allAttacks.length>3) page.overflow.push(["Weitere Angriffe",allAttacks.slice(3).map(a=>[a.name,a.attackBonusLabel,a.damage,a.damageType,a.details].filter(Boolean).join(" · ")).join("\n")]);
   const attackRows = [
-    { name:[348, 475, 393, 488] as PdfRect, bonus:[394, 475, 461, 488] as PdfRect, damage:[462, 475, 549, 488] as PdfRect },
-    { name:[348, 491, 393, 504] as PdfRect, bonus:[394, 491, 461, 504] as PdfRect, damage:[462, 491, 549, 504] as PdfRect },
-    { name:[348, 507, 393, 520] as PdfRect, bonus:[394, 507, 461, 520] as PdfRect, damage:[462, 507, 549, 520] as PdfRect },
+    { name:[350, 478, 398, 488] as PdfRect, bonus:[402, 478, 469, 488] as PdfRect, damage:[473, 478, 538, 488] as PdfRect },
+    { name:[350, 491, 398, 500] as PdfRect, bonus:[402, 491, 469, 500] as PdfRect, damage:[473, 491, 538, 500] as PdfRect },
+    { name:[350, 503, 398, 512] as PdfRect, bonus:[402, 503, 469, 512] as PdfRect, damage:[473, 503, 538, 512] as PdfRect },
   ];
   attacks.forEach((attack, index) => {
     const row = attackRows[index];
-    drawTextTopRect(page, row.name, attack.name, { size: 5.35, align: "left", bold: false });
-    drawValueTopRect(page, row.bonus, attack.attackBonusLabel, { size: 5.6, bold: true });
-    drawTextTopRect(page, row.damage, `${attack.damage} ${attack.damageType}`, { size: 5.25, bold: false });
+    drawTextTopRect(page, row.name, attack.name, { size: 8.5, align: "left", bold: false, label: "Vollständiger Angriffsname" });
+    drawValueTopRect(page, row.bonus, attack.attackBonusLabel, { size: 8.5, bold: true });
+    drawTextTopRect(page, row.damage, `${attack.damage} ${attack.damageType}`, { size: 8.5, bold: false });
   });
 
 }
 
 function populatePage2(page: PageContext, character: CharacterArchiveEntry): void {
-  const transformation = character.transformationId ? getTransformationById(character.transformationId) : undefined;
+  const record=resolveCharacterTransformation(character);
   drawTextTopRect(page, [202, 50, 410, 77], character.name, { size: 10 });
   drawTextTopRect(page, [42, 94, 159, 113], `${character.className || ""} ${character.level}`.trim(), { size: 7.2 });
-  drawTextTopRect(page, [48, 205, 260, 472], cleanExportText(character.journal?.background || character.summary), { size: 5.7, align: "left", multiline: true, bold: false, valign: "top" });
+  drawTextTopRect(page, [45, 204, 207, 465], cleanExportText(character.journal?.background || character.summary), { size: 8.2, align: "left", multiline: true, bold: false, valign: "top", label: "Charaktergeschichte" });
 
   const faction = character.journal?.factions?.[0];
   if (faction) {
     drawTextTopRect(page, [276, 389, 336, 478], `${faction.name}\n${faction.rank}`, { size: 5.5, multiline: true, bold: false });
   }
 
-  if (!transformation) return;
-  const stage = Math.max(0, Math.min(4, character.transformationStage ?? 0));
-  drawTextTopRect(page, [84, 502, 300, 519], transformation.name, { size: 5.4, align: "left", bold: true });
-  drawValueTopRect(page, [365, 502, 420, 519], stage || "", { size: 5.6 });
+  if (!record.name) return;
+  drawTextTopRect(page,[93,507,342,522], record.name,{size:8,align:"left",bold:true});
+  drawValueTopRect(page,[379,507,432,522],record.stage||"",{size:8});
+  if(record.warning)page.overflow.push(["Wandlung",record.warning]);
+  const boons=record.features.filter(f=>f.group==="boon");
+  const flaws=record.features.filter(f=>f.group==="flaw");
+  for(const f of record.features)page.overflow.push([transformationGroupLabels[f.group]+" · "+f.name,transformationApplicationLabels[f.application]+": "+f.description]);
+  const boonRows = [[1,555],[1,574],[2,594],[3,614],[4,632]];
+  const shownBoons = new Set<number>();
+  for(const [level,y] of boonRows){
+    const i=boons.findIndex((b,index)=>b.stage===level && !shownBoons.has(index));
+    if(i>=0){shownBoons.add(i);drawTextTopRect(page,[121,y-4,291,y+7],boons[i].name,{size:8,align:"left",bold:false});}
+  }
+  for(const [index,y] of [555,575,595,615].entries()){
+    const rows=flaws.filter(f=>f.stage===index+1);
+    if(rows[0])drawTextTopRect(page,[354,y-4,548,y+7],rows[0].name,{size:8,align:"left",bold:false});
+  }
 
-  const selected = new Set(character.transformationFeatureIds ?? []);
-  const activeStages = getActiveTransformationStages(transformation.id, stage);
-  const boons = activeStages.flatMap((st) => getTransformationStageBoons(st)
-    .filter((f) => selected.has(f.id)).map((f) => ({ stage: st.stage, name: f.name })));
-  const flaws = activeStages.flatMap((st) => getTransformationStageFlaws(st)
-    .filter((f) => selected.has(f.id)).map((f) => ({ stage: st.stage, name: f.name })));
-
-  const rowY: Record<number, number> = { 1: 558, 2: 580, 3: 601, 4: 622 };
-  boons.slice(0, 4).forEach((item) => {
-    const y = rowY[item.stage];
-    if (!y) return;
-    drawTextTopRect(page, [96, y - 10, 296, y - 1], item.name, { size: 4.7, align: "left", bold: false });
-  });
-  flaws.slice(0, 4).forEach((item) => {
-    const y = rowY[item.stage];
-    if (!y) return;
-    drawTextTopRect(page, [343, y - 10, 553, y - 1], item.name, { size: 4.7, align: "left", bold: false });
-  });
 }
 
 function populatePage3(page: PageContext, character: CharacterArchiveEntry): void {
@@ -538,10 +528,10 @@ function populatePage3(page: PageContext, character: CharacterArchiveEntry): voi
 
   // The official page has the class in the large scroll, then ability / save DC / attack in
   // the rectangle and the two circles. Previous maps had all four shifted one field right.
-  drawTextTopRect(page, [45, 38, 242, 82], character.className, { size: 7.5 });
-  drawValueTopRect(page, [264, 50, 330, 82], derived.spellcasting.abilityId ? abilityLabels[derived.spellcasting.abilityId] : "", { size: 8.5 });
-  drawValueTopRect(page, [378, 47, 432, 83], derived.spellcasting.spellSaveDifficultyClass, { size: 9.5 });
-  drawValueTopRect(page, [472, 47, 526, 83], formatBonus(derived.spellcasting.spellAttackBonus), { size: 9.0 });
+  drawTextTopRect(page, [76, 63, 230, 93], character.className, { size: 7.5 });
+  drawValueTopRect(page, [269, 59, 327, 82], derived.spellcasting.abilityId ? abilityLabels[derived.spellcasting.abilityId] : "", { size: 8.5 });
+  drawValueTopRect(page, [392, 54, 430, 89], derived.spellcasting.spellSaveDifficultyClass, { size: 9.5 });
+  drawValueTopRect(page, [487, 54, 525, 89], formatBonus(derived.spellcasting.spellAttackBonus), { size: 9.0 });
 
   const grantedSpellIds = getGrantedSubclassSpellIds({
     classId: character.classId ?? "",
@@ -561,27 +551,26 @@ function populatePage3(page: PageContext, character: CharacterArchiveEntry): voi
 
   // One spell per printed line. Never join spell names into a paragraph: that caused long
   // strings to cross several lines and circles on the original sheet.
-  const spellRows: Record<number, { ys: number[]; xText: number; xRight: number; circleX?: number }> = {
-    0:{ys:[175,190,203,217,231,245,259,273,286], xText:43, xRight:207},
-    1:{ys:[358,372,386,399,413,427,441,455,469,483,497,510,524], xText:50, xRight:207, circleX:45},
-    2:{ys:[582,595,609,623,637,651,664,678,692,706,720,733,747], xText:50, xRight:207, circleX:45},
-    3:{ys:[191,205,218,232,246,260,273,287,301,315,329,342,356], xText:237, xRight:394, circleX:228},
-    4:{ys:[413,427,441,455,469,482,496,510,523,537,551,565], xText:237, xRight:394, circleX:228},
-    5:{ys:[637,650,664,678,692,705,719,733,747], xText:237, xRight:394, circleX:228},
-    6:{ys:[191,205,218,232,246,260,273,288,301,315], xText:419, xRight:576, circleX:410},
-    7:{ys:[358,372,386,400,414,428,441,455,469,481], xText:419, xRight:576, circleX:410},
-    8:{ys:[526,540,554,567,581,595,608,621], xText:419, xRight:576, circleX:410},
-    9:{ys:[664,678,692,705,719,733,747], xText:419, xRight:576, circleX:410},
-  };
+  const spellRows = [{ys:Array.from({length:8},(_,i)=>190+i*13.85),xText:43,xRight:207,circleX:undefined},
+    {ys:Array.from({length:13},(_,i)=>358.4+i*13.85),xText:52,xRight:207,circleX:45},
+    {ys:Array.from({length:13},(_,i)=>581.8+i*13.85),xText:52,xRight:207,circleX:45},
+    {ys:Array.from({length:13},(_,i)=>191+i*13.85),xText:237,xRight:394,circleX:229},
+    {ys:Array.from({length:13},(_,i)=>413.5+i*13.85),xText:237,xRight:394,circleX:229},
+    {ys:Array.from({length:9},(_,i)=>637+i*13.85),xText:237,xRight:394,circleX:229},
+    {ys:Array.from({length:9},(_,i)=>191+i*13.85),xText:416,xRight:574,circleX:408},
+    {ys:Array.from({length:9},(_,i)=>358.4+i*13.85),xText:416,xRight:574,circleX:408},
+    {ys:Array.from({length:7},(_,i)=>526+i*13.85),xText:416,xRight:574,circleX:408},
+    {ys:Array.from({length:7},(_,i)=>664+i*13.85),xText:416,xRight:574,circleX:408}];
 
   for (let level = 0; level <= 9; level += 1) {
     const config = spellRows[level];
     const spells = selected.filter((item) => item.spell.level === level);
+    for(const item of spells.slice(config.ys.length))page.overflow.push([level===0?"Weitere Zaubertricks":"Weitere Zauber · Grad "+level,item.spell.name+(item.entry.prepared?" · vorbereitet":"")]);
     drawRowListTop(page, spells.slice(0, config.ys.length).map((item, i) => ({
       y: config.ys[i],
       text: item.spell.name,
       prepared: level > 0 ? item.entry.prepared : false,
-    })), config.xText, config.xRight, { size: 5.1, circleX: config.circleX });
+    })), config.xText, config.xRight, { size: 8.1, circleX: config.circleX });
   }
 
   // Slot totals and spent slots. The sheet prints total/used only in each level header.
@@ -589,24 +578,32 @@ function populatePage3(page: PageContext, character: CharacterArchiveEntry): voi
   const slotHeader: Partial<Record<number, { total: PdfRect; spent: PdfRect }>> = {
     1:{total:[72,318,105,330], spent:[139,318,176,330]},
     2:{total:[72,543,105,555], spent:[139,543,176,555]},
-    3:{total:[267,120,300,132], spent:[332,120,372,132]},
+    3:{total:[258,153,282,171], spent:[326,153,375,171]},
     4:{total:[267,373,300,385], spent:[332,373,372,385]},
     5:{total:[267,580,300,592], spent:[332,580,372,592]},
-    6:{total:[450,120,483,132], spent:[514,120,554,132]},
+    6:{total:[438,153,460,171], spent:[509,153,554,171]},
     7:{total:[450,317,483,329], spent:[514,317,554,329]},
     8:{total:[450,478,483,490], spent:[514,478,554,490]},
     9:{total:[450,616,483,628], spent:[514,616,554,628]},
   };
-  Object.entries(derived.spellcasting.spellSlots).forEach(([levelKey, total]) => {
+  const pact = derived.spellcasting.pactSlots;
+  const totals = { ...derived.spellcasting.spellSlots };
+  const used = { ...spent };
+  if (pact) {
+    const grade = pact.slotLevel as keyof typeof totals;
+    totals[grade] = (totals[grade] ?? 0) + pact.slots;
+    used[grade] = (used[grade] ?? 0) + (character.spellcasting?.slots.spentPactSlots ?? 0);
+  }
+  Object.entries(totals).forEach(([levelKey, total]) => {
     const level = Number(levelKey) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
     const rects = slotHeader[level];
     if (!rects || !total) return;
-    drawValueTopRect(page, rects.total, total, { size: 4.2, bold: false });
-    drawValueTopRect(page, rects.spent, spent[level] ?? 0, { size: 4.2, bold: false });
+    drawValueTopRect(page, rects.total, total, { size: 8, bold: true });
+    drawValueTopRect(page, rects.spent, used[level] ?? 0, { size: 8, bold: true });
   });
 }
 
-async function renderPage(url: string, populate?: (page: PageContext) => void): Promise<{ bytes: Uint8Array; width: number; height: number }> {
+async function renderPage(url: string, overflow:PageContext["overflow"] = [], populate?: (page: PageContext) => void): Promise<{ bytes: Uint8Array; width: number; height: number }> {
   const image = await loadImage(url);
   const canvas = document.createElement("canvas");
   canvas.width = image.naturalWidth;
@@ -614,9 +611,50 @@ async function renderPage(url: string, populate?: (page: PageContext) => void): 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas konnte nicht initialisiert werden.");
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-  populate?.({ ctx, sx: canvas.width / PDF_W, sy: canvas.height / PDF_H });
+  populate?.({ ctx, sx: canvas.width / PDF_W, sy: canvas.height / PDF_H, overflow });
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("PDF-Seite konnte nicht erzeugt werden.")), "image/jpeg", 0.96));
   return { bytes: new Uint8Array(await blob.arrayBuffer()), width: canvas.width, height: canvas.height };
+}
+
+async function renderAppendix(name:string,entries:PageContext["overflow"]) {
+  const result: Array<{bytes:Uint8Array;width:number;height:number}>=[];
+  let canvas:HTMLCanvasElement|undefined;
+  let ctx:CanvasRenderingContext2D;
+  let y=0;
+  async function save() {
+    if(!canvas)return;
+    const current=canvas;
+    const blob=await new Promise<Blob>((ok,fail)=>current.toBlob(b=>b?ok(b):fail(new Error("PDF-Anhang fehlgeschlagen")),"image/jpeg",0.96));
+    result.push({bytes:new Uint8Array(await blob.arrayBuffer()),width:current.width,height:current.height});
+  }
+  async function next() {
+    await save();
+    canvas=document.createElement("canvas");canvas.width=1836;canvas.height=2376;
+    const context=canvas.getContext("2d");
+    if(!context)throw new Error("PDF-Anhang konnte nicht erzeugt werden.");
+    ctx=context;
+    ctx.scale(3,3);ctx.fillStyle="white";ctx.fillRect(0,0,612,792);
+    ctx.strokeStyle="#bbb";ctx.strokeRect(32,33,548,722);
+    ctx.fillStyle="#111";ctx.font="bold 17px Georgia";ctx.fillText("Grim Hollow · Anhang",46,62);
+    ctx.font="10px Arial";ctx.fillText(fitCanvasText(ctx,name,455),46,82);ctx.fillText(String(result.length+5),548,739);
+    y=111;
+  }
+  for(const [label,body] of entries){
+    if(!canvas || y+38>719)await next();
+    ctx!.font="bold 11px Arial";
+    for(const line of wrapCanvasText(ctx!,label,510)){
+      if(y+15>720){await next();ctx!.font="bold 11px Arial";}
+      ctx!.fillText(fitCanvasText(ctx!,line,510),46,y);y+=15;
+    }
+    ctx!.font="10px Arial";
+    for(const line of body.split(/\r?\n/).flatMap(p=>wrapCanvasText(ctx!,p,510))){
+      if(y+14>720){await next();ctx!.font="10px Arial";}
+      ctx!.fillText(fitCanvasText(ctx!,line,510),46,y);y+=14;
+    }
+    y+=9;
+  }
+  await save();
+  return result;
 }
 
 function imagePagesPdf(images: Array<{ bytes: Uint8Array; width: number; height: number }>): Uint8Array {
@@ -675,12 +713,14 @@ export function downloadBlankGrimHollowSheet(): void {
 }
 
 export async function buildGrimHollowSheetPdf(character: CharacterArchiveEntry): Promise<Blob> {
+  const overflow: PageContext["overflow"][] = [[],[],[]];
   const pages = await Promise.all([
-    renderPage(TEMPLATE_PAGES[0], (page) => populatePage1(page, character)),
-    renderPage(TEMPLATE_PAGES[1], (page) => populatePage2(page, character)),
-    renderPage(TEMPLATE_PAGES[2], (page) => populatePage3(page, character)),
+    renderPage(TEMPLATE_PAGES[0], overflow[0], (page) => populatePage1(page, character)),
+    renderPage(TEMPLATE_PAGES[1], overflow[1], (page) => populatePage2(page, character)),
+    renderPage(TEMPLATE_PAGES[2], overflow[2], (page) => populatePage3(page, character)),
     renderPage(TEMPLATE_PAGES[3]),
   ]);
+  pages.push(...await renderAppendix(character.name,overflow.flat()));
   const pdf = imagePagesPdf(pages);
   return new Blob([pdf.buffer as ArrayBuffer], { type: "application/pdf" });
 }
@@ -688,4 +728,9 @@ export async function buildGrimHollowSheetPdf(character: CharacterArchiveEntry):
 export async function exportGrimHollowSheet(character: CharacterArchiveEntry): Promise<void> {
   const blob = await buildGrimHollowSheetPdf(character);
   downloadBlob(blob, `${safeName(character.name)}_Grim_Hollow_Charakterbogen_DE.pdf`);
+}
+
+export function exportGrimforgePlayPdf(character: CharacterArchiveEntry): void {
+  const pdf = makeGrimHollowPlayPdf(character);
+  downloadBlob(new Blob([pdf.buffer as ArrayBuffer], { type: "application/pdf" }), `${safeName(character.name)}_GrimForge_Spielakte.pdf`);
 }

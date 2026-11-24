@@ -1,3 +1,4 @@
+import { weaponDamageLabel } from "../../../compendium/equipment";
 import type {
   CharacterAncestry,
 } from "../../../compendium/ancestries";
@@ -40,7 +41,7 @@ function formatPrice(price: number) {
 }
 
 function formatDamage(damage: WeaponItem["damage"]) {
-  return `${damage.dice}W${damage.die} ${damageTypeLabels[damage.type] ?? damage.type}`;
+  return weaponDamageLabel(damage, damageTypeLabels[damage.type] ?? damage.type);
 }
 
 export interface ComparisonRow {

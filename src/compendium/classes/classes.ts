@@ -1,6 +1,7 @@
 import type { AbilityId, AbilityScores } from "../core";
 
 import type { CompendiumEntityBase, CompendiumSource } from "../shared";
+import { monsterHunterFeatures, monsterHunterGuilds } from "./monsterHunter";
 
 export type ClassSource = Extract<
   CompendiumSource,
@@ -35,6 +36,7 @@ export interface ClassFeatureResource {
   id: string;
   name: string;
   amount: ClassResourceAmount;
+  abilityId?: AbilityId;
   recharge: ClassResourceRecharge;
 }
 
@@ -62,6 +64,8 @@ export interface CharacterSubclass extends Omit<
 > {
   source?: ClassSource;
   features?: ClassFeature[];
+  unlockLevel?: number;
+  legacy?: boolean;
 }
 
 export interface CharacterClass extends Omit<CompendiumEntityBase, "source"> {
@@ -431,7 +435,7 @@ export const classes: CharacterClass[] = [
           "Eine düstere Tradition über Verfall, Pilze und den Kreislauf des Lebens.",
         features: [
           { id: "circle-of-spores-1", name: "Sporenhalo", description: "2014-Unterklassenmerkmal: As a reaction when a creature moves into or starts its turn within 10 feet, deal necrotic damage on a failed Constitution save; the die starts at 1d4.", level: 2, kind: "reaction" },
-          { id: "circle-of-spores-2", name: "Symbiotische Entität", description: "2014-Unterklassenmerkmal: As an action, expend Wild Shape to gain temporary hit points, double Halo of Spores damage, and add 1d6 poison damage to melee weapon hits while the effect lasts.", level: 2, kind: "action" },
+          { id: "circle-of-spores-2", name: "Symbiotische Entität", description: "Gib als Aktion eine Anwendung der Tiergestalt aus. Du erhältst 4 temporäre TP pro Druidenstufe, würfelst den Sporenhalo-Würfel ein zweites Mal und verursachst bei Nahkampfwaffentreffern 1W6 nekrotischen Zusatzschaden. Der Effekt endet nach 10 Minuten, beim Verlust dieser temporären TP oder bei erneutem Einsatz der Tiergestalt.", level: 2, kind: "action" },
         ],
       },
     ],
@@ -629,6 +633,7 @@ export const classes: CharacterClass[] = [
       { id: "paladin-divine-smite", name: "Göttliches Niederstrecken", description: "Wenn du mit einer Nahkampfwaffe triffst, kannst du einen Zauberplatz ausgeben, um zusätzlichen gleißenden Schaden zu verursachen; höhere Plätze erhöhen den Schaden.", level: 2, kind: "passive" },
       { id: "paladin-divine-health", name: "Göttliche Gesundheit", description: "Ab Stufe 3 bist du gegen Krankheiten immun.", level: 3, kind: "passive" },
       { id: "paladin-sacred-oath", name: "Heiliger Eid", description: "Auf Stufe 3 legst du deinen Heiligen Eid ab und erhältst dessen erste Merkmale und Optionen für Göttliche Macht fokussieren.", level: 3, kind: "passive" },
+      { id: "paladin-channel-divinity", name: "Göttliche Macht fokussieren", description: "Die Optionen deines Eids teilen sich eine Anwendung. Eine kurze oder lange Rast stellt sie wieder her.", level: 3, kind: "resource", resource: { id: "paladin-channel-divinity-uses", name: "Göttliche Macht fokussieren", amount: 1, recharge: "short-rest" } },
     ],
 
     subclasses: [
@@ -778,58 +783,30 @@ export const classes: CharacterClass[] = [
 
     hitDie: 10,
 
-    primaryAbilities: ["dexterity", "wisdom"],
+    primaryAbilities: ["strength", "dexterity", "intelligence"],
 
-    savingThrows: ["dexterity", "wisdom"],
+    savingThrows: ["dexterity", "intelligence"],
 
     armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
     weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
-    toolProficiencies: ["Alchemistenbedarf"],
+    toolProficiencies: [],
 
     spellcasting: false,
 
-    features: [
-      {
-        id: "monster-hunter-quarry",
-        name: "Gezeichnete Beute",
-        description:
-          "Als Bonusaktion erklärst du eine sichtbare Kreatur zu deiner Beute. Deine Ausbildung hilft dir, ihre Schwächen zu erkennen und sie unerbittlich zu verfolgen.",
-        level: 1,
-        kind: "bonus-action",
-        resource: {
-          id: "monster-hunter-quarry-uses",
-          name: "Gezeichnete Beute",
-          amount: "proficiency-bonus",
-          recharge: "long-rest",
-        },
-      },
-      {
-        id: "monster-hunter-lore",
-        name: "Monsterkunde",
-        description:
-          "Du bist im Erkennen übernatürlicher Kreaturen, ihrer Spuren und typischen Verwundbarkeiten ausgebildet.",
-        level: 1,
-        kind: "passive",
-      },
-      {
-        id: "monster-hunter-prepared-hunter",
-        name: "Vorbereiteter Jäger",
-        description:
-          "Du beherrschst den sicheren Umgang mit Jagdwerkzeugen, Tinkturen und spezialisierten Waffen gegen gefährliche Beute.",
-        level: 1,
-        kind: "passive",
-      },
-    ],
+    features: monsterHunterFeatures,
 
     subclasses: [
+      ...monsterHunterGuilds,
       {
         id: "monster-hunter-beast-slayer",
         name: "Bestienschlächter",
         description:
           "Ein Pfad für Jäger, die körperlich überlegene Ungeheuer durch Ausdauer, Fallen und präzise Gewalt bezwingen.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
       {
         id: "monster-hunter-occult-warden",
@@ -837,6 +814,8 @@ export const classes: CharacterClass[] = [
         description:
           "Ein Pfad gegen Flüche, Geister und fremdartige Mächte, der Wissen mit schützenden Ritualen verbindet.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
       {
         id: "monster-hunter-trophy-bearer",
@@ -844,6 +823,8 @@ export const classes: CharacterClass[] = [
         description:
           "Ein Pfad, auf dem die Überreste besiegter Monster zu Werkzeugen, Warnzeichen und Quellen neuer Stärke werden.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
     ],
 
@@ -1230,6 +1211,7 @@ export function getSubclassUnlockLevel(
   subclassId: string,
 ): number | undefined {
   const subclass = getSubclassById(classId, subclassId);
+  if (subclass?.unlockLevel !== undefined) return subclass.unlockLevel;
   const levels = (subclass?.features ?? [])
     .map((feature) => feature.level)
     .filter((level) => Number.isFinite(level) && level > 0);
@@ -1261,7 +1243,7 @@ const coreLevelMilestoneFeatures: Record<string, ClassFeature[]> = {
   ],
   bard: [
     { id: "bard-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
-    { id: "bard-font-of-inspiration", name: "Quelle der Inspiration", description: "Du erhältst alle verbrauchten Bardischen Inspirationen zurück, wenn du eine kurze oder lange Rast beendest.", level: 5, kind: "passive" },
+    { id: "bard-font-of-inspiration", name: "Quelle der Inspiration", description: "Dein Inspirationswürfel steigt auf W8. Du erhältst alle verbrauchten Bardischen Inspirationen nach einer kurzen oder langen Rast zurück.", level: 5, kind: "passive" },
   ],
   cleric: [
     { id: "cleric-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
@@ -1291,7 +1273,7 @@ const coreLevelMilestoneFeatures: Record<string, ClassFeature[]> = {
   ],
   "monster-hunter": [
     { id: "monster-hunter-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
-    { id: "monster-hunter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "monster-hunter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 11, kind: "passive" },
   ],
   rogue: [
     { id: "rogue-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
@@ -1319,7 +1301,21 @@ export function getClassFeatures(
     ...(coreLevelMilestoneFeatures[classId]?.filter(
       (feature) => feature.level <= level,
     ) ?? []),
-  ];
+  ].map((feature) => {
+    const die = level >= 17 ? "W12" : level >= 10 ? "W10" : level >= 5 ? "W8" : "W6";
+    switch (feature.id) {
+      case "bard-bardic-inspiration":
+        return { ...feature, description: feature.description.replace("W6-Inspirationswürfel", `${die}-Inspirationswürfel`) };
+      case "rogue-sneak-attack":
+        return { ...feature, description: feature.description.replace("1W6 auf Stufe 1–2, 2W6 ab Stufe 3", `${Math.ceil(level / 2)}W6`) };
+      case "monk-martial-arts": {
+        const martialArtsDie = level >= 17 ? "W10" : level >= 11 ? "W8" : level >= 5 ? "W6" : "W4";
+        return { ...feature, description: feature.description.replace("bis Stufe 4 ein W4", `ein ${martialArtsDie}`) };
+      }
+      default:
+        return feature;
+    }
+  });
 }
 
 export function getSubclassFeatures(

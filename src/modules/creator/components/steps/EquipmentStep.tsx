@@ -1,7 +1,8 @@
+import { weaponDamageLabel } from "../../../../compendium/equipment";
 import {
   equipmentPacks,
   getEquipmentById,
-  startingEquipment,
+  getStartingEquipment,
 } from "../../../../compendium/equipment";
 
 import { CodexCard } from "../../../../components/ui/CodexCard";
@@ -30,10 +31,7 @@ export function EquipmentStep({
   onSelectionsChange,
 }: EquipmentStepProps) {
   const configuration =
-    startingEquipment.find(
-      (entry) =>
-        entry.classId === draft.classId,
-    );
+    getStartingEquipment(draft);
 
   if (!draft.classId) {
     return (
@@ -81,8 +79,7 @@ export function EquipmentStep({
           .startingEquipmentSelections
           .some(
             (selection) =>
-              selection.choiceId ===
-              choice.id,
+              selection.choiceId === choice.id && choice.options.some(o => o.id === selection.optionId),
           ),
     ).length;
 
@@ -126,7 +123,12 @@ export function EquipmentStep({
               <h3>{choice.title}</h3>
             </header>
 
-            <div className="creator-card-grid">
+            {choice.options.length > 12 ? <label>{choice.title}
+              <select value={draft.startingEquipmentSelections.find(s => s.choiceId === choice.id)?.optionId ?? ""} onChange={event => selectOption(choice.id,event.target.value)}>
+                <option value="" disabled>Bitte auswählen</option>
+                {choice.options.map(o => <option key={o.id} value={o.id}>{o.title}</option>)}
+              </select>
+            </label> : <div className="creator-card-grid">
               {choice.options.map(
                 (option) => {
                   const selected =
@@ -155,7 +157,7 @@ export function EquipmentStep({
                   );
                 },
               )}
-            </div>
+            </div>}
           </section>
         ),
       )}
@@ -366,7 +368,7 @@ function getEquipmentFacts(
   ];
 
   if (definition.category === "weapon") {
-    const damage = `${definition.damage.dice}W${definition.damage.die} ${formatDamageType(definition.damage.type)}`;
+    const damage = weaponDamageLabel(definition.damage,formatDamageType(definition.damage.type));
     const range = definition.range
       ? definition.range.long
         ? `${definition.range.normal}/${definition.range.long} ft`

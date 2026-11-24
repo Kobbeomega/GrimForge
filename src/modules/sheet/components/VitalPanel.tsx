@@ -8,6 +8,7 @@ import type {
 
 interface VitalPanelProps {
   vitals: CharacterVitals;
+  effectiveSpeed: number;
 
   onDamage: (
     amount: number,
@@ -30,7 +31,7 @@ interface VitalPanelProps {
   hitDie?: number;
   totalHitDice: number;
   spentHitDice: number;
-  onUseHitDie: () => void;
+  onUseHitDie: (rolled: number) => void;
   inspiration: boolean;
   onToggleInspiration: () => void;
 }
@@ -41,6 +42,7 @@ type VitalAction =
 
 export function VitalPanel({
   vitals,
+  effectiveSpeed,
   onDamage,
   onHeal,
   onTemporaryHitPointsChange,
@@ -54,6 +56,7 @@ export function VitalPanel({
   inspiration,
   onToggleInspiration,
 }: VitalPanelProps) {
+  const [rolledHitDie, setRolledHitDie] = useState(1);
   const [customAmount, setCustomAmount] =
     useState(1);
 
@@ -514,7 +517,7 @@ export function VitalPanel({
 
         <EditableVital
           abbreviation="BEW"
-          label="Bewegung"
+          label="Grundbewegung"
           value={vitals.speed}
           suffix="m"
           minimum={0}
@@ -533,14 +536,21 @@ export function VitalPanel({
             })
           }
         />
+        <p>Aktuelle Bewegung mit Ausrüstung und Boni: <strong>{effectiveSpeed} m</strong></p>
       </section>
 
       <section className="session-reserves" aria-label="Reserven und Inspiration">
         <div className="session-reserve-card">
           <span>Trefferwürfel</span>
           <strong>{Math.max(0, totalHitDice - spentHitDice)} / {totalHitDice} {hitDie ? `W${hitDie}` : ""}</strong>
-          <button type="button" onClick={onUseHitDie} disabled={!hitDie || spentHitDice >= totalHitDice || vitals.currentHitPoints >= vitals.maximumHitPoints}>
-            Trefferwürfel verwenden
+          <label className="gf-manual-hit-die">Würfelergebnis (1–{hitDie ?? "?"})
+            <input type="number" inputMode="numeric" min={1} max={hitDie ?? 1} step={1}
+              value={rolledHitDie} onChange={(event) => setRolledHitDie(Number(event.target.value))}
+              disabled={!hitDie || spentHitDice >= totalHitDice || vitals.currentHitPoints >= vitals.maximumHitPoints}/>
+          </label>
+          <button type="button" onClick={() => onUseHitDie(rolledHitDie)}
+            disabled={!hitDie || !Number.isInteger(rolledHitDie) || rolledHitDie < 1 || rolledHitDie > hitDie || spentHitDice >= totalHitDice || vitals.currentHitPoints >= vitals.maximumHitPoints}>
+            Ergebnis anwenden
           </button>
         </div>
         <div className="session-reserve-card">

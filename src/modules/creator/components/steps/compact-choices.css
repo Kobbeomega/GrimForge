@@ -1,0 +1,51 @@
+.creator-section .creator-class-dossier-grid,
+.creator-section .creator-dossier-grid--backgrounds,
+.creator-section .ancestry-reforged__selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  align-items: start;
+  gap: var(--space-sm);
+}
+
+.gf-choice {
+  min-width: 0;
+  background: var(--color-surface);
+  border: var(--border-thin);
+}
+
+.gf-choice[data-selected="true"] {
+  border-color: var(--color-primary-light);
+}
+
+.gf-choice__pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: 3.6rem;
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 0;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gf-choice__pick:hover { background: var(--color-surface-light); }
+.gf-choice__pick:focus-visible,
+.gf-choice__details summary:focus-visible {
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: -2px;
+}
+
+.gf-choice__copy { display: grid; gap: var(--space-xs); min-width: 0; overflow-wrap: anywhere; }
+.gf-choice__copy small { color: var(--color-text-muted); }
+.gf-choice__state { flex: none; color: var(--color-primary-light); font-size: .75rem; }
+.gf-choice__details { border-top: var(--border-thin); padding: 0 var(--space-md); min-width: 0; }
+.gf-choice__details summary { cursor: pointer; padding: var(--space-sm) 0; color: var(--color-text-muted); font-size: .86rem; }
+.gf-choice__details[open] { padding-bottom: var(--space-md); }
+.gf-choice__details > :not(summary) { margin-top: var(--space-sm); }
+.creator-section .ancestry-choice-card { min-height: 0; padding: var(--space-sm); gap: var(--space-xs); }
+.creator-section .ancestry-choice-card__facts { gap: var(--space-xs); }
