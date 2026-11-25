@@ -11986,6 +11986,7 @@ padding:1.25rem;
   grid-template-columns:
     minmax(120px, 0.8fr)
     minmax(220px, 2fr)
+    auto
     auto;
   align-items: center;
   gap: 0.75rem;
@@ -12038,6 +12039,25 @@ padding:1.25rem;
 
 .compact-spell-row__values strong {
   color: var(--color-primary-light);
+}
+
+.compact-spell-row__values .compact-spell-row__fact,
+.compact-spell-row__values .compact-spell-row__flag {
+  padding: .18rem .32rem;
+  border: 1px solid rgba(var(--accent-rgb), .2);
+  background: rgba(0, 0, 0, .16);
+}
+
+.compact-spell-row__values .compact-spell-row__flag {
+  color: var(--color-primary-light);
+  font-weight: 700;
+}
+
+.compact-spell-row__values .compact-spell-row__effect {
+  flex-basis: 100%;
+  color: var(--color-paper-dark);
+  font-size: .58rem;
+  line-height: 1.35;
 }
 
 .compact-spell-row__prepared {

@@ -35,7 +35,7 @@ export default defineConfig({
         orientation: "any",
 
         background_color: "#09090b",
-        theme_color: "#17111f",
+        theme_color: "#231017",
 
         categories: [
           "games",

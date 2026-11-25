@@ -5,6 +5,8 @@ import type {
 } from "./types";
 
 import { sourceSpellRulesLevel0To3 } from "../../content/phase1/spellRulesLevel0To3";
+import { sourceSpellRulesLevel4To5 } from "../../content/srd/spellRulesLevel4To5";
+import { grimHollowSpellRulesLevel4To5 } from "../../content/grimHollow/spellRulesLevel4To5";
 import { abilityLabels } from "../core";
 import { cleanSpellRule, readExplicitSpellMechanics, spellOverrides } from "./spellMechanics";
 
@@ -1333,19 +1335,23 @@ function parseSourceComponents(value: string): SpellComponents {
   };
 }
 
-const sourceRuleById = new Map<string, (typeof sourceSpellRulesLevel0To3)[number]>(
-  sourceSpellRulesLevel0To3.map((spell) => [spell.id, spell]),
-);
+const sourceSpellRules = [
+  ...sourceSpellRulesLevel0To3,
+  ...sourceSpellRulesLevel4To5,
+  ...grimHollowSpellRulesLevel4To5,
+];
+type SourceSpellRule = (typeof sourceSpellRules)[number];
+const sourceRuleById = new Map<string, SourceSpellRule>(sourceSpellRules.map((spell) => [spell.id, spell]));
 
 const curatedSpellIds = new Set(curatedSpells.map((spell) => spell.id));
 
-const importedSpells: SpellDefinition[] = sourceSpellRulesLevel0To3
+const importedSpells: SpellDefinition[] = sourceSpellRules
   .filter((spell) => !curatedSpellIds.has(spell.id))
   .map((spell) => ({
     id: spell.id,
     name: spell.name,
-    level: spell.level,
-    school: spell.school,
+    level: spell.level as SpellDefinition["level"],
+    school: spell.school as SpellDefinition["school"],
     castingTime: spell.castingTime,
     range: spell.range,
     components: parseSourceComponents(spell.components),
@@ -1370,7 +1376,7 @@ function applySpellMechanics(spell: SpellDefinition): SpellDefinition {
     scaling: spell.scaling ?? mechanics.scaling,
     ...(source ? { castingTime:spellFact(source.castingTime), range:spellFact(source.range), duration:spellFact(source.duration), components: parseSourceComponents(source.components) } : {}),
     sourceLabel: source?.source,
-    sourcePage: source?.sourcePage,
+    sourcePage: source && "sourcePage" in source ? source.sourcePage : undefined,
     mechanicsReview: override ? "checked" : "source-excerpt",
     ...(rulesText && rulesText !== spell.description ? { rulesText } : {}),
     higherLevels: spell.higherLevels || higherLevels || undefined,

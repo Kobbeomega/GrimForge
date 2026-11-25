@@ -11,7 +11,17 @@ import { getSpellSelectionRules, validateSpellSelection } from "../creator/utils
 
 const blastInvocations = ["agonizing-blast", "eldritch-spear", "repelling-blast"];
 
-export const MAX_LEVEL_UP_LEVEL = 5;
+export const MAX_LEVEL_UP_LEVEL = 10;
+
+const abilityScoreImprovementLevels: Record<string, number[]> = {
+  fighter: [4, 6, 8],
+  rogue: [4, 8, 10],
+};
+
+/** Klassenstufen mit einer Attributswerterhöhung nach den 2014er Klassenprogressionen. */
+export function isAbilityScoreImprovementLevel(classId: string, level: number): boolean {
+  return (abilityScoreImprovementLevels[classId] ?? [4, 8]).includes(level);
+}
 export interface LevelUpDraft {
   fromLevel: number;
   subclassId: string;
@@ -49,7 +59,7 @@ export function createLevelUpDraft(character: CharacterArchiveEntry): LevelUpDra
     pathChoices: structuredClone(creatorDraft.pathChoices),
     hitPointMode: "average",
     hitDieRoll: Math.floor((getClassById(character.classId ?? "")?.hitDie ?? 8) / 2) + 1,
-    abilityScoreMode: character.level + 1 === 4 ? "increase" : "none",
+    abilityScoreMode: isAbilityScoreImprovementLevel(character.classId ?? "", character.level + 1) ? "increase" : "none",
     abilityScoreIncreases: {},
     featId: "",
     featChoices: structuredClone(character.featChoices ?? {}),
@@ -108,7 +118,9 @@ export function previewLevelUp(character: CharacterArchiveEntry, draft: LevelUpD
   const maximumHitPoints = vitals.maximumHitPoints + getLevelUpHitPointGain(character, draft, constitution);
   const oldInitiative = getAbilityModifier(character.abilityScores?.dexterity ?? 10) +
     (character.classId === "ranger" && character.subclassId === "gloom-stalker" && character.level >= 3
-      ? getAbilityModifier(character.abilityScores?.wisdom ?? 10) : 0);
+      ? getAbilityModifier(character.abilityScores?.wisdom ?? 10) : 0) +
+    (character.classId === "monster-hunter" && character.subclassId === "monster-hunter-trapper-guild" && character.level >= 7
+      ? getAbilityModifier(character.abilityScores?.intelligence ?? 10) : 0);
   const initiativeModifier = vitals.initiativeModifier + (mapped.vitals?.initiativeModifier ?? oldInitiative) - oldInitiative;
   const spellRules = getSpellSelectionRules({ classId: character.classId ?? "", subclassId: draft.subclassId, level, abilityScores: mapped.abilityScores ?? defaultAbilityScores, pathChoices: draft.pathChoices });
   const spellcasting = structuredClone(draft.spellcasting);
@@ -152,15 +164,15 @@ export function validateLevelUp(character: CharacterArchiveEntry, draft: LevelUp
   if (!Number.isInteger(character.level) || character.level < 1 || level > MAX_LEVEL_UP_LEVEL) return [`Der aktuelle Regelumfang unterstützt Aufstiege bis Stufe ${MAX_LEVEL_UP_LEVEL}.`];
   if (draft.fromLevel !== character.level) errors.push("Die Charakterstufe hat sich geändert. Öffne den Aufstieg erneut.");
   if (draft.hitPointMode === "roll" && (!Number.isInteger(draft.hitDieRoll) || draft.hitDieRoll < 1 || draft.hitDieRoll > definition.hitDie)) errors.push(`Trage ein Würfelergebnis von 1 bis ${definition.hitDie} ein.`);
-  if (level === 4) {
-    if (draft.abilityScoreMode === "none") errors.push("Stufe 4 benötigt eine Attributswerterhöhung oder ein Talent.");
+  if (isAbilityScoreImprovementLevel(classId, level)) {
+    if (draft.abilityScoreMode === "none") errors.push(`Stufe ${level} benötigt eine Attributswerterhöhung oder ein Talent.`);
     if (draft.abilityScoreMode === "increase") {
       const baseScores = { ...defaultAbilityScores, ...character.abilityScores };
       const entries = Object.entries(draft.abilityScoreIncreases)
         .filter(([abilityId, increase]) => isAbilityId(abilityId) && Number.isFinite(increase) && Math.floor(increase ?? 0) > 0)
         .map(([abilityId, increase]) => [abilityId as AbilityId, Math.floor(increase ?? 0)] as const);
       const total = entries.reduce((sum, [, increase]) => sum + increase, 0);
-      if (total !== 2) errors.push("Verteile auf Stufe 4 genau 2 Attributspunkte.");
+      if (total !== 2) errors.push(`Verteile auf Stufe ${level} genau 2 Attributspunkte.`);
       if (entries.some(([, increase]) => increase > 2)) errors.push("Ein Attribut kann durch diesen Aufstieg höchstens um 2 steigen.");
       if (entries.some(([abilityId, increase]) => baseScores[abilityId] + increase > 20)) errors.push("Attributswerte dürfen durch den Aufstieg nicht über 20 steigen.");
     }

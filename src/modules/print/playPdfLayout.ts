@@ -74,6 +74,7 @@ export class PlayPdf {
     for(let y=this.y+27;y<Math.min(this.y+65,bottom);y+=17)this.line(y);
   }
   private ensure(space:number){if(this.y+space>bottom)this.page();}
+  keepTogether(space:number){this.ensure(space);}
   title(value:string) {
     for(const line of wrap(value,25,width-2*margin-16)){this.ensure(36);this.panel(margin,this.y,width-2*margin,32,6,paper);this.text(line,margin+9,this.y+23,25,true,true);this.y+=36;}
   }
@@ -107,6 +108,25 @@ export class PlayPdf {
         this.panel(x-8,this.y+1,w-5,rowHeight-3,4);
         c.label.forEach((l,j)=>this.text(l,x,this.y+10+11*j,9));
         c.value.forEach((v,j)=>this.text(v,x,this.y+12+labelLines*11+14*j,11,true));
+      });
+      this.y+=rowHeight;
+    }
+  }
+  metrics(entries:Array<[string,string,string?]>,columns=3) {
+    const w=(width-2*margin)/columns;
+    const rowHeight=55;
+    for(let start=0;start<entries.length;start+=columns){
+      const line=entries.slice(start,start+columns);
+      this.ensure(rowHeight);
+      line.forEach(([label,value,note],i)=>{
+        const x=margin+i*w;
+        this.panel(x,this.y+1,w-5,rowHeight-4,4,paper);
+        this.text(label.toUpperCase(),x+8,this.y+12,7.5,true);
+        this.text(value,x+8,this.y+32,15,true,true);
+        if(note){
+          const detail=wrap(note,7.5,w-16).slice(0,2);
+          detail.forEach((str,j)=>this.text(str,x+8,this.y+43+j*8,7.5));
+        }
       });
       this.y+=rowHeight;
     }

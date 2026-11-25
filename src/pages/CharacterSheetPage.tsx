@@ -538,16 +538,18 @@ export function CharacterSheetPage({
 
         <div className="sheet-toolbar__actions">
           <GrimButton type="button" disabled={levelUpOpen || character.level >= MAX_LEVEL_UP_LEVEL || !getClassById(character.classId ?? "")}
-            title={character.level >= MAX_LEVEL_UP_LEVEL ? "Der aktuelle Regelumfang reicht bis Stufe 5." : "Nächste Charakterstufe vorbereiten"}
+            title={character.level >= MAX_LEVEL_UP_LEVEL ? `Der aktuelle Regelumfang reicht bis Stufe ${MAX_LEVEL_UP_LEVEL}.` : "Nächste Charakterstufe vorbereiten"}
             onClick={() => { setLevelUpNotice(""); setLevelUpOpen(true); }}>
-            {character.level >= MAX_LEVEL_UP_LEVEL ? "Stufe 5 erreicht" : "Level-up"}
+            {character.level >= MAX_LEVEL_UP_LEVEL ? `Stufe ${MAX_LEVEL_UP_LEVEL} erreicht` : "Level-up"}
+          </GrimButton>
+          <GrimButton type="button" onClick={() => exportGrimforgePlayPdf(character)}>
+            Spielakte (A4)
           </GrimButton>
           <details className="sheet-export">
-            <summary>Export &amp; Druck</summary>
+            <summary>Weitere Exporte</summary>
             <div className="sheet-export__actions">
               <GrimButton type="button" onClick={() => exportSingleCharacter(character)}>Akte exportieren</GrimButton>
               <small><strong>Datensicherung:</strong> Der Charakter wird im Browser gespeichert. Regelmäßig „Akte exportieren“ nutzen – besonders vor Updates oder Browserwechseln.</small>
-              <GrimButton type="button" onClick={() => exportGrimforgePlayPdf(character)}>GrimForge-Spielakte (A4)</GrimButton>
               <GrimButton type="button" onClick={() => void exportGrimHollowSheet(character)}>Grim-Hollow-Original (PDF)</GrimButton>
               <GrimButton type="button" onClick={downloadBlankGrimHollowSheet}>Leerer Bogen</GrimButton>
               <GrimButton type="button" onClick={() => window.print()}>Charakter drucken</GrimButton>
@@ -652,6 +654,8 @@ export function CharacterSheetPage({
               }
               onNavigate={setActiveSection}
               onToggleCondition={toggleCondition}
+              onSpendClassResource={handleSpendClassResource}
+              onRestoreClassResource={handleRestoreClassResource}
               deathSaves={deathSaves}
               exhaustionLevel={exhaustionLevel}
               onMarkDeathSave={handleMarkDeathSave}
@@ -771,6 +775,8 @@ interface CharacterOverviewProps {
   onNavigate: (section: CharacterSheetSection) => void;
 
   onToggleCondition: (conditionId: string) => void;
+  onSpendClassResource: (resourceId: string, maximum: number) => void;
+  onRestoreClassResource: (resourceId: string) => void;
   deathSaves: DeathSaves;
   exhaustionLevel: number;
   onMarkDeathSave: (type: "success" | "failure") => void;
@@ -793,6 +799,8 @@ function CharacterOverview({
   rulesSection,
   onNavigate,
   onToggleCondition,
+  onSpendClassResource,
+  onRestoreClassResource,
   deathSaves,
   exhaustionLevel,
   onMarkDeathSave,
@@ -813,6 +821,8 @@ function CharacterOverview({
         onLongRest={onLongRest}
         onNavigate={onNavigate}
         onToggleCondition={onToggleCondition}
+        onSpendClassResource={onSpendClassResource}
+        onRestoreClassResource={onRestoreClassResource}
       />
 
       {vitals.currentHitPoints === 0 ?

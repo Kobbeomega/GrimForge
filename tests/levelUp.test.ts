@@ -8,13 +8,13 @@ import { resolveCharacterTransformation } from "../src/compendium/transformation
 import { transformations, getTransformationStageAutomaticFeatures } from "../src/compendium/transformations";
 import { TransformationPanel } from "../src/modules/sheet/components/TransformationPanel";
 import { mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
-import { classes, getCharacterClassFeatures, getCharacterPathChoices, getClassSubclassUnlockLevel, getGrantedSubclassSpellIds, getSubclassSkillProficiencies, getSubclassUnlockLevel, subclassSpellPackages } from "../src/compendium/classes";
+import { classes, getCharacterClassFeatures, getCharacterPathChoices, getClassSubclassUnlockLevel, getGrantedSubclassSpellIds, getSubclassSkillProficiencies, getSubclassSpellcastingProfile, getSubclassUnlockLevel, subclassSpellPackages } from "../src/compendium/classes";
 import { backgrounds } from "../src/compendium/backgrounds";
 import { getSpellsForClass, getSpellById, spells } from "../src/compendium/spells";
 import { getSpellDisplayValues } from "../src/modules/sheet/utils/getSpellDisplayValues";
 import { sourceSpellsLevel0To3 } from "../src/content/phase1/spellsLevel0To3";
 import { defaultAbilityScores } from "../src/compendium/core";
-import { createLevelUpDraft, previewLevelUp, validateLevelUp, applyLevelUp, type LevelUpDraft } from "../src/modules/level-up/levelUp";
+import { createLevelUpDraft, previewLevelUp, validateLevelUp, applyLevelUp, isAbilityScoreImprovementLevel, type LevelUpDraft } from "../src/modules/level-up/levelUp";
 import { getSpellSelectionRules, validateSpellSelection } from "../src/modules/creator/utils/getSpellSelectionRules";
 import { getSpellcastingStats } from "../src/modules/sheet/utils/getSpellcastingStats";
 import { createCharacterRuleInput } from "../src/modules/sheet/rules/createCharacterRuleInput";
@@ -78,7 +78,7 @@ test("Altakte ohne Historie: maximale, fehlende und temporäre TP sowie Todesret
   assert.deepEqual(edited.deathSaves,c.deathSaves);
   assert.deepEqual(edited.conditionIds,c.conditionIds); assert.equal(edited.exhaustionLevel,3);
   const pdf=new TextDecoder().decode(makeGrimHollowPlayPdf(edited));
-  for(const value of ["Erfolge: 1/3 · Fehlschläge: 2/3","Stufe 3 / 6"])
+  for(const value of ["Erfolge: 1/3 · Fehlschläge: 2/3","3 / 6"])
     assert.ok(pdf.includes(Buffer.from(value,"latin1").toString("hex")));
 });
 
@@ -316,7 +316,7 @@ test("Zaubersonderfälle: drei Geschosse, zwei Strahlen, sechs Schadensarten, al
   assert.deepEqual(migrateCharacterArchiveEntry(c).character.spellcasting!.spellIds,[{spellId:"hunter-s-mark",prepared:true}]);
 });
 
-for (const cls of classes) test(cls.name + ": Erstellung, Aufstieg 1–5 und Druck aller Katalog-Unterklassen", () => {
+for (const cls of classes) test(cls.name + ": Erstellung, Aufstieg 1–10 und Druck aller Katalog-Unterklassen", () => {
   for (const sub of cls.subclasses.filter(sub => !sub.legacy)) {
     const d=createEmptyCharacterDraft("Audit"); d.identity.name="Auditfigur"; d.classId=cls.id; d.ancestryId="human"; d.backgroundId=backgrounds[0].id;
     d.baseAbilities={strength:12,dexterity:16,constitution:14,intelligence:14,wisdom:14,charisma:14};
@@ -327,7 +327,7 @@ for (const cls of classes) test(cls.name + ": Erstellung, Aufstieg 1–5 und Dru
     const first=complete({...seed,level:0},{...createLevelUpDraft(seed),subclassId:d.subclassId,pathChoices:{},spellcasting:d.spellcasting},true);
     d.pathChoices=first.pathChoices; d.spellcasting=first.spellcasting;
     let c=mapDraftToArchiveEntry(d);
-    for (let level=1;level<=5;level++) {
+    for (let level=1;level<=10;level++) {
       if(level>1){const draft=createLevelUpDraft(c); if(unlock===level)draft.subclassId=sub.id;
         c=applyLevelUp(c,complete(c,draft,true));}
       c=migrateCharacterArchiveEntry(JSON.parse(JSON.stringify(c))).character;
@@ -402,14 +402,15 @@ function complete(character: CharacterArchiveEntry, draft: LevelUpDraft, fillGro
   const classId = character.classId!;
   const cls = classes.find((entry) => entry.id === classId)!;
   if (!draft.subclassId && (getClassSubclassUnlockLevel(classId) ?? Infinity) <= level) draft.subclassId = cls.subclasses[0].id;
-  if (level === 4 && draft.abilityScoreMode === "increase" && Object.keys(draft.abilityScoreIncreases).length === 0) {
+  if (isAbilityScoreImprovementLevel(classId, level) && draft.abilityScoreMode === "increase" && Object.keys(draft.abilityScoreIncreases).length === 0) {
     draft.abilityScoreIncreases = { strength: 2 };
   }
   // Iterate because a choice may unlock a dependent choice (e.g. Pact of the Tome).
   for (let pass = 0; pass < 3; pass++) {
     for (const choice of getCharacterPathChoices(classId, draft.subclassId, level, draft.pathChoices)) {
       const existing = draft.pathChoices[choice.id];
-      if (existing && (!fillGrowingChoices || !Array.isArray(existing) || existing.length === choice.choose)) continue;
+      const existingValues = Array.isArray(existing) ? existing : existing ? [existing] : [];
+      if (existing && (!fillGrowingChoices || existingValues.length === choice.choose)) continue;
       const options = choice.options.filter((option) =>
         (!choice.id.endsWith("-expertise") || character.skillProficiencies?.includes(option.id as never)) &&
         (choice.id !== "lore-bonus-skills" || !character.skillProficiencies?.includes(option.id as never)));
@@ -484,7 +485,7 @@ test("roll boundaries, fractional and empty inputs, minimum HP", () => {
   assert.equal(applyLevelUp(character, draft).vitals!.maximumHitPoints, 13);
 });
 
-test("subclass required for 2→3; level 5 is final for now", () => {
+test("subclass required for 2→3; level 10 is the supported ceiling", () => {
   const character = fixture("fighter", 2);
   const draft = createLevelUpDraft(character);
   assert.throws(() => applyLevelUp(character, draft), /Unterklasse/);
@@ -494,14 +495,17 @@ test("subclass required for 2→3; level 5 is final for now", () => {
   const levelFour = applyLevelUp(next, complete(next, createLevelUpDraft(next)));
   const levelFive = applyLevelUp(levelFour, complete(levelFour, createLevelUpDraft(levelFour)));
   assert.equal(levelFive.level, 5);
-  assert.throws(() => applyLevelUp(levelFive, createLevelUpDraft(levelFive)), /bis Stufe 5/);
+  let levelTen = levelFive;
+  while (levelTen.level < 10) levelTen = applyLevelUp(levelTen, complete(levelTen, createLevelUpDraft(levelTen), true));
+  assert.equal(levelTen.level, 10);
+  assert.throws(() => applyLevelUp(levelTen, createLevelUpDraft(levelTen)), /bis Stufe 10/);
   assert.throws(() => applyLevelUp({ ...character, level: 1 }, draft), /geändert/);
 });
 
 test("jede reguläre Unterklasse lässt sich bei ihrer Freischaltung übernehmen und erneut laden", () => {
   for (const cls of classes) for (const sub of cls.subclasses) {
     const unlock = getSubclassUnlockLevel(cls.id, sub.id);
-    if (sub.legacy || !unlock || unlock === 1 || unlock > 5) continue;
+    if (sub.legacy || !unlock || unlock === 1 || unlock > 10) continue;
     const before = fixture(cls.id, unlock - 1);
     const draft = complete(before, { ...createLevelUpDraft(before), subclassId: sub.id });
     const errors = validateLevelUp(before, draft);
@@ -667,7 +671,7 @@ test("level 4 Wizard uses the new Intelligence score for spell preparation", () 
   assert.equal(applyLevelUp(character, draft).abilityScores?.intelligence, 12);
 });
 
-test("subclass spell packages through level 5 resolve to catalog entries", () => {
+test("subclass spell packages through level 10 resolve to catalog entries", () => {
   for (const pack of subclassSpellPackages) {
     for (const spellId of [...Object.values(pack.grantedByLevel ?? {}).flat(), ...Object.values(pack.expandedByLevel ?? {}).flat()]) {
       assert.ok(getSpellById(spellId), `${pack.subclassId}: ${spellId}`);
@@ -675,6 +679,29 @@ test("subclass spell packages through level 5 resolve to catalog entries", () =>
   }
   const paladin = resolveCharacterClassResources({ classId: "paladin", subclassId: "oath-of-devotion", level: 3, abilityScores: defaultAbilityScores });
   assert.equal(paladin.find((resource) => resource.id === "paladin-channel-divinity-uses")?.maximum, 1);
+});
+
+test("Grim Hollow: alle 40 Unterklassenpfade und Zauber bis Grad 5 sind spielbar verdrahtet", () => {
+  const grimHollowSubclasses = classes.flatMap((characterClass) =>
+    characterClass.subclasses.filter((subclass) => characterClass.id !== "monster-hunter" && subclass.source === "grim-hollow-2025" && !subclass.legacy)
+      .map((subclass) => ({ classId: characterClass.id, subclass })),
+  );
+  assert.equal(grimHollowSubclasses.length, 36);
+  assert.equal(classes.find((entry) => entry.id === "monster-hunter")?.subclasses.filter((subclass) => !subclass.legacy).length, 4);
+  for (const { classId, subclass } of grimHollowSubclasses) {
+    assert.ok(subclass.features.some((feature) => feature.level <= 10), `${classId}: ${subclass.id}`);
+    assert.ok(subclass.features.every((feature) => feature.level <= 10), `${subclass.id}: Merkmal oberhalb Stufe 10`);
+  }
+  for (const id of ["circle-of-scarlet", "dark-sacrament", "ride-the-lightning", "greater-animate-dead", "incite-riot", "investiture-of-venom", "little-death", "magic-mirror", "mortality", "spirit-swarm"]) {
+    const definition = getSpellById(id);
+    assert.ok(definition, id);
+    assert.ok(definition!.level === 4 || definition!.level === 5, id);
+    assert.ok(definition!.description.length >= 80, `${id}: Erklärung zu kurz`);
+  }
+  const sanguineThief = getSubclassSpellcastingProfile("rogue", "sanguine-thief");
+  assert.equal(sanguineThief?.startsAtLevel, 3);
+  assert.equal(sanguineThief?.spellsKnown[10], 7);
+  assert.equal(sanguineThief?.cantripsKnown[10], 4);
 });
 
 test("the guided spell picker blocks excess spell grades and off-school selections", () => {
@@ -944,20 +971,20 @@ test("grim hollow backgrounds are available as creator vault data", () => {
   assert.ok(grimHollowBackgrounds.some((entry) => entry.id === "ebon-syndicate-smuggler"));
 });
 
-for (const classId of ["fighter", "warlock"]) test(classId + ": Aufstieg, erneutes Laden und Spielbogen 1–5", () => {
+for (const classId of ["fighter", "warlock"]) test(classId + ": Aufstieg, erneutes Laden und Spielbogen 1–10", () => {
   let c = fixture(classId);
   c.ancestry = "Mensch";
   c.summary = "";
   c.name = classId === "fighter" ? "Aldric Dorn" : "Mira Nachtwind";
   c.inventory!.items = ["longsword", "shortbow"].map((id, i) => ({id, name: ["Langschwert","Kurzbogen"][i], category: "weapon", quantity: 1, equipped: true, weight: 2, notes: "", createdAt: "", updatedAt: ""}));
-  while (c.level < 5) {
+  while (c.level < 10) {
     c = migrateCharacterArchiveEntry(JSON.parse(JSON.stringify(applyLevelUp(c, complete(c, createLevelUpDraft(c), true))))).character;
     const html = renderToStaticMarkup(createElement(CharacterPrintSheets, { character: c }));
     assert.ok(html.includes(c.name) && html.includes("Stufe " + c.level));
     const rules = calculateCharacterRules(createCharacterRuleInput(c));
     for (const feature of rules.classFeatures) assert.ok(html.includes(feature.name), feature.name);
-    if (c.level === 5) {
-      assert.equal(rules.proficiencyBonus, 3);
+    if (c.level === 10) {
+      assert.equal(rules.proficiencyBonus, 4);
       assert.ok(html.includes("Übungsbonus") && html.includes("Langschwert") && html.includes("Kurzbogen"));
       if (classId === "warlock") assert.ok(html.includes("Paktplätze") && !html.includes(">Grad 9<"));
       if (process.env.GRIMFORGE_PRINT_QA) {

@@ -1,5 +1,6 @@
 import { weapons } from "../equipment/equipment";
 import { getWeaponMastery2024 } from "../equipment/weaponMasteries2024";
+import { getMaximumSpellLevel, spells } from "../spells";
 
 export type CharacterPathChoiceValue = string | string[];
 export type CharacterPathChoices = Record<string, CharacterPathChoiceValue>;
@@ -64,6 +65,10 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
       ["blind-fighting", "Blindkampf"], ["opportunist", "Opportunist"],
     ].map(([id, name]) => ({ id, name, description: "Kampfstiltalent nach 2024er-Regeln und Kampagnenfreigabe." })),
   },
+  {
+    id: "monster-hunter-occult-rituals", classId: "monster-hunter", subclassId: "monster-hunter-occultist-guild", name: "Okkultes Wissen · Rituale",
+    description: "Wähle zwei Ritualzauber von der Kleriker-, Druiden- oder Magierliste.", level: 10, choose: 2, options: [],
+  },
 
   {
     id: "fighter-fighting-style", classId: "fighter", name: "Kampfstil", description: "Wähle deinen Kampfstil.", level: 1, choose: 1,
@@ -99,6 +104,12 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
     options: [
       ["acrobatics","Akrobatik"],["animal-handling","Mit Tieren umgehen"],["arcana","Arkane Kunde"],["athletics","Athletik"],["deception","Täuschen"],["history","Geschichte"],["insight","Motiv erkennen"],["intimidation","Einschüchtern"],["investigation","Nachforschungen"],["medicine","Heilkunde"],["nature","Naturkunde"],["perception","Wahrnehmung"],["performance","Auftreten"],["persuasion","Überzeugen"],["religion","Religion"],["sleight-of-hand","Fingerfertigkeit"],["stealth","Heimlichkeit"],["survival","Überlebenskunst"]
     ].map(([id,name]) => ({ id, name, description: "Dein Übungsbonus wird für diese Fertigkeit verdoppelt." })),
+  },
+  {
+    id: "bard-magical-secrets", classId: "bard", name: "Magische Geheimnisse", description: "Wähle zwei Zauber aus beliebigen Klassenlisten. Sie gelten als Bardenzauber und zählen gegen deine bekannten Zauber.", level: 10, choose: 2, options: [],
+  },
+  {
+    id: "lore-magical-secrets", classId: "bard", subclassId: "college-of-lore", name: "Zusätzliche magische Geheimnisse", description: "Wähle zwei Zauber aus beliebigen Klassenlisten. Diese beiden zählen nicht gegen die Zahl deiner bekannten Bardenzauber.", level: 6, choose: 2, options: [],
   },
   {
     id: "rogue-expertise", classId: "rogue", name: "Expertise", description: "Wähle zwei deiner Fertigkeitsübungen oder eine Fertigkeit und Diebeswerkzeug.", level: 1, choose: 2,
@@ -150,6 +161,13 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
       {id:"sign-of-ill-omen",name:"Zeichen des schlechten Omens",description:"Du kannst einmal pro langer Rast Fluch mit einem Paktplatz wirken.",minimumLevel:5},
       {id:"mire-the-mind",name:"Den Geist lähmen",description:"Du kannst einmal pro langer Rast Verlangsamen mit einem Paktplatz wirken.",minimumLevel:5},
       {id:"thirsting-blade",name:"Dürstende Klinge",description:"Mit der Paktwaffe kannst du bei deiner Angriffsaktion zweimal angreifen.",minimumLevel:5,requiredPact:"blade"},
+      {id:"bewitching-whispers",name:"Bezauberndes Flüstern",description:"Du kannst einmal pro langer Rast Zwang mit einem Paktplatz wirken.",minimumLevel:7},
+      {id:"dreadful-word",name:"Schreckliches Wort",description:"Du kannst einmal pro langer Rast Verwirrung mit einem Paktplatz wirken.",minimumLevel:7},
+      {id:"sculptor-of-flesh",name:"Bildhauer des Fleisches",description:"Du kannst einmal pro langer Rast Verwandlung mit einem Paktplatz wirken.",minimumLevel:7},
+      {id:"ascendant-step",name:"Aufsteigender Schritt",description:"Du kannst Schweben beliebig oft auf dich selbst wirken.",minimumLevel:9},
+      {id:"minions-of-chaos",name:"Diener des Chaos",description:"Du kannst einmal pro langer Rast Elementar beschwören mit einem Paktplatz wirken.",minimumLevel:9},
+      {id:"otherworldly-leap",name:"Jenseitiger Sprung",description:"Du kannst Springen beliebig oft auf dich selbst wirken.",minimumLevel:9},
+      {id:"whispers-of-the-grave",name:"Flüstern aus dem Grab",description:"Du kannst Mit Toten sprechen beliebig oft wirken.",minimumLevel:9},
     ],
   },
   {
@@ -262,6 +280,20 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
     ],
   },
   {
+    id: "totem-aspect",
+    classId: "barbarian",
+    subclassId: "totem-warrior",
+    name: "Aspekt des Tieres",
+    description: "Wähle auf Stufe 6 einen beständigen Aspekt. Diese Wahl ist unabhängig von deinem Totemgeist.",
+    level: 6,
+    choose: 1,
+    options: [
+      { id: "bear", name: "Bär", description: "Du erhältst Vorteil auf ST-Proben zum Schieben, Ziehen, Heben und Zerbrechen; deine Traglast verdoppelt sich." },
+      { id: "eagle", name: "Adler", description: "Du siehst außergewöhnlich weit und erleidest bei schwachem Licht keinen Nachteil auf WE-Proben (Wahrnehmung)." },
+      { id: "wolf", name: "Wolf", description: "Du kannst in schnellem Reisetempo heimlich reisen und Spuren auch bei schnellem Tempo verfolgen." },
+    ],
+  },
+  {
     id: "storm-aura-environment",
     classId: "barbarian",
     subclassId: "storm-herald",
@@ -336,6 +368,20 @@ export const characterPathChoices: CharacterPathChoiceDefinition[] = [
     ],
   },
   {
+    id: "hunter-defensive-tactics",
+    classId: "ranger",
+    subclassId: "hunter",
+    name: "Defensive Taktik",
+    description: "Wähle auf Stufe 7 eine defensive Spezialisierung für deinen Jäger.",
+    level: 7,
+    choose: 1,
+    options: [
+      { id: "escape-the-horde", name: "Der Horde entkommen", description: "Gelegenheitsangriffe gegen dich haben Nachteil." },
+      { id: "multiattack-defense", name: "Mehrfachangriff-Abwehr", description: "Trifft dich eine Kreatur, erhältst du bis zum Ende ihres Zugs +4 RK gegen ihre weiteren Angriffe." },
+      { id: "steel-will", name: "Stählerner Wille", description: "Du hast Vorteil auf Rettungswürfe gegen Verängstigung." },
+    ],
+  },
+  {
     id: "draconic-ancestry",
     classId: "sorcerer",
     subclassId: "draconic-bloodline",
@@ -366,7 +412,30 @@ export function getCharacterPathChoices(classId: string, subclassId?: string, le
     const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
     return values.includes(choice.requires.optionId);
   }).map((choice) => {
+    if (choice.id === "bard-magical-secrets" || choice.id === "lore-magical-secrets") {
+      const maximumSpellLevel = getMaximumSpellLevel("bard", level);
+      return { ...choice, options: spells.filter((spell) => spell.level <= maximumSpellLevel)
+        .sort((a, b) => Number(a.level === 0) - Number(b.level === 0) || a.level - b.level || a.name.localeCompare(b.name, "de"))
+        .map((spell) => ({
+        id: spell.id,
+        name: `${spell.name} · ${spell.level ? `Grad ${spell.level}` : "Zaubertrick"}`,
+        description: `${spell.castingTime} · ${spell.range} · ${spell.duration}`,
+      })) };
+    }
+    if (choice.id === "monster-hunter-occult-rituals") {
+      return { ...choice, options: spells.filter((spell) => spell.ritual && ["cleric", "druid", "wizard"].some((id) => spell.classIds.includes(id))).map((spell) => ({
+        id: spell.id,
+        name: `${spell.name} · Grad ${spell.level}`,
+        description: `${spell.castingTime} · ${spell.range} · ${spell.duration}`,
+      })) };
+    }
     if (choice.id === "monster-hunter-weapon-mastery") return { ...choice, choose: level >= 17 ? 5 : level >= 11 ? 4 : level >= 5 ? 3 : 2 };
+    if (choice.id === "monster-hunter-grimoire-types") return { ...choice, choose: level >= 6 ? 3 : 2 };
+    if (choice.id === "battle-master-maneuvers") return { ...choice, choose: level >= 7 ? 5 : 3 };
+    if (choice.id === "sorcerer-metamagic") return { ...choice, choose: level >= 10 ? 3 : 2 };
+    if (choice.id === "rogue-expertise") return { ...choice, choose: level >= 6 ? 4 : 2 };
+    if (choice.id === "bard-expertise") return { ...choice, choose: level >= 10 ? 4 : 2 };
+    if (choice.id === "ranger-favored-enemy" || choice.id === "ranger-favored-terrain") return { ...choice, choose: level >= 6 ? 2 : 1 };
     if (choice.id === "monster-hunter-grimoire-language") {
       const rawTypes = selectedChoices?.["monster-hunter-grimoire-types"];
       const types = Array.isArray(rawTypes) ? rawTypes : rawTypes ? [rawTypes] : [];
@@ -377,7 +446,7 @@ export function getCharacterPathChoices(classId: string, subclassId?: string, le
     const pact = selectedChoices?.["warlock-pact-boon"];
     return {
       ...choice,
-      choose: level >= 5 ? 3 : 2,
+      choose: level >= 9 ? 5 : level >= 7 ? 4 : level >= 5 ? 3 : 2,
       options: choice.options.filter((option) =>
         (option.minimumLevel ?? 2) <= level && (!option.requiredPact || option.requiredPact === pact)),
     };

@@ -19,10 +19,13 @@ interface SessionDashboardProps {
   onLongRest: () => void;
   onToggleCondition: (id: string) => void;
   onNavigate: (section: "combat" | "magic") => void;
+  onSpendClassResource: (id: string, maximum: number) => void;
+  onRestoreClassResource: (id: string) => void;
 }
 
 export function SessionDashboard({
   character, vitals, derivedStats, onDamage, onHeal, onShortRest, onLongRest, onToggleCondition, onNavigate,
+  onSpendClassResource, onRestoreClassResource,
 }: SessionDashboardProps) {
   const [amount, setAmount] = useState("1");
   const headingId = useId();
@@ -91,10 +94,13 @@ export function SessionDashboard({
     {transformation.name && <section className="table-board__section" aria-label="Aktive Wandlung">
       <h3>Wandlung: {transformation.name}{transformation.stage>0 ? " · Stufe "+transformation.stage : ""}</h3>
       {transformation.warning && <p role="status">{transformation.warning}</p>}
-      {transformation.features.length>0 && <details>
-        <summary>{transformation.features.length} Merkmale · nicht in Grundwerten eingerechnet</summary>
-        <ul>{transformation.features.map(f=><li key={f.id}><strong>{f.name}</strong> · {transformationGroupLabels[f.group]} · {transformationApplicationLabels[f.application]}<p>{f.description}</p></li>)}</ul>
-      </details>}
+      {transformation.features.length>0 && <p className="table-board__transformation-note">Situative Merkmale sind nicht in Grundwerten eingerechnet und müssen am Tisch angewendet werden.</p>}
+      {transformation.features.length>0 && <ul className="table-board__transformation-list">
+        {transformation.features.map(f=><li key={f.id}>
+          <div><strong>{f.name}</strong><span>{transformationGroupLabels[f.group]} · {transformationApplicationLabels[f.application]}</span></div>
+          <p>{f.description}</p>
+        </li>)}
+      </ul>}
     </section>}
     <div className="table-board__extras">
       {attacks.length > 0 && <section className="table-board__section">
@@ -108,7 +114,14 @@ export function SessionDashboard({
       </section>}
       {classResources.length > 0 && <section className="table-board__section">
         <h3>Klassenressourcen</h3>
-        <ul className="table-board__listing">{classResources.map(({ id, name, remaining, maximum }) => <li key={id}><span>{name}</span><strong>{remaining}/{maximum} frei</strong></li>)}</ul>
+        <ul className="table-board__listing table-board__resources">{classResources.map(({ id, name, remaining, maximum }) => <li key={id}>
+          <span>{name}</span>
+          <strong>{remaining}/{maximum} frei</strong>
+          <div className="table-board__resource-actions">
+            <button type="button" disabled={remaining <= 0} onClick={() => onSpendClassResource(id, maximum)}>Nutzen</button>
+            <button type="button" disabled={remaining >= maximum} onClick={() => onRestoreClassResource(id)}>Auffüllen</button>
+          </div>
+        </li>)}</ul>
       </section>}
     </div>
   </section>;

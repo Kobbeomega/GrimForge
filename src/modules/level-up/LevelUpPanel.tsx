@@ -10,7 +10,7 @@ import { LevelUpReview } from "./LevelUpReview";
 import { LevelUpSpellPreview, type LevelUpSpellContext } from "./LevelUpSpellPreview";
 import { mapArchiveEntryToDraft } from "../creator/mappers/mapArchiveEntryToDraft";
 import { getSpellSelectionRules } from "../creator/utils/getSpellSelectionRules";
-import { applyLevelUp, canChooseWarCaster, choiceValues, createLevelUpDraft, invocationRequiresEldritchBlast, needsEldritchBlast, previewLevelUp, validateLevelUp } from "./levelUp";
+import { applyLevelUp, canChooseWarCaster, choiceValues, createLevelUpDraft, invocationRequiresEldritchBlast, isAbilityScoreImprovementLevel, needsEldritchBlast, previewLevelUp, validateLevelUp } from "./levelUp";
 import { getCharacterVitals } from "../archives/utils/getCharacterVitals";
 import "./level-up.css";
 
@@ -61,6 +61,7 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
     || spellRules.grantedSpellIds.includes("eldritch-blast") || cantrips.length < spellRules.cantripsRequired;
   const currentAbilityScores = { ...defaultAbilityScores, ...character.abilityScores };
   const abilityIncreaseTotal = Object.values(draft.abilityScoreIncreases).reduce((sum, increase) => sum + (Number.isFinite(increase) ? Math.max(0, Math.floor(increase ?? 0)) : 0), 0);
+  const hasAbilityScoreImprovement = isAbilityScoreImprovementLevel(classId, level);
   const selectedFeat = getFeatById(draft.featId);
   const selectableFeats = feats.filter((feat) =>
     !character.featIds?.includes(feat.id) &&
@@ -130,10 +131,10 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
           <p>Aktuelle TP bleiben erhalten. Eine Heilung oder lange Rast kannst du anschließend im Charakterbogen ausführen.</p>
         </section>
 
-        {level === 4 && <section className="level-up__card">
+        {hasAbilityScoreImprovement && <section className="level-up__card">
           <h3>Attributswerterhöhung oder Talent</h3>
           <p>Erhöhe ein Attribut um 2 oder zwei Attribute um je 1 (höchstens 20). Wenn eure Runde mit Talenten spielt, kannst du stattdessen eines wählen.</p>
-          <div className="level-up__mode-options" role="radiogroup" aria-label="Stufe-4-Entscheidung">
+          <div className="level-up__mode-options" role="radiogroup" aria-label={`Stufe-${level}-Entscheidung`}>
             <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "increase"} onChange={() => setDraft({ ...draft, abilityScoreMode: "increase", featNote: "" })} /> Attribute erhöhen</label>
             <label><input type="radio" name="abilityScoreMode" checked={draft.abilityScoreMode === "feat"} onChange={() => setDraft({ ...draft, abilityScoreMode: "feat", abilityScoreIncreases: {} })} /> Talent wählen</label>
           </div>
@@ -248,7 +249,7 @@ export function LevelUpPanel({ character, onCancel, onSave }: Props) {
             <div><dt>Trefferwürfel</dt><dd>{character.level} → {level} W{definition?.hitDie}</dd></div>
             <div><dt>Übungsbonus</dt><dd>+{getProficiencyBonus(character.level)} → +{getProficiencyBonus(level)}</dd></div>
             <div><dt>Unterklasse</dt><dd>{preview.subclass ?? "Noch keine"}</dd></div>
-            {level === 4 && <div><dt>Stufe-4-Wahl</dt><dd>{draft.abilityScoreMode === "feat" ? selectedFeat?.name ?? "Talent offen" : "Attribute"}</dd></div>}
+            {hasAbilityScoreImprovement && <div><dt>Stufe-{level}-Wahl</dt><dd>{draft.abilityScoreMode === "feat" ? selectedFeat?.name ?? "Talent offen" : "Attribute"}</dd></div>}
           </dl>
           <LevelUpReview before={character} after={preview} />
           <p>Klassenressourcen und Zauberplätze richten sich nach der neuen Stufe. Bereits verbrauchte Ressourcen und Plätze bleiben verbraucht.</p>

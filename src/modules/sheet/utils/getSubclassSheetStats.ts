@@ -30,9 +30,9 @@ export function getSubclassSheetStats(character: CharacterArchiveEntry): Subclas
 
   switch (subclassId) {
     case "champion": return [stat("Kritischer Treffer", level >= 15 ? "18–20" : "19–20", "Nur bei Waffenangriffen.")];
-    case "battle-master": return [stat("Manöver-SG", `ST ${save("strength")} / GE ${save("dexterity")}`, "Du wählst Stärke oder Geschicklichkeit."), stat("Überlegenheitswürfel", "4 × W8", "Erholen sich nach kurzer oder langer Rast.")];
-    case "samurai": return [stat("Kampfgeist", "5 temporäre TP", "Bei Aktivierung; Vorteil auf Waffenangriffe bis zum Ende des Zuges.")];
-    case "college-of-whispers": return [stat("Psychische Klingen", level >= 5 ? "3W6 psychisch" : "2W6 psychisch", "Bei einem Waffentreffer; kostet eine Bardische Inspiration, einmal pro Runde.")];
+    case "battle-master": return [stat("Manöver-SG", `ST ${save("strength")} / GE ${save("dexterity")}`, "Du wählst Stärke oder Geschicklichkeit."), stat("Überlegenheitswürfel", `4 × ${level >= 10 ? "W10" : "W8"}`, "Erholen sich nach kurzer oder langer Rast.")];
+    case "samurai": return [stat("Kampfgeist", `${level >= 10 ? 10 : 5} temporäre TP`, "Bei Aktivierung; Vorteil auf Waffenangriffe bis zum Ende des Zuges.")];
+    case "college-of-whispers": return [stat("Psychische Klingen", level >= 10 ? "5W6 psychisch" : level >= 5 ? "3W6 psychisch" : "2W6 psychisch", "Bei einem Waffentreffer; kostet eine Bardische Inspiration, einmal pro Runde.")];
     case "life-domain": return [stat("Jünger des Lebens", "2 + Zaubergrad zusätzlich", "Wenn ein Zauber ab Grad 1 Trefferpunkte wiederherstellt."), ...(level >= 2 ? [stat("Leben bewahren", `${5 * level} TP zum Verteilen`, "Göttliche Macht; kein Ziel über die Hälfte seiner maximalen TP heilen.")] : [])];
     case "light-domain": return level >= 2 ? [stat("Glanz der Morgenröte", `2W10 + ${level} strahlend · KO-SG ${save("wisdom")}`, "Göttliche Macht; halber Schaden bei Erfolg.")] : [];
     case "war-domain": return level >= 2 ? [stat("Geführter Schlag", "+10 auf einen Angriffswurf", "Nur bei Einsatz von Göttlicher Macht.")] : [];

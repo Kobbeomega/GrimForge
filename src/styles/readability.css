@@ -71,10 +71,11 @@
   .ability-sheet-card__empty { font-size: .94rem; }
 
   /* Grimoire used sub-10px labels; restore readable type. */
-  .compact-spell-row > summary { grid-template-columns: minmax(140px,.85fr) minmax(180px,1.4fr) auto; gap: .65rem; padding: .85rem; font-size: 1rem; }
+  .compact-spell-row > summary { grid-template-columns: minmax(140px,.85fr) minmax(180px,1.4fr) auto auto; gap: .65rem; padding: .85rem; font-size: 1rem; }
   .compact-spell-row__identity strong { font-size: 1.12rem; line-height: 1.25; }
   .compact-spell-row__identity span, .compact-spell-row__prepared { font-size: .84rem; }
   .compact-spell-row__values span { font-size: .94rem; }
+  .compact-spell-row__values .compact-spell-row__effect { font-size: .92rem; line-height: 1.45; }
   .compact-spell-row__details { padding: 1rem; }
   .compact-spell-row__details dt { font-size: .84rem; }
   .compact-spell-row__details dd, .compact-spell-row__details p, .compact-spell-row__details small { font-size: .97rem; line-height: 1.55; }

@@ -125,6 +125,15 @@
 .table-board__section-heading { justify-content: space-between; }
 .table-board__listing { list-style: none; padding: 0; margin: .4rem 0 0; }
 .table-board__listing li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem .7rem; padding: .42rem 0; border-top: 1px solid var(--sheet-edge); font-size: .87rem; }
+.table-board__resources li { align-items: center; }
+.table-board__resource-actions { display: flex; flex-wrap: wrap; gap: .3rem; margin-left: auto; }
+.table-board__resource-actions button { min-height: 36px; padding: .3rem .5rem; font-size: .8rem; }
+.table-board__transformation-list { display: grid; gap: .5rem; margin: .6rem 0 0; padding: 0; list-style: none; }
+.table-board__transformation-note { margin: .45rem 0 0; color: var(--sheet-link); font-size: .84rem; font-weight: 700; line-height: 1.4; }
+.table-board__transformation-list li { padding-top: .5rem; border-top: 1px solid var(--sheet-edge); }
+.table-board__transformation-list li > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .3rem .7rem; }
+.table-board__transformation-list li span { color: var(--sheet-link); font-size: .8rem; font-weight: 700; }
+.table-board__transformation-list p { margin: .25rem 0 0; color: var(--sheet-muted); font-size: .86rem; line-height: 1.45; }
 .table-board__spell-facts { margin: .44rem 0; font-size: .9rem; }
 .table-board__more { padding: .7rem; color: var(--sheet-text); }
 .table-board__more dd { margin: .26rem 0 .65rem; font-weight: 700; overflow-wrap: anywhere; }

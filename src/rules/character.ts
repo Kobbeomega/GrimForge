@@ -296,6 +296,9 @@ export function calculateCharacterRules(
       featInitiativeBonus +
       (input.classId === "ranger" && input.subclassId === "gloom-stalker" && level >= 3
         ? abilityModifiers.wisdom
+        : 0) +
+      (input.classId === "monster-hunter" && input.subclassId === "monster-hunter-trapper-guild" && level >= 7
+        ? abilityModifiers.intelligence
         : 0),
     maximumHitPoints:
       calculateMaximumHitPoints({

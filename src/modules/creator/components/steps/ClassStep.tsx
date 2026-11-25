@@ -76,7 +76,7 @@ export function ClassStep({
             <span>Progression</span>
             <h3>{existingLevel ? "Aktuelle Stufe" : "Startstufe"}</h3>
           </div>
-          <p>{existingLevel ? `Stufe ${existingLevel} bleibt beim Bearbeiten erhalten. Zum Aufsteigen öffne den Charakterbogen.` : "Erste Figur? Starte auf Stufe 1. Beginnt eure Runde auf Stufe 2 oder 3, wähle diese direkt. Weitere Aufstiege bis Stufe 5 machst du im Charakterbogen."}</p>
+          <p>{existingLevel ? `Stufe ${existingLevel} bleibt beim Bearbeiten erhalten. Zum Aufsteigen öffne den Charakterbogen.` : "Erste Figur? Starte auf Stufe 1. Beginnt eure Runde auf Stufe 2 oder 3, wähle diese direkt. Weitere Aufstiege bis Stufe 10 machst du im Charakterbogen."}</p>
         </header>
         <div className="creator-path-choice__options">
           {(existingLevel ? [] : [1, 2, 3]).map((candidateLevel) => (
@@ -109,6 +109,9 @@ export function ClassStep({
           const levelOneFeatures = (entry.features ?? []).filter(
             (feature) => feature.level === 1,
           );
+          const startingFeatures = (entry.features ?? []).filter(
+            (feature) => feature.level <= level,
+          );
 
           return (
             <article className="gf-choice" key={entry.id} data-selected={selected}>
@@ -116,8 +119,26 @@ export function ClassStep({
                 <span className="gf-choice__copy"><strong>{entry.name}</strong><small>{primaryAbilities} · W{entry.hitDie}{entry.spellcasting ? " · Zauberwirken" : ""}</small></span>
                 <span className="gf-choice__state">{selected ? "✓ Gewählt" : "Wählen"}</span>
               </button>
+              <dl className="gf-choice__quickfacts" aria-label={`Wichtige Werte für ${entry.name}`}>
+                <div>
+                  <dt>Rettungswürfe</dt>
+                  <dd>{savingThrows}</dd>
+                </div>
+                <div>
+                  <dt>Rüstung</dt>
+                  <dd>{entry.armorProficiencies.length > 0 ? entry.armorProficiencies.join(" · ") : "Keine"}</dd>
+                </div>
+                <div>
+                  <dt>Waffen</dt>
+                  <dd>{entry.weaponProficiencies.length > 0 ? entry.weaponProficiencies.join(" · ") : "Keine"}</dd>
+                </div>
+                <div>
+                  <dt>Merkmale bis Stufe {level}</dt>
+                  <dd>{startingFeatures.length > 0 ? startingFeatures.map((feature) => feature.name).join(" · ") : "Keine"}</dd>
+                </div>
+              </dl>
               <details className="gf-choice__details">
-                <summary>Klassenmerkmale und Übungen</summary>
+                <summary>Beschreibungen und vollständige Regeln</summary>
                 <ArtworkHero category="class" entryId={entry.id} eyebrow="Klassenprofil" title={entry.name} description={entry.description} compact />
               <dl className="creator-class-dossier__facts">
                 <div>

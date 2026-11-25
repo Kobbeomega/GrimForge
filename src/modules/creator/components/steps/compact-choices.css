@@ -43,9 +43,38 @@
 .gf-choice__copy { display: grid; gap: var(--space-xs); min-width: 0; overflow-wrap: anywhere; }
 .gf-choice__copy small { color: var(--color-text-muted); }
 .gf-choice__state { flex: none; color: var(--color-primary-light); font-size: .75rem; }
+.gf-choice__quickfacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .45rem .75rem;
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-top: var(--border-thin);
+  background: rgba(0, 0, 0, .12);
+}
+.gf-choice__quickfacts > div { min-width: 0; }
+.gf-choice__quickfacts > div:nth-child(-n+2) { grid-column: 1 / -1; }
+.gf-choice__quickfacts dt {
+  color: var(--color-primary-light);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.gf-choice__quickfacts dd {
+  margin: .15rem 0 0;
+  color: var(--color-text);
+  font-size: .83rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
 .gf-choice__details { border-top: var(--border-thin); padding: 0 var(--space-md); min-width: 0; }
 .gf-choice__details summary { cursor: pointer; padding: var(--space-sm) 0; color: var(--color-text-muted); font-size: .86rem; }
 .gf-choice__details[open] { padding-bottom: var(--space-md); }
 .gf-choice__details > :not(summary) { margin-top: var(--space-sm); }
 .creator-section .ancestry-choice-card { min-height: 0; padding: var(--space-sm); gap: var(--space-xs); }
 .creator-section .ancestry-choice-card__facts { gap: var(--space-xs); }
+
+@media (max-width: 520px) {
+  .gf-choice__quickfacts { grid-template-columns: 1fr; }
+}

@@ -9,7 +9,7 @@
       L130 346
       L110 126
       Z
-    " fill="#17111f" stroke="#9c69d3" stroke-width="18"></path>
+    " fill="#231017" stroke="#d47a8c" stroke-width="18"></path>
 
   <path d="
       M256 112
@@ -31,7 +31,7 @@
       L162 256
       L234 228
       Z
-    " fill="#9c69d3"></path>
+    " fill="#d47a8c"></path>
 
   <circle cx="256" cy="256" r="32" fill="#09090b" stroke="#d8c9b8" stroke-width="10"></circle>
 </svg>

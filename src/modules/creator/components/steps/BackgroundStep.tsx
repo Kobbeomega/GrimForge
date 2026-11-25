@@ -70,8 +70,33 @@ export function BackgroundStep({
                 <span className="gf-choice__copy"><strong>{background.name}</strong><small>{sourceLabel} · {skillNames.join(" · ")}</small></span>
                 <span className="gf-choice__state">{selected ? "✓ Gewählt" : "Wählen"}</span>
               </button>
+              <dl className="gf-choice__quickfacts" aria-label={`Wichtige Werte für ${background.name}`}>
+                <div>
+                  <dt>Merkmal</dt>
+                  <dd>{background.feature.name}</dd>
+                </div>
+                <div>
+                  <dt>Startausrüstung</dt>
+                  <dd>{background.equipment.length > 0 ? background.equipment.join(" · ") : "Keine automatische"}</dd>
+                </div>
+                {(background.toolProficiencies.length > 0 || background.languageChoices > 0) && (
+                  <div>
+                    <dt>Weitere Übungen</dt>
+                    <dd>{[
+                      ...background.toolProficiencies,
+                      background.languageChoices > 0 ? `${background.languageChoices} Sprache${background.languageChoices === 1 ? "" : "n"} nach Wahl` : "",
+                    ].filter(Boolean).join(" · ")}</dd>
+                  </div>
+                )}
+                {background.originFeat && (
+                  <div>
+                    <dt>Ursprungstalent</dt>
+                    <dd>{background.originFeat}</dd>
+                  </div>
+                )}
+              </dl>
               <details className="gf-choice__details">
-                <summary>Merkmal und Startausrüstung</summary>
+                <summary>Beschreibung und vollständige Regeln</summary>
               <p className="creator-dossier-card__description">
                 {background.description}
               </p>

@@ -37,24 +37,34 @@ export function makeGrimHollowPlayPdf(c:CharacterArchiveEntry): Uint8Array {
   pdf.title(c.name || "Unbenannter Charakter");
   const subclass=getSubclassById(c.classId??"",c.subclassId??"");
   pdf.row(join([c.className,"Stufe "+c.level,subclass?.name??c.subclass,c.ancestry,c.backgroundName,c.alignment]));
-  pdf.heading("Am Spieltisch");
-  pdf.cells([
-    ["Trefferpunkte",hp.currentHitPoints+"/"+hp.maximumHitPoints+(hp.temporaryHitPoints?" +"+hp.temporaryHitPoints+" temporär":"")],
-    ["Rüstungsklasse",String(stats.armorClass)],["Initiative",signed(rules.initiativeModifier)],
-    ["Bewegung",rules.speed+" m"],["Übungsbonus",signed(stats.proficiencyBonus)],["Passive Wahrnehmung",String(rules.passivePerception)],
-    ["Trefferwürfel",Math.max(0,c.level-(c.spentHitDice??0))+"/"+c.level+(cls?" W"+cls.hitDie:"")],
-    ["Inspiration",c.inspiration?"Vorhanden":"Nicht aktiv"],["Erschöpfung",c.exhaustionLevel ? "Stufe "+c.exhaustionLevel+" / 6" : c.conditionIds?.includes("exhaustion") ? "Stufe am Tisch klären" : "Keine"],
+  pdf.heading("Kernwerte");
+  pdf.metrics([
+    ["Trefferpunkte",hp.currentHitPoints+" / "+hp.maximumHitPoints,hp.temporaryHitPoints?hp.temporaryHitPoints+" temporäre TP":"aktuell / maximum"],
+    ["Rüstungsklasse",String(stats.armorClass),"RK"],
+    ["Initiative",signed(rules.initiativeModifier),"Initiativbonus"],
+    ["Bewegung",rules.speed+" m","pro Zug"],
+    ["Übungsbonus",signed(stats.proficiencyBonus),"ÜB"],
+    ["Passive Wahrnehmung",String(rules.passivePerception),"ohne Würfelwurf"],
+  ]);
+  pdf.heading("Reserven & Zustand");
+  pdf.metrics([
+    ["Trefferwürfel",Math.max(0,c.level-(c.spentHitDice??0))+" / "+c.level,cls?"W"+cls.hitDie+" je Würfel":"verfügbar / gesamt"],
+    ["Inspiration",c.inspiration?"Ja":"Nein","am Tisch nutzbar"],
+    ["Erschöpfung",c.exhaustionLevel ? String(c.exhaustionLevel)+" / 6" : c.conditionIds?.includes("exhaustion") ? "Klärung" : "0 / 6","aktuelle Stufe"],
   ]);
   if(hp.currentHitPoints === 0 || c.deathSaves?.successes || c.deathSaves?.failures)
     pdf.row("Todesrettungen",`Erfolge: ${c.deathSaves?.successes ?? 0}/3 · Fehlschläge: ${c.deathSaves?.failures ?? 0}/3`);
-  pdf.heading("Attribute und Rettungswürfe");
-  pdf.cells(abilityIds.map(id=>[abilityLabels[id],scores[id]+" ("+signed(getAbilityModifier(scores[id]))+") / RW "+signed(rules.savingThrows[id])]),3);
-  pdf.heading("Fertigkeiten");
-  pdf.cells(rules.skillBonuses.map(s=>[skillsById[s.id]?.name??s.id,signed(s.bonus)+(c.skillExpertise?.includes(s.id)?" · Expertise":s.proficient?" · Geübt":"")]),3);
   if(knownAttacks.length){
     pdf.heading("Angriffe auf einen Blick");
     knownAttacks.slice(0,2).forEach(a=>pdf.row(a.name,join([a.attackBonusLabel,a.damage+" "+a.damageType])));
   }
+  pdf.heading("Attribute & Rettungswürfe");
+  pdf.metrics(abilityIds.map(id=>[abilityLabels[id],scores[id]+"  "+signed(getAbilityModifier(scores[id])),"Rettungswurf "+signed(rules.savingThrows[id])]),3);
+  // Keep the complete skill overview together so a continuation page never
+  // starts with unlabeled skill cells.
+  pdf.keepTogether(250);
+  pdf.heading("Fertigkeiten");
+  pdf.cells(rules.skillBonuses.map(s=>[skillsById[s.id]?.name??s.id,signed(s.bonus)+(c.skillExpertise?.includes(s.id)?" · Expertise":s.proficient?" · Geübt":"")]),3);
   if(stats.spellcasting.enabled)pdf.row("Zauberwerte",join(["SG "+(stats.spellcasting.spellSaveDifficultyClass??"-"),"Angriff "+signed(stats.spellcasting.spellAttackBonus??0)]));
   const conditions=tableConditions.filter(item=>c.conditionIds?.includes(item.id));
   if(conditions.length)pdf.row("Aktuelle Zustände",conditions.map(item=>item.label).join(", "));
@@ -92,7 +102,7 @@ export function makeGrimHollowPlayPdf(c:CharacterArchiveEntry): Uint8Array {
     const magic=stats.spellcasting, slots=c.spellcasting?.slots;
     pdf.start("Zauber");
     pdf.heading("Zauberwirken");
-    pdf.cells([["Attribut",magic.abilityId?abilityLabels[magic.abilityId]:"-"],["Rettungswurf-SG",String(magic.spellSaveDifficultyClass??"-")],["Zauberangriff",signed(magic.spellAttackBonus??0)]]);
+    pdf.metrics([["Attribut",magic.abilityId?abilityLabels[magic.abilityId]:"-","Zauberattribut"],["Rettungswurf-SG",String(magic.spellSaveDifficultyClass??"-"),"gegen deine Zauber"],["Zauberangriff",signed(magic.spellAttackBonus??0),"Angriffswurf"]]);
     const totals=Object.entries(magic.spellSlots).filter(([,n])=>n>0);
     for(const [grade,n] of totals) pdf.row("Grad "+grade+" · "+Math.max(0,n-(slots?.spentSlots[Number(grade) as 1]??0))+"/"+n+" Plätze frei");
     if(magic.pactSlots)pdf.row("Paktplätze · Grad "+magic.pactSlots.slotLevel+" · "+Math.max(0,magic.pactSlots.slots-(slots?.spentPactSlots??0))+"/"+magic.pactSlots.slots+" frei");

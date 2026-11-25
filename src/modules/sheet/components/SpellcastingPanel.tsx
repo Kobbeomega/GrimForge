@@ -560,6 +560,12 @@ function CompactSpellList({
                       stats
                         .spellSaveDifficultyClass,
                   });
+                const quickEffect = (
+                  spell.mechanicsSummary ?? spell.description
+                ).trim();
+                const quickEffectLabel = quickEffect.length > 150
+                  ? `${quickEffect.slice(0, 147).trimEnd()}…`
+                  : quickEffect;
 
                 return (
                   <details
@@ -580,6 +586,22 @@ function CompactSpellList({
                       </div>
 
                       <div className="compact-spell-row__values">
+                        <span className="compact-spell-row__fact">
+                          <strong>Zeit</strong> {spellFact(spell.castingTime)}
+                        </span>
+
+                        <span className="compact-spell-row__fact">
+                          <strong>Reichweite</strong> {spellFact(spell.range)}
+                        </span>
+
+                        {spell.concentration && (
+                          <span className="compact-spell-row__flag">Konzentration</span>
+                        )}
+
+                        {spell.ritual && (
+                          <span className="compact-spell-row__flag">Ritual</span>
+                        )}
+
                         {displayValues
                           .spellAttackLabel && (
                           <span>
@@ -640,6 +662,10 @@ function CompactSpellList({
                             {displayValues.savingThrow.difficultyClass !== undefined ? ` · SG ${displayValues.savingThrow.difficultyClass}` : ""}
                           </span>
                         )}
+
+                        <span className="compact-spell-row__effect">
+                          {quickEffectLabel}
+                        </span>
                       </div>
 
                       {selection.prepared && (
