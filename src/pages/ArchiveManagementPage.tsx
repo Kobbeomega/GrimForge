@@ -17,6 +17,15 @@ export function ArchiveManagementPage() {
   const [message, setMessage] = useState<string>("");
   const [isError, setIsError] = useState(false);
 
+  const [pending, setPending] = useState<Awaited<ReturnType<typeof readCharacterArchiveFile>> | null>(null);
+
+  function commitImport(mode: "merge" | "replace") {
+    if (!pending) return;
+    replaceCharacters(mode === "merge" ? mergeCharacterArchives(characters, pending.characters) : pending.characters, mode === "replace");
+    setMessage([pending.characters.length + " Akten importiert.", ...pending.warnings].join(" "));
+    setPending(null);
+  }
+
   function handleExport() {
     if (characters.length === 0) {
       setIsError(true);
@@ -36,19 +45,9 @@ export function ArchiveManagementPage() {
 
     try {
       const result = await readCharacterArchiveFile(file);
-      const replace = window.confirm(
-        "OK ersetzt das aktuelle Archiv vollständig. Abbrechen führt die importierten Akten mit dem bestehenden Archiv zusammen.",
-      );
-      const nextCharacters = replace
-        ? result.characters
-        : mergeCharacterArchives(characters, result.characters);
-
-      replaceCharacters(nextCharacters);
+      setPending(result);
       setIsError(false);
-      setMessage(
-        `${result.characters.length} Akte${result.characters.length === 1 ? "" : "n"} importiert.` +
-          (result.warnings.length > 0 ? ` ${result.warnings.join(" ")}` : ""),
-      );
+      setMessage("");
     } catch (error) {
       setIsError(true);
       setMessage(error instanceof Error ? error.message : "Der Import ist fehlgeschlagen.");
@@ -93,7 +92,13 @@ export function ArchiveManagementPage() {
           <p className="archive-management-card__eyebrow">Wiederherstellung</p>
           <h2>Archiv importieren</h2>
           <p>Importierte Akten können bestehende Daten ersetzen oder anhand ihrer ID zusammengeführt werden.</p>
-          <GrimButton type="button" onClick={() => fileInputRef.current?.click()}>Daten importieren</GrimButton>
+          {pending ? <div role="group" aria-label="Import bestätigen">
+            <p>{pending.characters.length} Akten eingelesen. Ersetzen entfernt alle bisherigen Akten aus diesem Browser.</p>
+            <GrimButton onClick={() => commitImport("merge")}>Zusammenführen</GrimButton>
+            {pending.warnings.length > 0 && <ul>{pending.warnings.map((w,i) => <li key={i}>{w}</li>)}</ul>}
+            <GrimButton disabled={pending.warnings.some(w => w.includes("übersprungen"))} onClick={() => commitImport("replace")}>Archiv ersetzen</GrimButton>
+            <GrimButton onClick={() => { setPending(null); setMessage("Import abgebrochen. Archiv unverändert."); }}>Abbrechen</GrimButton>
+          </div> : <GrimButton type="button" onClick={() => fileInputRef.current?.click()}>Daten importieren</GrimButton>}
           <input
             ref={fileInputRef}
             className="visually-hidden"

@@ -24,12 +24,7 @@ export function RuleSummaryPanel({
   const rules =
     useCharacterRules(character);
 
-  const storedArmorClass =
-    character.vitals?.armorClass;
-
-  const armorClass =
-    storedArmorClass ??
-    rules.armorClass.armorClass;
+  const armorClass = rules.armorClass.armorClass;
 
   return (
     <section className="rule-summary-panel">
@@ -79,7 +74,7 @@ export function RuleSummaryPanel({
         <RuleMetric
           label="Trefferpunkte"
           value={String(
-            rules.maximumHitPoints,
+            character.vitals?.maximumHitPoints ?? rules.maximumHitPoints,
           )}
         />
 

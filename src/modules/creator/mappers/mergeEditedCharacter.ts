@@ -1,6 +1,9 @@
+import { resolveCharacterTransformation } from "../../../compendium/transformations/activeRecord";
 import type { CharacterArchiveEntry } from "../../archives/types";
-import { calculateMaximumHitPoints } from "../../../rules/hitPoints";
+import { buildHitPointsPerLevel, calculateMaximumHitPoints } from "../../../rules/hitPoints";
 import { getFeatById } from "../../../compendium/feats";
+import { mapArchiveEntryToDraft } from "./mapArchiveEntryToDraft";
+import { mapDraftToArchiveEntry } from "./mapDraftToArchiveEntry";
 
 /**
  * Merges creator-owned character-definition changes with sheet/session state.
@@ -19,29 +22,11 @@ export function mergeEditedCharacter(
     items: [],
     currency: { copper: 0, silver: 0, gold: 0 },
   };
-  const originalItemsById = new Map(
-    originalInventory.items.map((item) => [item.id, item]),
-  );
-
-  const mergedItems = previewInventory.items.map((item) => {
-    const existing = originalItemsById.get(item.id);
-    return existing
-      ? {
-          ...item,
-          quantity: existing.quantity,
-          weight: existing.weight,
-          equipped: existing.equipped,
-          notes: existing.notes,
-          createdAt: existing.createdAt,
-          updatedAt: existing.updatedAt,
-        }
-      : item;
-  });
-
-  const previewItemIds = new Set(mergedItems.map((item) => item.id));
-  for (const item of originalInventory.items) {
-    if (!previewItemIds.has(item.id)) mergedItems.push({ ...item });
-  }
+  // The current pack is authoritative, even if the player consumed or sold
+  // a starting item. Only a newly selected grant may add a missing item.
+  const initialKit = mapDraftToArchiveEntry(mapArchiveEntryToDraft(original)).inventory;
+  const retained = new Set([...originalInventory.items, ...(initialKit?.items ?? [])].map(i => i.id));
+  const mergedItems = [...originalInventory.items, ...previewInventory.items.filter(i => !retained.has(i.id))];
 
   const oldMaximum =
     original.vitals?.maximumHitPoints ?? preview.vitals?.maximumHitPoints ?? 0;
@@ -50,16 +35,23 @@ export function mergeEditedCharacter(
   const originalCalculatedMaximum = calculateMaximumHitPoints({
     classId: original.classId ?? "", level: original.level,
     constitution: original.abilityScores?.constitution ?? 10,
-    bonusPerLevel:
-      (original.classId === "sorcerer" && original.subclassId === "draconic-bloodline" ? 1 : 0) +
-      (original.featIds ?? []).reduce((sum, featId) => sum + (getFeatById(featId)?.bonuses?.hitPointsPerLevel ?? 0), 0),
+    bonusPerLevel: buildHitPointsPerLevel(original),
   });
-  const preserveRolledHitPoints = Boolean(original.levelUpHistory?.length) && original.classId === preview.classId && original.level === preview.level;
+  const preserveRolledHitPoints = !!original.vitals && original.classId === preview.classId && original.level === preview.level;
+  const featHp = (original.featIds ?? []).reduce((n,id) => n + (getFeatById(id)?.bonuses?.hitPointsPerLevel ?? 0), 0);
   const newMaximum = Math.max(1, (preview.vitals?.maximumHitPoints ?? oldMaximum) +
-    (preserveRolledHitPoints ? oldMaximum - originalCalculatedMaximum : 0));
+    (preserveRolledHitPoints ? oldMaximum - originalCalculatedMaximum : featHp * preview.level));
 
+  const previousTransformation=resolveCharacterTransformation(original);
+  const preserveUnknownTransformation=Boolean(previousTransformation.name && !previousTransformation.definition && !preview.transformationId);
   return {
     ...preview,
+    conditionIds: original.conditionIds?.slice(),
+    exhaustionLevel: original.exhaustionLevel,
+    deathSaves: original.deathSaves && { ...original.deathSaves },
+    migratedFromSchemaVersion: original.migratedFromSchemaVersion,
+    sealId: original.sealId,
+    ...(preserveUnknownTransformation ? { transformation: original.transformation, transformationId: original.transformationId, transformationStage: original.transformationStage, transformationFeatureIds: original.transformationFeatureIds } : {}),
     status: original.status,
     createdAt: original.createdAt ?? preview.createdAt,
     updatedAt: new Date().toISOString(),
@@ -83,7 +75,6 @@ export function mergeEditedCharacter(
     },
     equipmentIds: Array.from(
       new Set([
-        ...(preview.equipmentIds ?? []),
         ...mergedItems.map((item) => item.id),
       ]),
     ),

@@ -1,3 +1,4 @@
+import { resolveCharacterTransformation } from "../../../compendium/transformations/activeRecord";
 import {
   defaultAbilityScores,
 } from "../../../compendium/core";
@@ -246,7 +247,7 @@ export function mapArchiveEntryToDraft(
      */
 
     transformationId:
-      character.transformationId ?? "",
+      resolveCharacterTransformation(character).definition?.id ?? character.transformationId ?? "",
 
     transformationStage:
       character.transformationStage ?? 0,
@@ -268,7 +269,7 @@ export function mapArchiveEntryToDraft(
       timestamp,
 
     updatedAt:
-      timestamp,
+      character.updatedAt ?? timestamp,
   };
 }
 function normalizeSkillChoice(value: import("../../../compendium/classes").CharacterPathChoiceValue | undefined): SkillId[] {
@@ -287,7 +288,8 @@ function inferStartingEquipmentSelections(character: CharacterArchiveEntry) {
 
   const inventoryQuantities = new Map<string, number>();
   for (const item of character.inventory.items) {
-    inventoryQuantities.set(item.id, (inventoryQuantities.get(item.id) ?? 0) + Math.max(0, item.quantity));
+    const id = item.catalogId ?? item.id;
+    inventoryQuantities.set(id, (inventoryQuantities.get(id) ?? 0) + Math.max(0, item.quantity));
   }
 
   return configuration.choices.flatMap((choice) => {

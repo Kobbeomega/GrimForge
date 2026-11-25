@@ -152,7 +152,7 @@ export const ancestries:
       ],
 
       variants: [
-        { id: "hill-dwarf", name: "Hügelzwerg", description: "Zäh und weise.", abilityBonuses: { wisdom: 1 }, traits: ["Zwergische Zähigkeit"] },
+        { id: "hill-dwarf", name: "Hügelzwerg", description: "Zwergische Zähigkeit: +1 maximales TP je Charakterstufe. Bei neuen Figuren und weiteren Aufstiegen eingerechnet.", abilityBonuses: { wisdom: 1 }, traits: ["Zwergische Zähigkeit"] },
         { id: "mountain-dwarf", name: "Gebirgszwerg", description: "Stark und rüstungsgeübt.", abilityBonuses: { strength: 2 }, traits: ["Rüstungstraining"] },
       ],
     },

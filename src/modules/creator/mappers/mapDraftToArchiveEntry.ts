@@ -1,3 +1,4 @@
+import { weaponDamageLabel } from "../../../compendium/equipment";
 import {
   ancestries,
   applyAbilityBonuses,
@@ -16,7 +17,7 @@ import {
 import {
   equipmentPacks,
   getEquipmentById,
-  startingEquipment,
+  getStartingEquipment,
 } from "../../../compendium/equipment";
 
 import type {
@@ -38,10 +39,11 @@ import type {
 import type {
   CharacterCreatorDraft,
 } from "../types";
-import { CURRENT_CHARACTER_SCHEMA_VERSION } from "../../../migrations/characterSchema";
+import { CURRENT_CHARACTER_SCHEMA_VERSION, resolveBackgroundInventory } from "../../../migrations/characterSchema";
 
 import {
   calculateMaximumHitPoints,
+  buildHitPointsPerLevel,
 } from "../../../rules/hitPoints";
 
 export function mapDraftToArchiveEntry(
@@ -88,7 +90,7 @@ export function mapDraftToArchiveEntry(
         entry.id === draft.subclassId,
     );
 
-  const subclassProficiencies = getSubclassProficiencyPackage(draft.classId, draft.subclassId);
+  const subclassProficiencies = getSubclassProficiencyPackage(draft.classId, draft.subclassId, draft.level);
 
   const battleMasterToolId = draft.classId === "fighter" && draft.subclassId === "battle-master" && draft.level >= 3
     ? normalizeRawChoice(draft.pathChoices["battle-master-artisans-tool"])[0]
@@ -119,6 +121,7 @@ export function mapDraftToArchiveEntry(
         ),
 
         ...draft.classSkillProficiencies,
+        ...(subclassProficiencies?.skills ?? []),
         ...(draft.classId === "bard" && draft.subclassId === "college-of-lore" && draft.level >= 3
           ? normalizeSkillChoice(draft.pathChoices["lore-bonus-skills"])
           : []),
@@ -147,12 +150,12 @@ export function mapDraftToArchiveEntry(
       level: draft.level,
       constitution:
         effectiveAbilityScores.constitution,
-      bonusPerLevel:
-        draft.classId === "sorcerer" && draft.subclassId === "draconic-bloodline" ? 1 : 0,
+      bonusPerLevel: buildHitPointsPerLevel(draft),
     });
 
   return {
     schemaVersion: CURRENT_CHARACTER_SCHEMA_VERSION,
+    movementBaseVersion: 1,
 
     id:
       draft.id,
@@ -350,17 +353,7 @@ function cloneDraftSpellcasting(
   CharacterArchiveEntry["spellcasting"]
 > {
   return {
-    spellIds: (() => {
-      const normal = draft.spellcasting.spellIds.map((selection) => ({ ...selection }));
-      const tomeCantrips = draft.classId === "warlock" && draft.level >= 3
-        ? normalizeRawChoice(draft.pathChoices["warlock-tome-cantrips"])
-        : [];
-      const existing = new Set(normal.map((selection) => selection.spellId));
-      return [
-        ...normal,
-        ...tomeCantrips.filter((spellId) => !existing.has(spellId)).map((spellId) => ({ spellId, prepared: true })),
-      ];
-    })(),
+    spellIds: draft.spellcasting.spellIds.map((selection) => ({ ...selection })),
 
     slots: {
       spentSlots: {
@@ -390,20 +383,17 @@ function createStartingInventoryItems(
   backgroundEquipment: string[],
 ): CharacterInventoryItem[] {
   const configuration =
-    startingEquipment.find(
-      (entry) =>
-        entry.classId ===
-        draft.classId,
-    );
+    getStartingEquipment(draft);
 
   if (!configuration) {
-    return createBackgroundInventoryItems(backgroundEquipment, timestamp);
+    return resolveBackgroundInventory(backgroundEquipment, timestamp);
   }
 
   const selectedEntries:
     InventorySourceEntry[] =
       draft
         .startingEquipmentSelections
+        .filter((selection,index,list)=>list.findIndex(s=>s.choiceId===selection.choiceId)===index)
         .flatMap(
           (selection) => {
             const choice =
@@ -509,29 +499,13 @@ function createStartingInventoryItems(
     },
   );
 
-  const backgroundItems = createBackgroundInventoryItems(backgroundEquipment, timestamp);
-  const existingIds = new Set(classItems.map((item) => item.id));
-  return [...classItems, ...backgroundItems.filter((item) => !existingIds.has(item.id))];
-}
-
-function createBackgroundInventoryItems(labels: string[], timestamp: string): CharacterInventoryItem[] {
-  return labels.flatMap((label, index) => {
-    if (parseBackgroundGold(label) !== undefined) {
-      return [];
-    }
-
-    return [{
-      id: `background-${toBackgroundItemId(label)}-${index + 1}`,
-      name: label,
-      category: "other" as const,
-      quantity: 1,
-      weight: 0,
-      equipped: false,
-      notes: "Startausrüstung aus dem Hintergrund.",
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    }];
-  });
+  const backgroundItems = resolveBackgroundInventory(backgroundEquipment, timestamp);
+  const consolidated = new Map(classItems.map(item=>[item.id,item]));
+  for (const item of backgroundItems) {
+    const prior=consolidated.get(item.id);
+    consolidated.set(item.id,prior ? {...prior,quantity:prior.quantity+item.quantity}:item);
+  }
+  return [...consolidated.values()];
 }
 
 function getBackgroundStartingGold(labels: string[]): number {
@@ -543,11 +517,6 @@ function parseBackgroundGold(label: string): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
-function toBackgroundItemId(value: string): string {
-  return value.toLocaleLowerCase("de")
-    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "item";
-}
 
 function mergeEquipmentEntries(
   entries: InventorySourceEntry[],
@@ -690,9 +659,7 @@ function createWeaponNotes(
   weapon: WeaponItem,
 ): string {
   const notes: string[] = [
-    `${weapon.damage.dice}W${weapon.damage.die} ${getDamageTypeLabel(
-      weapon.damage.type,
-    )}`,
+    weaponDamageLabel(weapon.damage,getDamageTypeLabel(weapon.damage.type)),
   ];
 
   if (weapon.versatile) {

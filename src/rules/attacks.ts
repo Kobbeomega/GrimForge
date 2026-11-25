@@ -79,9 +79,7 @@ export function getWeaponAbility(
   abilityScores: AbilityScores,
 ): AbilityId {
   if (
-    weapon.properties.includes(
-      "ammunition",
-    )
+    weapon.properties.includes("ammunition") || weapon.id === "netz"
   ) {
     return "dexterity";
   }
@@ -105,6 +103,8 @@ export function formatDamage(
   die: number,
   modifier: number,
 ): string {
+  if (dice === 0) return "Kein Schaden";
+  if (die === 1) return String(Math.max(0, dice + modifier));
   const base = `${dice}W${die}`;
 
   if (modifier === 0) {

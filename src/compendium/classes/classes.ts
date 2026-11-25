@@ -1,6 +1,8 @@
 import type { AbilityId, AbilityScores } from "../core";
 
 import type { CompendiumEntityBase, CompendiumSource } from "../shared";
+import { monsterHunterFeatures, monsterHunterGuilds } from "./monsterHunter";
+import { grimHollowSubclassesByClassId } from "./grimHollowSubclasses";
 
 export type ClassSource = Extract<
   CompendiumSource,
@@ -35,6 +37,7 @@ export interface ClassFeatureResource {
   id: string;
   name: string;
   amount: ClassResourceAmount;
+  abilityId?: AbilityId;
   recharge: ClassResourceRecharge;
 }
 
@@ -62,6 +65,8 @@ export interface CharacterSubclass extends Omit<
 > {
   source?: ClassSource;
   features?: ClassFeature[];
+  unlockLevel?: number;
+  legacy?: boolean;
 }
 
 export interface CharacterClass extends Omit<CompendiumEntityBase, "source"> {
@@ -108,7 +113,7 @@ export const classes: CharacterClass[] = [
         name: "Kampfrausch",
         description: "Als Bonusaktion verfällst du bis zu 1 Minute in Kampfrausch. Ohne schwere Rüstung erhältst du Vorteil auf Stärkeproben und Stärkerettungswürfe, +2 Schaden mit Nahkampfangriffen über Stärke sowie Resistenz gegen Hieb-, Stich- und Wuchtschaden.",
         level: 1, kind: "bonus-action",
-        resource: { id: "barbarian-rage-uses", name: "Kampfrausch", amount: { kind: "level-table", values: { 1: 2, 3: 3 } }, recharge: "long-rest" },
+        resource: { id: "barbarian-rage-uses", name: "Kampfrausch", amount: { kind: "level-table", values: { 1: 2, 3: 3, 6: 4 } }, recharge: "long-rest" },
       },
       { id: "barbarian-unarmored-defense", name: "Ungepanzerte Verteidigung", description: "Ohne Rüstung beträgt deine RK 10 + GE-Modifikator + KO-Modifikator. Einen Schild kannst du dabei verwenden.", level: 1, kind: "passive" },
       { id: "barbarian-reckless-attack", name: "Rücksichtsloser Angriff", description: "Beim ersten Angriff deines Zuges kannst du rücksichtslos angreifen: Vorteil auf Stärke-basierte Nahkampfangriffe in diesem Zug, dafür haben Angriffe gegen dich bis zu deinem nächsten Zug Vorteil.", level: 2, kind: "passive" },
@@ -293,7 +298,7 @@ export const classes: CharacterClass[] = [
     features: [
       { id: "cleric-spellcasting", name: "Zauberwirken", description: "Du bereitest Klerikerzauber vor und wirkst sie mit Weisheit. Die Zahl vorbereiteter Zauber entspricht WE-Modifikator + Klerikerstufe, mindestens 1.", level: 1, kind: "passive" },
       { id: "cleric-divine-domain", name: "Göttliche Domäne", description: "Auf Stufe 1 wählst du eine göttliche Domäne und erhältst deren Domänenzauber und Merkmale.", level: 1, kind: "passive" },
-      { id: "cleric-channel-divinity", name: "Göttliche Macht fokussieren", description: "Du kanalisierst göttliche Energie für Untote vertreiben oder eine Option deiner Domäne. Der SG entspricht deinem Zauberrettungswurf-SG.", level: 2, kind: "action", resource: { id: "cleric-channel-divinity-uses", name: "Göttliche Macht fokussieren", amount: 1, recharge: "short-rest" } },
+      { id: "cleric-channel-divinity", name: "Göttliche Macht fokussieren", description: "Du kanalisierst göttliche Energie für Untote vertreiben oder eine Option deiner Domäne. Der SG entspricht deinem Zauberrettungswurf-SG.", level: 2, kind: "action", resource: { id: "cleric-channel-divinity-uses", name: "Göttliche Macht fokussieren", amount: { kind: "level-table", values: { 2: 1, 6: 2 } }, recharge: "short-rest" } },
       { id: "cleric-turn-undead", name: "Untote vertreiben", description: "Als Aktion präsentierst du dein heiliges Symbol. Untote innerhalb von 9 m, die dich sehen oder hören, müssen einen WE-Rettungswurf bestehen oder werden 1 Minute lang vertrieben.", level: 2, kind: "action" },
     ],
 
@@ -431,7 +436,7 @@ export const classes: CharacterClass[] = [
           "Eine düstere Tradition über Verfall, Pilze und den Kreislauf des Lebens.",
         features: [
           { id: "circle-of-spores-1", name: "Sporenhalo", description: "2014-Unterklassenmerkmal: As a reaction when a creature moves into or starts its turn within 10 feet, deal necrotic damage on a failed Constitution save; the die starts at 1d4.", level: 2, kind: "reaction" },
-          { id: "circle-of-spores-2", name: "Symbiotische Entität", description: "2014-Unterklassenmerkmal: As an action, expend Wild Shape to gain temporary hit points, double Halo of Spores damage, and add 1d6 poison damage to melee weapon hits while the effect lasts.", level: 2, kind: "action" },
+          { id: "circle-of-spores-2", name: "Symbiotische Entität", description: "Gib als Aktion eine Anwendung der Tiergestalt aus. Du erhältst 4 temporäre TP pro Druidenstufe, würfelst den Sporenhalo-Würfel ein zweites Mal und verursachst bei Nahkampfwaffentreffern 1W6 nekrotischen Zusatzschaden. Der Effekt endet nach 10 Minuten, beim Verlust dieser temporären TP oder bei erneutem Einsatz der Tiergestalt.", level: 2, kind: "action" },
         ],
       },
     ],
@@ -629,6 +634,7 @@ export const classes: CharacterClass[] = [
       { id: "paladin-divine-smite", name: "Göttliches Niederstrecken", description: "Wenn du mit einer Nahkampfwaffe triffst, kannst du einen Zauberplatz ausgeben, um zusätzlichen gleißenden Schaden zu verursachen; höhere Plätze erhöhen den Schaden.", level: 2, kind: "passive" },
       { id: "paladin-divine-health", name: "Göttliche Gesundheit", description: "Ab Stufe 3 bist du gegen Krankheiten immun.", level: 3, kind: "passive" },
       { id: "paladin-sacred-oath", name: "Heiliger Eid", description: "Auf Stufe 3 legst du deinen Heiligen Eid ab und erhältst dessen erste Merkmale und Optionen für Göttliche Macht fokussieren.", level: 3, kind: "passive" },
+      { id: "paladin-channel-divinity", name: "Göttliche Macht fokussieren", description: "Die Optionen deines Eids teilen sich eine Anwendung. Eine kurze oder lange Rast stellt sie wieder her.", level: 3, kind: "resource", resource: { id: "paladin-channel-divinity-uses", name: "Göttliche Macht fokussieren", amount: 1, recharge: "short-rest" } },
     ],
 
     subclasses: [
@@ -778,58 +784,30 @@ export const classes: CharacterClass[] = [
 
     hitDie: 10,
 
-    primaryAbilities: ["dexterity", "wisdom"],
+    primaryAbilities: ["strength", "dexterity", "intelligence"],
 
-    savingThrows: ["dexterity", "wisdom"],
+    savingThrows: ["dexterity", "intelligence"],
 
     armorProficiencies: ["Leichte Rüstung", "Mittlere Rüstung", "Schilde"],
 
     weaponProficiencies: ["Einfache Waffen", "Kriegswaffen"],
 
-    toolProficiencies: ["Alchemistenbedarf"],
+    toolProficiencies: [],
 
     spellcasting: false,
 
-    features: [
-      {
-        id: "monster-hunter-quarry",
-        name: "Gezeichnete Beute",
-        description:
-          "Als Bonusaktion erklärst du eine sichtbare Kreatur zu deiner Beute. Deine Ausbildung hilft dir, ihre Schwächen zu erkennen und sie unerbittlich zu verfolgen.",
-        level: 1,
-        kind: "bonus-action",
-        resource: {
-          id: "monster-hunter-quarry-uses",
-          name: "Gezeichnete Beute",
-          amount: "proficiency-bonus",
-          recharge: "long-rest",
-        },
-      },
-      {
-        id: "monster-hunter-lore",
-        name: "Monsterkunde",
-        description:
-          "Du bist im Erkennen übernatürlicher Kreaturen, ihrer Spuren und typischen Verwundbarkeiten ausgebildet.",
-        level: 1,
-        kind: "passive",
-      },
-      {
-        id: "monster-hunter-prepared-hunter",
-        name: "Vorbereiteter Jäger",
-        description:
-          "Du beherrschst den sicheren Umgang mit Jagdwerkzeugen, Tinkturen und spezialisierten Waffen gegen gefährliche Beute.",
-        level: 1,
-        kind: "passive",
-      },
-    ],
+    features: monsterHunterFeatures,
 
     subclasses: [
+      ...monsterHunterGuilds,
       {
         id: "monster-hunter-beast-slayer",
         name: "Bestienschlächter",
         description:
           "Ein Pfad für Jäger, die körperlich überlegene Ungeheuer durch Ausdauer, Fallen und präzise Gewalt bezwingen.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
       {
         id: "monster-hunter-occult-warden",
@@ -837,6 +815,8 @@ export const classes: CharacterClass[] = [
         description:
           "Ein Pfad gegen Flüche, Geister und fremdartige Mächte, der Wissen mit schützenden Ritualen verbindet.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
       {
         id: "monster-hunter-trophy-bearer",
@@ -844,6 +824,8 @@ export const classes: CharacterClass[] = [
         description:
           "Ein Pfad, auf dem die Überreste besiegter Monster zu Werkzeugen, Warnzeichen und Quellen neuer Stärke werden.",
         source: "grim-hollow-2025",
+        unlockLevel: 3,
+        legacy: true,
       },
     ],
 
@@ -1212,6 +1194,12 @@ export const classes: CharacterClass[] = [
   },
 ];
 
+for (const characterClass of classes) {
+  characterClass.subclasses.push(
+    ...(grimHollowSubclassesByClassId[characterClass.id] ?? []),
+  );
+}
+
 export function getClassById(classId: string): CharacterClass | undefined {
   return classes.find((entry) => entry.id === classId);
 }
@@ -1230,6 +1218,7 @@ export function getSubclassUnlockLevel(
   subclassId: string,
 ): number | undefined {
   const subclass = getSubclassById(classId, subclassId);
+  if (subclass?.unlockLevel !== undefined) return subclass.unlockLevel;
   const levels = (subclass?.features ?? [])
     .map((feature) => feature.level)
     .filter((level) => Number.isFinite(level) && level > 0);
@@ -1248,7 +1237,7 @@ export function getClassSubclassUnlockLevel(
 }
 
 const abilityScoreImprovementDescription =
-  "Auf Stufe 4 erhöhst du einen Attributswert um 2 oder zwei Attributswerte um je 1. Alternativ kann eure Runde ein Talent erlauben. Trage die Werte anschließend über „Bearbeiten“ in die Akte ein.";
+  "Erhöhe einen Attributswert um 2 oder zwei Attributswerte um je 1 (Maximum 20). Alternativ kann eure Runde ein Talent erlauben. Der Aufstiegsassistent übernimmt die Wahl direkt in die Akte.";
 
 const extraAttackDescription =
   "Wenn du in deinem Zug die Angriffsaktion ausführst, kannst du zweimal statt einmal angreifen.";
@@ -1258,53 +1247,207 @@ const coreLevelMilestoneFeatures: Record<string, ClassFeature[]> = {
     { id: "barbarian-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "barbarian-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
     { id: "barbarian-fast-movement", name: "Schnelle Bewegung", description: "Deine Bewegungsrate erhöht sich um 3 m, solange du keine schwere Rüstung trägst.", level: 5, kind: "passive" },
+    { id: "barbarian-feral-instinct", name: "Wilder Instinkt", description: "Du hast Vorteil auf Initiativewürfe. Wenn du überrascht bist, kannst du in deinem ersten Zug normal handeln, sofern du zuerst in Kampfrausch verfällst.", level: 7, kind: "passive" },
+    { id: "barbarian-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "barbarian-brutal-critical", name: "Brutaler kritischer Treffer", description: "Bei einem kritischen Treffer mit einer Nahkampfwaffe würfelst du einen zusätzlichen Waffenschadenswürfel. Dein Kampfrauschschaden beträgt ab Stufe 9 +3.", level: 9, kind: "passive" },
   ],
   bard: [
     { id: "bard-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
-    { id: "bard-font-of-inspiration", name: "Quelle der Inspiration", description: "Du erhältst alle verbrauchten Bardischen Inspirationen zurück, wenn du eine kurze oder lange Rast beendest.", level: 5, kind: "passive" },
+    { id: "bard-font-of-inspiration", name: "Quelle der Inspiration", description: "Dein Inspirationswürfel steigt auf W8. Du erhältst alle verbrauchten Bardischen Inspirationen nach einer kurzen oder langen Rast zurück.", level: 5, kind: "passive" },
+    { id: "bard-countercharm", name: "Gegenzauber", description: "Als Aktion beginnst du eine Darbietung. Bis zum Ende deines nächsten Zugs haben du und freundliche Kreaturen in 9 m Vorteil auf Rettungswürfe gegen Bezauberung und Verängstigung.", level: 6, kind: "action" },
+    { id: "bard-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "bard-song-rest-d8", name: "Lied der Erholung (W8)", description: "Bei einer kurzen Rast erhalten Kreaturen, die Trefferwürfel ausgeben und dein Lied hören, zusätzlich 1W8 Trefferpunkte.", level: 9, kind: "passive" },
+    { id: "bard-magical-secrets", name: "Magische Geheimnisse", description: "Wähle zwei Zauber aus beliebigen Klassenlisten. Sie gelten als Bardenzauber und zählen gegen deine bekannten Zauber.", level: 10, kind: "passive" },
   ],
   cleric: [
     { id: "cleric-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "cleric-destroy-undead", name: "Untote zerstören", description: "Wenn ein Untoter mit Herausfordern der Untoten seinen Rettungswurf nicht schafft und seine HG niedrig genug ist, wird er zerstört statt vertrieben. Auf Stufe 5 gilt dies bis HG 1/2.", level: 5, kind: "passive" },
+    { id: "cleric-channel-divinity-2", name: "Göttliche Macht fokussieren (2 Anwendungen)", description: "Du kannst Göttliche Macht zweimal zwischen zwei kurzen oder langen Rasten einsetzen.", level: 6, kind: "passive" },
+    { id: "cleric-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "cleric-destroy-undead-cr1", name: "Untote zerstören (HG 1)", description: "Untote bis HG 1 werden bei einem misslungenen Rettungswurf gegen Untote vertreiben zerstört.", level: 8, kind: "passive" },
+    { id: "cleric-divine-intervention", name: "Göttliches Eingreifen", description: "Als Aktion bittest du deine Gottheit um Hilfe und würfelst mit W100. Bei einem Ergebnis bis zu deiner Klerikerstufe greift sie ein; nach einem Erfolg erst nach 7 Tagen erneut, sonst nach langer Rast.", level: 10, kind: "action" },
   ],
   druid: [
     { id: "druid-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "druid-wild-shape-swim", name: "Tiergestalt-Verbesserung", description: "Ab Stufe 4 kannst du Tiergestalt auch für Gestalten mit Schwimmbewegungsrate verwenden, solange die weiteren Grenzen deiner Tiergestalt eingehalten werden.", level: 4, kind: "passive" },
+    { id: "druid-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "druid-wild-shape-flight", name: "Tiergestalt · Flug", description: "Ab Stufe 8 darf deine Tiergestalt auch über eine Flugbewegungsrate verfügen, sofern sie die übrigen HG-Grenzen erfüllt.", level: 8, kind: "passive" },
   ],
   fighter: [
     { id: "fighter-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "fighter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "fighter-asi-6", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 6, kind: "passive" },
+    { id: "fighter-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "fighter-indomitable", name: "Unbezwingbar", description: "Du darfst einen misslungenen Rettungswurf wiederholen und musst das neue Ergebnis verwenden. Eine lange Rast stellt die Anwendung wieder her.", level: 9, kind: "resource", resource: { id: "fighter-indomitable-uses", name: "Unbezwingbar", amount: 1, recharge: "long-rest" } },
   ],
   monk: [
     { id: "monk-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "monk-slow-fall", name: "Langsamer Fall", description: "Als Reaktion verringerst du Fallschaden um das Fünffache deiner Mönchsstufe.", level: 4, kind: "reaction" },
     { id: "monk-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
     { id: "monk-stunning-strike", name: "Betäubender Schlag", description: "Wenn du eine Kreatur mit einem Nahkampfwaffenangriff triffst, kannst du 1 Ki-Punkt ausgeben. Misslingt ihr ein KO-Rettungswurf, ist sie bis zum Ende deines nächsten Zuges betäubt.", level: 5, kind: "passive" },
+    { id: "monk-ki-empowered-strikes", name: "Ki-verstärkte Schläge", description: "Deine waffenlosen Angriffe gelten für Resistenz und Immunität gegen nichtmagische Angriffe als magisch.", level: 6, kind: "passive" },
+    { id: "monk-evasion", name: "Entrinnen", description: "Bei einem GE-Rettungswurf für halben Schaden erleidest du bei Erfolg keinen und bei Misserfolg nur halben Schaden.", level: 7, kind: "passive" },
+    { id: "monk-stillness-of-mind", name: "Stillstand des Geistes", description: "Als Aktion kannst du einen Effekt auf dir beenden, der dich bezaubert oder verängstigt.", level: 7, kind: "action" },
+    { id: "monk-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "monk-unarmored-movement-9", name: "Verbesserte ungepanzerte Bewegung", description: "Während deiner Bewegung kannst du dich über senkrechte Flächen und Flüssigkeiten bewegen, ohne zu fallen.", level: 9, kind: "passive" },
+    { id: "monk-purity-of-body", name: "Reinheit des Körpers", description: "Du bist immun gegen Krankheiten und Gift.", level: 10, kind: "passive" },
   ],
   paladin: [
     { id: "paladin-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "paladin-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "paladin-aura-of-protection", name: "Aura des Schutzes", description: "Du und freundliche Kreaturen in 3 m addieren deinen CH-Modifikator (mindestens +1) zu Rettungswürfen, solange du bei Bewusstsein bist.", level: 6, kind: "passive" },
+    { id: "paladin-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "paladin-aura-of-courage", name: "Aura des Mutes", description: "Du und freundliche Kreaturen in 3 m können nicht verängstigt werden, solange du bei Bewusstsein bist.", level: 10, kind: "passive" },
   ],
   ranger: [
     { id: "ranger-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "ranger-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "ranger-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "ranger-lands-stride", name: "Sicherer Schritt", description: "Nichtmagisches schwieriges Gelände kostet dich keine zusätzliche Bewegung; Pflanzen verlangsamen dich nicht und verursachen keinen Schaden. Gegen magische Pflanzen erhältst du Vorteil auf Rettungswürfe.", level: 8, kind: "passive" },
+    { id: "ranger-hide-in-plain-sight", name: "In der Menge verschwinden", description: "Nach 1 Minute Tarnvorbereitung erhältst du +10 auf GE-Proben (Heimlichkeit), solange du dich nicht bewegst oder eine Aktion oder Reaktion ausführst.", level: 10, kind: "action" },
   ],
   "monster-hunter": [
     { id: "monster-hunter-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
-    { id: "monster-hunter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 5, kind: "passive" },
+    { id: "monster-hunter-extra-attack", name: "Zusätzlicher Angriff", description: extraAttackDescription, level: 11, kind: "passive" },
+    { id: "monster-hunter-improved-grimoire", name: "Verbessertes Monstergrimoire", description: "Du ergänzt dein Grimoire um einen dritten Kreaturentyp. Die Auswahl wird im Aufstiegsassistenten gespeichert.", level: 6, kind: "passive" },
+    { id: "monster-hunter-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
   ],
   rogue: [
     { id: "rogue-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
     { id: "rogue-uncanny-dodge", name: "Unheimliches Ausweichen", description: "Wenn dich ein Angreifer trifft, den du sehen kannst, kannst du deine Reaktion verwenden, um den Schaden dieses Angriffs gegen dich zu halbieren.", level: 5, kind: "reaction" },
+    { id: "rogue-expertise-6", name: "Expertise", description: "Wähle zwei weitere geübte Fertigkeiten oder Diebeswerkzeug. Dein Übungsbonus wird bei diesen Proben verdoppelt.", level: 6, kind: "passive" },
+    { id: "rogue-evasion", name: "Entrinnen", description: "Bei einem GE-Rettungswurf für halben Schaden erleidest du bei Erfolg keinen und bei Misserfolg nur halben Schaden.", level: 7, kind: "passive" },
+    { id: "rogue-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "rogue-asi-10", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 10, kind: "passive" },
   ],
   sorcerer: [
     { id: "sorcerer-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "sorcerer-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+    { id: "sorcerer-metamagic-10", name: "Metamagie", description: "Du lernst eine dritte Metamagie-Option.", level: 10, kind: "passive" },
   ],
   warlock: [
     { id: "warlock-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "warlock-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
   ],
   wizard: [
     { id: "wizard-asi-4", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 4, kind: "passive" },
+    { id: "wizard-asi-8", name: "Attributswerterhöhung", description: abilityScoreImprovementDescription, level: 8, kind: "passive" },
+  ],
+};
+
+const subclassLevelMilestoneFeatures: Record<string, ClassFeature[]> = {
+  "barbarian:berserker": [
+    { id:"berserker-mindless-rage", name:"Geistloser Kampfrausch", description:"Während des Kampfrauschs kannst du nicht bezaubert oder verängstigt werden; bestehende Effekte pausieren.", level:6, kind:"passive" },
+    { id:"berserker-intimidating-presence", name:"Einschüchternde Präsenz", description:"Als Aktion zwingst du eine Kreatur in 9 m zu einem WE-Rettungswurf oder sie ist bis zum Ende deines nächsten Zugs verängstigt; du kannst den Effekt mit weiteren Aktionen verlängern.", level:10, kind:"action" },
+  ],
+  "barbarian:totem-warrior": [
+    { id:"totem-aspect-feature", name:"Aspekt des Tieres", description:"Du erhältst den im Aufstiegsassistenten gewählten Aspekt von Bär, Adler oder Wolf.", level:6, kind:"passive" },
+    { id:"totem-spirit-walker", name:"Geisterwanderer", description:"Du kannst Gemeinschaft mit der Natur als Ritual wirken; eine spirituelle Tierform überbringt die Antworten.", level:10, kind:"passive" },
+  ],
+  "barbarian:ancestral-guardian": [
+    { id:"ancestral-spirit-shield", name:"Geisterschild", description:"Im Kampfrausch reduzierst du als Reaktion Schaden an einer anderen Kreatur in 9 m um 2W6.", level:6, kind:"reaction" },
+    { id:"ancestral-consult-spirits", name:"Die Geister befragen", description:"Du kannst Hellsehen oder Weissagung ohne Materialkomponenten wirken; nach kurzer oder langer Rast erneut.", level:10, kind:"action" },
+  ],
+  "barbarian:path-of-the-beast": [
+    { id:"beast-bestial-soul", name:"Bestialische Seele", description:"Deine natürlichen Waffen gelten als magisch. Nach einer Rast wählst du Schwimmen, Klettern oder verstärktes Springen.", level:6, kind:"passive" },
+    { id:"beast-infectious-fury", name:"Ansteckende Raserei", description:"Ein Treffer mit deiner natürlichen Waffe kann das Ziel zu einem WE-Rettungswurf zwingen: psychischer Schaden oder Reaktionsangriff gegen ein anderes Ziel.", level:10, kind:"passive" },
+  ],
+  "barbarian:storm-herald": [
+    { id:"storm-soul", name:"Sturmseele", description:"Du erhältst einen dauerhaften Umwelteffekt und eine passende Resistenz gemäß deiner Sturmaura.", level:6, kind:"passive" },
+    { id:"shielding-storm", name:"Schützender Sturm", description:"Verbündete in deiner Sturmaura erhalten die Resistenz deiner Sturmseele.", level:10, kind:"passive" },
+  ],
+  "bard:college-of-lore": [{ id:"lore-additional-magical-secrets", name:"Zusätzliche magische Geheimnisse", description:"Wähle zwei Zauber aus beliebigen Klassenlisten. Sie zählen als Bardenzauber, aber nicht gegen die Zahl deiner bekannten Bardenzauber.", level:6, kind:"passive" }],
+  "bard:college-of-valor": [{ id:"valor-extra-attack", name:"Zusätzlicher Angriff", description:extraAttackDescription, level:6, kind:"passive" }],
+  "bard:college-of-whispers": [{ id:"whispers-mantle", name:"Mantel des Flüsterns", description:"Wenn ein Humanoider in 9 m stirbt, kannst du als Reaktion seinen Schatten einfangen und später 1 Stunde lang seine Erscheinung und oberflächlichen Erinnerungen annehmen.", level:6, kind:"reaction" }],
+  "cleric:life-domain": [
+    { id:"life-blessed-healer", name:"Gesegneter Heiler", description:"Heilst du eine andere Kreatur mit einem Zauber ab Grad 1, erhältst du selbst 2 + Zaubergrad Trefferpunkte.", level:6, kind:"passive" },
+    { id:"life-divine-strike", name:"Göttlicher Schlag", description:"Einmal pro Zug verursacht ein Waffenangriff zusätzlich 1W8 gleißenden Schaden.", level:8, kind:"passive" },
+  ],
+  "cleric:light-domain": [
+    { id:"light-improved-flare", name:"Verbessertes schützendes Flackern", description:"Du kannst Schützendes Flackern auch einsetzen, wenn eine andere Kreatur in 9 m angegriffen wird.", level:6, kind:"reaction" },
+    { id:"light-potent-spellcasting", name:"Mächtiges Zauberwirken", description:"Addiere deinen WE-Modifikator zum Schaden eines Kleriker-Zaubertricks.", level:8, kind:"passive" },
+  ],
+  "cleric:war-domain": [
+    { id:"war-gods-blessing", name:"Segen des Kriegsgottes", description:"Wenn eine Kreatur in 9 m angreift, kannst du als Reaktion Göttliche Macht einsetzen und ihr +10 auf den Angriff geben.", level:6, kind:"reaction" },
+    { id:"war-divine-strike", name:"Göttlicher Schlag", description:"Einmal pro Zug verursacht ein Waffenangriff zusätzlich 1W8 Schaden derselben Art.", level:8, kind:"passive" },
+  ],
+  "cleric:grave-domain": [
+    { id:"grave-sentinel", name:"Wächter an der Schwelle des Todes", description:"Als Reaktion verwandelst du einen kritischen Treffer gegen dich oder eine Kreatur in 9 m in einen normalen Treffer; Anwendungen = WE-Modifikator pro langer Rast.", level:6, kind:"reaction" },
+    { id:"grave-potent-spellcasting", name:"Mächtiges Zauberwirken", description:"Addiere deinen WE-Modifikator zum Schaden eines Kleriker-Zaubertricks.", level:8, kind:"passive" },
+  ],
+  "druid:circle-of-the-land": [
+    { id:"land-stride", name:"Sicherer Schritt", description:"Nichtmagisches schwieriges Gelände und Pflanzen behindern dich nicht; gegen magische Pflanzen hast du Vorteil auf Rettungswürfe.", level:6, kind:"passive" },
+    { id:"land-natures-ward", name:"Schutz der Natur", description:"Du kannst nicht von Elementaren oder Feenwesen bezaubert oder verängstigt werden und bist immun gegen Gift und Krankheit.", level:10, kind:"passive" },
+  ],
+  "druid:circle-of-the-moon": [
+    { id:"moon-primal-strike", name:"Urschlag", description:"Angriffe in Tiergestalt gelten für Resistenz und Immunität gegen nichtmagische Angriffe als magisch.", level:6, kind:"passive" },
+    { id:"moon-elemental-wild-shape", name:"Elementare Tiergestalt", description:"Du kannst zwei Anwendungen der Tiergestalt ausgeben, um dich in einen Luft-, Erd-, Feuer- oder Wasserelementar zu verwandeln.", level:10, kind:"action" },
+  ],
+  "druid:circle-of-spores": [
+    { id:"spores-fungal-infestation", name:"Pilzbefall", description:"Eine kleine oder mittelgroße Bestie oder ein Humanoider, die in 3 m stirbt, kann als Reaktion mit 1 TP als Zombie aufstehen; Anwendungen = WE-Modifikator pro langer Rast.", level:6, kind:"reaction" },
+    { id:"spores-spreading-spores", name:"Sporen verbreiten", description:"Während Symbiotische Entität aktiv ist, kannst du deine Sporen als Bonusaktion in einem Würfel in 9 m platzieren.", level:10, kind:"bonus-action" },
+  ],
+  "fighter:champion": [{ id:"champion-remarkable-athlete", name:"Bemerkenswerter Athlet", description:"Addiere den halben Übungsbonus auf ST-, GE- und KO-Proben ohne Übung; dein Anlauf für Weitsprünge wird kürzer.", level:7, kind:"passive" }],
+  "fighter:battle-master": [
+    { id:"battle-master-know-your-enemy", name:"Kenne deinen Feind", description:"Nach 1 Minute Beobachtung vergleichst du ausgewählte Kampfwerte des Ziels mit deinen eigenen.", level:7, kind:"passive" },
+    { id:"battle-master-improved-superiority", name:"Verbesserte Kampfüberlegenheit", description:"Deine Überlegenheitswürfel werden W10.", level:10, kind:"passive" },
+  ],
+  "fighter:eldritch-knight": [
+    { id:"eldritch-knight-war-magic", name:"Kriegsmagie", description:"Wirkst du einen Zaubertrick als Aktion, kannst du als Bonusaktion einen Waffenangriff ausführen.", level:7, kind:"bonus-action" },
+    { id:"eldritch-knight-eldritch-strike", name:"Unheimlicher Schlag", description:"Triffst du eine Kreatur mit einer Waffe, hat sie bis zum Ende deines nächsten Zugs Nachteil auf den nächsten Rettungswurf gegen einen deiner Zauber.", level:10, kind:"passive" },
+  ],
+  "fighter:samurai": [
+    { id:"samurai-elegant-courtier", name:"Eleganter Höfling", description:"Addiere deinen WE-Modifikator auf CH-Proben (Überzeugen) und erhalte Übung in WE-Rettungswürfen.", level:7, kind:"passive" },
+    { id:"samurai-tireless-spirit", name:"Unermüdlicher Geist", description:"Wenn du bei Initiative keine Anwendung Kampfgeist hast, erhältst du eine zurück.", level:10, kind:"passive" },
+  ],
+  "monk:way-of-the-open-hand": [{ id:"open-hand-wholeness", name:"Ganzheit des Körpers", description:"Als Aktion heilst du das Dreifache deiner Mönchsstufe an TP; nach langer Rast erneut.", level:6, kind:"action" }],
+  "monk:way-of-shadow": [{ id:"shadow-step", name:"Schattenschritt", description:"Bei dämmrigem Licht oder Dunkelheit teleportierst du dich als Bonusaktion bis zu 18 m zu einer sichtbaren dunklen Stelle und erhältst Vorteil auf den ersten Nahkampfangriff dieses Zugs.", level:6, kind:"bonus-action" }],
+  "monk:way-of-the-long-death": [{ id:"long-death-hour-of-reaping", name:"Stunde der Ernte", description:"Als Aktion zwingst du Kreaturen in 9 m, die dich sehen können, zu einem WE-Rettungswurf oder sie sind bis zum Ende deines nächsten Zugs verängstigt.", level:6, kind:"action" }],
+  "paladin:oath-of-devotion": [{ id:"devotion-aura", name:"Aura der Hingabe", description:"Du und freundliche Kreaturen in 3 m können nicht bezaubert werden, solange du bei Bewusstsein bist.", level:7, kind:"passive" }],
+  "paladin:oath-of-vengeance": [{ id:"vengeance-relentless-avenger", name:"Unaufhaltsamer Rächer", description:"Triffst du mit einem Gelegenheitsangriff, darfst du dich danach bis zur halben Bewegungsrate bewegen, ohne Gelegenheitsangriffe zu provozieren.", level:7, kind:"passive" }],
+  "paladin:oath-of-the-ancients": [{ id:"ancients-aura", name:"Aura des Schutzes", description:"Du und freundliche Kreaturen in 3 m erhalten Resistenz gegen Schaden durch Zauber.", level:7, kind:"passive" }],
+  "paladin:oath-of-the-crown": [{ id:"crown-divine-allegiance", name:"Göttliche Treue", description:"Als Reaktion übernimmst du den Schaden eines Angriffs gegen eine Kreatur in 1,5 m; der Schaden kann nicht reduziert werden.", level:7, kind:"reaction" }],
+  "ranger:hunter": [{ id:"hunter-defensive-tactics-feature", name:"Defensive Taktik", description:"Du erhältst die im Aufstiegsassistenten gewählte defensive Taktik.", level:7, kind:"passive" }],
+  "ranger:beast-master": [{ id:"beast-master-exceptional-training", name:"Außergewöhnliches Training", description:"An Bonusaktionsbefehle kann dein Tiergefährte zusätzlich Sprinten, Lösen oder Helfen ausführen; seine Angriffe gelten als magisch.", level:7, kind:"bonus-action" }],
+  "ranger:gloom-stalker": [{ id:"gloom-stalker-iron-mind", name:"Eiserner Geist", description:"Du erhältst Übung in WE-Rettungswürfen; bist du bereits geübt, wählst du IN oder CH.", level:7, kind:"passive" }],
+  "rogue:thief": [{ id:"thief-supreme-sneak", name:"Oberste Heimlichkeit", description:"Bewegst du dich in deinem Zug höchstens mit halber Bewegungsrate, hast du Vorteil auf GE-Proben (Heimlichkeit).", level:9, kind:"passive" }],
+  "rogue:assassin": [{ id:"assassin-infiltration", name:"Infiltrationsexpertise", description:"Mit 7 Tagen und 25 GM erschaffst du eine falsche Identität samt Geschichte, Beruf und Verbindungen.", level:9, kind:"passive" }],
+  "rogue:arcane-trickster": [{ id:"arcane-trickster-magical-ambush", name:"Magischer Hinterhalt", description:"Bist du beim Wirken vor einer Kreatur verborgen, hat sie Nachteil auf Rettungswürfe gegen den Zauber in diesem Zug.", level:9, kind:"passive" }],
+  "rogue:inquisitive": [{ id:"inquisitive-steady-eye", name:"Sicheres Auge", description:"Bewegst du dich in deinem Zug höchstens mit halber Bewegungsrate, hast du Vorteil auf WE-Proben (Wahrnehmung) und IN-Proben (Nachforschungen).", level:9, kind:"passive" }],
+  "sorcerer:draconic-bloodline": [{ id:"draconic-elemental-affinity", name:"Elementare Affinität", description:"Wenn ein Zauber Schaden der Art deiner Drachenahne verursacht, addierst du deinen CH-Modifikator auf einen Schadenswurf und kannst 1 Zaubereipunkt für 1 Stunde Resistenz ausgeben.", level:6, kind:"passive" }],
+  "sorcerer:wild-magic": [{ id:"wild-magic-bend-luck", name:"Glück verbiegen", description:"Wenn eine sichtbare Kreatur einen Angriff, eine Attributsprobe oder einen Rettungswurf macht, gib 2 Zaubereipunkte aus und addiere oder subtrahiere 1W4.", level:6, kind:"reaction" }],
+  "sorcerer:shadow-magic": [{ id:"shadow-hound", name:"Hund des bösen Omens", description:"Als Bonusaktion beschwörst du für 3 Zaubereipunkte einen Schattenhund, der ein Ziel verfolgt und dessen Rettungswürfe gegen deine Zauber erschwert.", level:6, kind:"bonus-action" }],
+  "warlock:the-fiend": [
+    { id:"fiend-own-luck", name:"Glück des Dunklen Meisters", description:"Addiere 1W10 auf eine Attributsprobe oder einen Rettungswurf; nach kurzer oder langer Rast erneut.", level:6, kind:"passive" },
+    { id:"fiendish-resilience", name:"Unhold-Widerstandskraft", description:"Wähle nach kurzer oder langer Rast eine Schadensart; du erhältst Resistenz dagegen, außer durch magische oder versilberte Waffen, wenn du Hieb/Stich/Wucht wählst.", level:10, kind:"passive" },
+  ],
+  "warlock:the-archfey": [
+    { id:"archfey-misty-escape", name:"Neblige Flucht", description:"Wenn du Schaden erleidest, kannst du als Reaktion unsichtbar werden und dich bis zu 18 m teleportieren; nach kurzer oder langer Rast erneut.", level:6, kind:"reaction" },
+    { id:"archfey-beguiling-defenses", name:"Betörende Verteidigung", description:"Du bist immun gegen Bezauberung; versucht eine Kreatur dich zu bezaubern, kannst du sie als Reaktion selbst bezaubern.", level:10, kind:"reaction" },
+  ],
+  "warlock:the-great-old-one": [
+    { id:"goo-entropic-ward", name:"Entropischer Schutz", description:"Als Reaktion erhält ein Angriff gegen dich Nachteil; verfehlt er, hast du Vorteil auf deinen nächsten Angriff gegen den Angreifer. Nach kurzer oder langer Rast erneut.", level:6, kind:"reaction" },
+    { id:"goo-thought-shield", name:"Gedankenschild", description:"Deine Gedanken können nicht gelesen werden, du erhältst Resistenz gegen psychischen Schaden und psychischer Schaden gegen dich trifft den Verursacher ebenfalls.", level:10, kind:"passive" },
+  ],
+  "warlock:the-undead": [
+    { id:"undead-grave-touched", name:"Vom Grab berührt", description:"Du musst nicht atmen. Ein Treffer kann einmal pro Zug seinen Schaden in nekrotisch ändern; in Gestalt des Schreckens würfelst du einen zusätzlichen Schadenswürfel.", level:6, kind:"passive" },
+    { id:"undead-necrotic-husk", name:"Nekrotische Hülle", description:"Du erhältst Resistenz gegen nekrotischen Schaden. Bei 0 TP kannst du als Reaktion auf 1 TP bleiben und nekrotische Energie freisetzen; danach Erschöpfung und erst nach 1W4 langen Rasten erneut.", level:10, kind:"reaction" },
+  ],
+  "wizard:school-of-abjuration": [
+    { id:"abjuration-projected-ward", name:"Projizierter Schutz", description:"Als Reaktion lässt du deinen Arkanen Schutz Schaden einer Kreatur in 9 m absorbieren.", level:6, kind:"reaction" },
+    { id:"abjuration-improved", name:"Verbesserte Bannmagie", description:"Addiere deinen Übungsbonus auf Attributsproben für Magie bannen und Gegenzauber.", level:10, kind:"passive" },
+  ],
+  "wizard:school-of-evocation": [
+    { id:"evocation-potent-cantrip", name:"Mächtiger Zaubertrick", description:"Besteht eine Kreatur den Rettungswurf gegen deinen Schadenszaubertrick, erleidet sie halben Schaden statt keinen.", level:6, kind:"passive" },
+    { id:"evocation-empowered", name:"Verstärkte Hervorrufung", description:"Addiere deinen IN-Modifikator auf einen Schadenswurf eines Magier-Hervorrufungszaubers.", level:10, kind:"passive" },
+  ],
+  "wizard:school-of-necromancy": [
+    { id:"necromancy-undead-thralls", name:"Untote Knechte", description:"Du lernst Tote beleben. Damit erschaffene Untote erhalten zusätzliche TP und addieren deinen Übungsbonus auf Waffenschaden.", level:6, kind:"passive" },
+    { id:"necromancy-inured", name:"An den Tod gewöhnt", description:"Du erhältst Resistenz gegen nekrotischen Schaden; dein TP-Maximum kann nicht verringert werden.", level:10, kind:"passive" },
+  ],
+  "wizard:school-of-illusion": [
+    { id:"illusion-malleable", name:"Formbare Illusionen", description:"Als Aktion veränderst du die Beschaffenheit einer deiner Illusionen, sofern du sie sehen kannst und der Zauber die neue Form erlaubt.", level:6, kind:"action" },
+    { id:"illusion-illusory-self", name:"Illusorisches Selbst", description:"Als Reaktion lässt du einen Angriff gegen dich automatisch verfehlen; nach kurzer oder langer Rast erneut.", level:10, kind:"reaction" },
   ],
 };
 
@@ -1319,7 +1462,21 @@ export function getClassFeatures(
     ...(coreLevelMilestoneFeatures[classId]?.filter(
       (feature) => feature.level <= level,
     ) ?? []),
-  ];
+  ].map((feature) => {
+    const die = level >= 17 ? "W12" : level >= 10 ? "W10" : level >= 5 ? "W8" : "W6";
+    switch (feature.id) {
+      case "bard-bardic-inspiration":
+        return { ...feature, description: feature.description.replace("W6-Inspirationswürfel", `${die}-Inspirationswürfel`) };
+      case "rogue-sneak-attack":
+        return { ...feature, description: feature.description.replace("1W6 auf Stufe 1–2, 2W6 ab Stufe 3", `${Math.ceil(level / 2)}W6`) };
+      case "monk-martial-arts": {
+        const martialArtsDie = level >= 17 ? "W10" : level >= 11 ? "W8" : level >= 5 ? "W6" : "W4";
+        return { ...feature, description: feature.description.replace("bis Stufe 4 ein W4", `ein ${martialArtsDie}`) };
+      }
+      default:
+        return feature;
+    }
+  });
 }
 
 export function getSubclassFeatures(
@@ -1327,11 +1484,10 @@ export function getSubclassFeatures(
   subclassId: string,
   level: number,
 ): ClassFeature[] {
-  return (
-    getSubclassById(classId, subclassId)?.features?.filter(
-      (feature) => feature.level <= level,
-    ) ?? []
-  );
+  return [
+    ...(getSubclassById(classId, subclassId)?.features?.filter((feature) => feature.level <= level) ?? []),
+    ...(subclassLevelMilestoneFeatures[`${classId}:${subclassId}`]?.filter((feature) => feature.level <= level) ?? []),
+  ];
 }
 
 export function getCharacterClassFeatures({

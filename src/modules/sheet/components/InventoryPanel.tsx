@@ -1,3 +1,4 @@
+import { weaponDamageLabel } from "../../../compendium/equipment";
 import {
   useMemo,
   useState,
@@ -6,7 +7,7 @@ import {
 import { GrimButton } from "../../../components/ui/GrimButton";
 
 import {
-  getEquipmentById,
+  equipment, getEquipmentById,
 } from "../../../compendium/equipment";
 
 import type {
@@ -14,7 +15,9 @@ import type {
   WeaponItem,
 } from "../../../compendium/equipment";
 
+import { resolveInventoryItem } from "../../archives/utils/resolveInventoryItem";
 import type {
+  HomebrewEquipment,
   CharacterCurrency,
   CharacterInventory,
   CharacterInventoryItem,
@@ -30,6 +33,8 @@ interface InventoryPanelProps {
 }
 
 interface NewInventoryItemDraft {
+  catalogId?: string;
+  homebrew?: HomebrewEquipment;
   name: string;
   category: InventoryItemCategory;
   quantity: number;
@@ -68,6 +73,7 @@ const emptyItemDraft: NewInventoryItemDraft = {
   quantity: 1,
   weight: 0,
   notes: "",
+  homebrew: {kind:"gear",price:0},
 };
 
 export function InventoryPanel({
@@ -84,6 +90,8 @@ export function InventoryPanel({
     useState<NewInventoryItemDraft>(
       emptyItemDraft,
     );
+
+  const [editId,setEditId] = useState<string>();
 
   const totalWeight = useMemo(
     () =>
@@ -141,10 +149,13 @@ export function InventoryPanel({
     const timestamp =
       new Date().toISOString();
 
+    const existing=inventory.items.find(item=>item.id===editId);
     const item: CharacterInventoryItem = {
-      id: crypto.randomUUID(),
+      id: existing?.id ?? crypto.randomUUID(),
 
       name,
+      catalogId: newItem.catalogId,
+      homebrew: newItem.catalogId ? undefined : newItem.homebrew,
 
       category: newItem.category,
 
@@ -158,24 +169,23 @@ export function InventoryPanel({
         newItem.weight,
       ),
 
-      equipped: false,
+      equipped: Boolean(existing?.equipped && existing.homebrew?.kind === newItem.homebrew?.kind),
 
       notes: newItem.notes.trim(),
 
-      createdAt: timestamp,
+      createdAt: existing?.createdAt ?? timestamp,
       updatedAt: timestamp,
     };
 
+    if (item.homebrew && item.homebrew.kind !== "gear" && !resolveInventoryItem(item)) return;
     onChange({
       ...inventory,
 
-      items: [
-        ...inventory.items,
-        item,
-      ],
+      items: existing ? inventory.items.map(old=>old.id===existing.id?item:old) : [...inventory.items,item],
     });
 
     setNewItem(emptyItemDraft);
+    setEditId(undefined);
     setIsAddingItem(false);
   }
 
@@ -222,13 +232,14 @@ export function InventoryPanel({
   function toggleEquipped(
     itemId: string,
   ) {
-    updateItem(
-      itemId,
-      (item) => ({
-        ...item,
-        equipped: !item.equipped,
-      }),
-    );
+    const target = inventory.items.find(item=>item.id===itemId);
+    if (!target) return;
+    const category = resolveInventoryItem(target)?.category;
+    const exclusive = !target.equipped && (category==="armor" || category==="shield");
+    onChange({...inventory,items:inventory.items.map(item => item.id===itemId
+      ? {...item,equipped:!item.equipped,updatedAt:new Date().toISOString()}
+      : exclusive && resolveInventoryItem(item)?.category===category ? {...item,equipped:false} : item)});
+
   }
 
   function removeItem(
@@ -282,11 +293,7 @@ export function InventoryPanel({
 
         <GrimButton
           type="button"
-          onClick={() =>
-            setIsAddingItem(
-              (current) => !current,
-            )
-          }
+          onClick={() => {setEditId(undefined);setNewItem(emptyItemDraft);setIsAddingItem(!isAddingItem)}}
         >
           {isAddingItem
             ? "Editor schließen"
@@ -319,11 +326,14 @@ export function InventoryPanel({
 
       {isAddingItem && (
         <InventoryItemEditor
+          key={editId ?? "new"}
+          editing={Boolean(editId)}
           value={newItem}
           onChange={setNewItem}
           onSubmit={handleAddItem}
           onCancel={() => {
             setNewItem(emptyItemDraft);
+            setEditId(undefined);
             setIsAddingItem(false);
           }}
         />
@@ -364,6 +374,7 @@ export function InventoryPanel({
             <InventoryItemCard
               key={item.id}
               item={item}
+              onEdit={item.homebrew ? () => {setNewItem({...item});setEditId(item.id);setIsAddingItem(true)} : undefined}
               onQuantityChange={(amount) =>
                 changeQuantity(
                   item.id,
@@ -473,7 +484,7 @@ function EquippedItemsPanel({
         <div className="equipped-items__grid">
           {items.map((item) => {
             const definition =
-              getEquipmentById(item.id);
+              resolveInventoryItem(item);
 
             return (
               <article
@@ -726,6 +737,7 @@ function CurrencyField({
 }
 
 interface InventoryItemCardProps {
+  onEdit?: () => void;
   item: CharacterInventoryItem;
 
   onQuantityChange: (
@@ -738,12 +750,13 @@ interface InventoryItemCardProps {
 
 function InventoryItemCard({
   item,
+  onEdit,
   onQuantityChange,
   onToggleEquipped,
   onRemove,
 }: InventoryItemCardProps) {
   const definition =
-    getEquipmentById(item.id);
+    resolveInventoryItem(item);
 
   const canEquip =
     item.category === "weapon" ||
@@ -786,6 +799,7 @@ function InventoryItemCard({
         definition={definition}
         fallbackNotes={item.notes}
       />
+      {item.homebrew && (item.homebrew.kind === "armor" || item.homebrew.kind === "shield") && item.notes && <p className="equipment-live-notes">{item.notes}</p>}
 
       <dl className="live-inventory-item__facts">
         <div>
@@ -803,7 +817,7 @@ function InventoryItemCard({
         </div>
 
         <div>
-          <dt>Gesamt</dt>
+          <dt>Gesamtgewicht</dt>
 
           <dd>
             {formatWeight(
@@ -813,6 +827,8 @@ function InventoryItemCard({
             kg
           </dd>
         </div>
+        {definition && <div><dt>Wert je Stück</dt><dd>{definition.price} GM</dd></div>}
+        {item.homebrew?.kind === "weapon" && <div><dt>Zusatzboni</dt><dd>Angriff {item.homebrew.attackBonus} · Schaden {item.homebrew.damageBonus}</dd></div>}
       </dl>
 
       <div className="live-inventory-item__quantity">
@@ -841,6 +857,7 @@ function InventoryItemCard({
       </div>
 
       <footer className="live-inventory-item__actions">
+        {onEdit && <button type="button" onClick={onEdit}>Werte bearbeiten</button>}
         {canEquip && (
           <button
             type="button"
@@ -893,9 +910,7 @@ function EquipmentDefinitionDetails({
     definition.category === "weapon"
   ) {
     return (
-      <WeaponDetails
-        weapon={definition}
-      />
+      <><WeaponDetails weapon={definition} />{fallbackNotes && !fallbackNotes.includes("Schaden:") && <p className="equipment-live-notes">{fallbackNotes}</p>}</>
     );
   }
 
@@ -983,11 +998,7 @@ function WeaponDetails({
           <dt>Schaden</dt>
 
           <dd>
-            {weapon.damage.dice}W
-            {weapon.damage.die}{" "}
-            {getDamageTypeLabel(
-              weapon.damage.type,
-            )}
+            {weaponDamageLabel(weapon.damage,getDamageTypeLabel(weapon.damage.type))}
           </dd>
         </div>
 
@@ -1033,6 +1044,7 @@ function WeaponDetails({
 }
 
 interface InventoryItemEditorProps {
+  editing: boolean;
   value: NewInventoryItemDraft;
 
   onChange: (
@@ -1044,19 +1056,35 @@ interface InventoryItemEditorProps {
 }
 
 function InventoryItemEditor({
+  editing,
   value,
   onChange,
   onSubmit,
   onCancel,
 }: InventoryItemEditorProps) {
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [useCatalog, setUseCatalog] = useState(false);
+  const homebrew = value.homebrew ?? {kind:"gear",price:0};
+  const patch = (h:HomebrewEquipment) => onChange({...value,homebrew:h});
+  const num = (label:string,n:number,min:number,max:number,update:(n:number)=>void,step=1) =>
+    <label className="grim-field"><span>{label}</span><input type="number" value={n} min={min} max={max} step={step} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v))update(Math.min(max,Math.max(min,step===1?Math.round(v):v)))}} /></label>;
   return (
     <section className="inventory-editor">
       <header>
         <p>Neuer Eintrag</p>
 
-        <h3>Gegenstand hinzufügen</h3>
+        <h3>{editing ? "Homebrew-Werte bearbeiten" : "Gegenstand hinzufügen"}</h3>
       </header>
 
+      {!editing && <label className="grim-field"><span>Eintragsart</span><select value={useCatalog?"catalog":"custom"} onChange={e=>{setUseCatalog(e.target.value==="catalog");onChange(emptyItemDraft)}}><option value="custom">Eigener Gegenstand (Homebrew)</option><option value="catalog">Aus dem Ausrüstungskatalog</option></select></label>}
+      {useCatalog && <div className="inventory-editor__grid">
+        <label className="grim-field"><span>Katalog durchsuchen</span><input type="search" value={catalogQuery} onChange={e=>setCatalogQuery(e.target.value)}/></label>
+        <label className="grim-field"><span>Kataloggegenstand</span><select value={value.catalogId??""} onChange={e=>{
+          const d=getEquipmentById(e.target.value);if(!d){onChange(emptyItemDraft);return;}
+          const category=d.category==="shield"?"armor":d.category==="ammunition"?"consumable":d.category==="gear"||d.category==="focus"?"adventuring-gear":d.category;
+          onChange({...value,catalogId:d.id,name:d.name,category,weight:d.weight*0.45359237,notes:d.description??""});
+        }}><option value="">Bitte wählen</option>{equipment.filter(d=>d.id===value.catalogId || d.name.toLocaleLowerCase("de").includes(catalogQuery.trim().toLocaleLowerCase("de"))).sort((a,b)=>a.name.localeCompare(b.name,"de")).map(d=><option key={d.id} value={d.id}>{d.name} · {d.price} GM</option>)}</select></label>
+      </div>}
       <div className="inventory-editor__grid">
         <label className="grim-field">
           <span>Name</span>
@@ -1064,6 +1092,7 @@ function InventoryItemEditor({
           <input
             type="text"
             value={value.name}
+            readOnly={useCatalog}
             placeholder="Zum Beispiel Fackel"
             onChange={(event) =>
               onChange({
@@ -1079,10 +1108,11 @@ function InventoryItemEditor({
 
           <select
             value={value.category}
+            disabled={useCatalog}
             onChange={(event) =>
               onChange({
                 ...value,
-
+                homebrew: event.target.value==="weapon" ? {kind:"weapon",price:homebrew.price,dice:1,die:6,damageType:"slashing",martial:false,finesse:false,ranged:false,twoHanded:false,attackBonus:0,damageBonus:0} : event.target.value==="armor" ? {kind:"armor",price:homebrew.price,armorClass:11,dexterity:"full"} : {kind:"gear",price:homebrew.price},
                 category:
                   event.target.value as
                     InventoryItemCategory,
@@ -1134,7 +1164,7 @@ function InventoryItemEditor({
           <input
             type="number"
             min={0}
-            step={0.1}
+            step="any"
             value={value.weight}
             onChange={(event) =>
               onChange({
@@ -1151,8 +1181,26 @@ function InventoryItemEditor({
           />
         </label>
 
+        {!useCatalog && num("Wert pro Stück (GM)",homebrew.price,0,1000000,price=>patch({...homebrew,price}),0.01)}
+        {!useCatalog && homebrew.kind==="weapon" && <>
+          {num("Anzahl Schadenswürfel",homebrew.dice,1,20,dice=>patch({...homebrew,dice}))}
+          {num("Würfelseiten (1 = fester Schaden)",homebrew.die,1,100,die=>patch({...homebrew,die}))}
+          <label className="grim-field"><span>Schadensart</span><select value={homebrew.damageType} onChange={e=>patch({...homebrew,damageType:e.target.value as typeof homebrew.damageType})}><option value="slashing">Hieb</option><option value="piercing">Stich</option><option value="bludgeoning">Wucht</option></select></label>
+          {num("Zusatzbonus Angriff",homebrew.attackBonus,-20,20,attackBonus=>patch({...homebrew,attackBonus}))}
+          {num("Zusatzbonus Schaden",homebrew.damageBonus,-20,20,damageBonus=>patch({...homebrew,damageBonus}))}
+          {([["martial","Kriegswaffe"],["finesse","Finesse"],["ranged","Fernkampf"],["thrown","Wurfwaffe"],["twoHanded","Zweihändig"]] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={Boolean(homebrew[key])} onChange={e=>patch({...homebrew,[key]:e.target.checked})}/> {label}</label>)}
+          {(homebrew.ranged || homebrew.thrown) && <>
+            {num("Normale Reichweite (Fuß; 0 = offen)",homebrew.rangeNormal??0,0,1000,rangeNormal=>patch({...homebrew,rangeNormal}))}
+            {num("Maximale Reichweite (Fuß; 0 = offen)",homebrew.rangeLong??0,0,1000,rangeLong=>patch({...homebrew,rangeLong}))}
+          </>}
+        </>}
+        {!useCatalog && (homebrew.kind==="armor" || homebrew.kind==="shield") && <>
+          <label className="grim-field"><span>Art</span><select value={homebrew.kind} onChange={e=>patch({...homebrew,kind:e.target.value==="shield"?"shield":"armor",armorClass:e.target.value==="shield"?2:11})}><option value="armor">Rüstung</option><option value="shield">Schild</option></select></label>
+          {num(homebrew.kind==="shield"?"RK-Bonus":"Basis-RK",homebrew.armorClass,1,homebrew.kind==="shield"?10:30,armorClass=>patch({...homebrew,armorClass}))}
+          {homebrew.kind==="armor" && <label className="grim-field"><span>Geschicklichkeit zur RK</span><select value={homebrew.dexterity} onChange={e=>patch({...homebrew,dexterity:e.target.value as typeof homebrew.dexterity})}><option value="full">Voll</option><option value="limited">Maximal +2</option><option value="none">Nicht addieren</option></select></label>}
+        </>}
         <label className="grim-field inventory-editor__notes">
-          <span>Notizen</span>
+          <span>Notizen und besondere Effekte</span>
 
           <textarea
             rows={4}
@@ -1179,7 +1227,7 @@ function InventoryItemEditor({
         <GrimButton
           type="button"
           onClick={onSubmit}
-          disabled={!value.name.trim()}
+          disabled={!value.name.trim() || (useCatalog && !value.catalogId)}
         >
           Eintrag versiegeln
         </GrimButton>

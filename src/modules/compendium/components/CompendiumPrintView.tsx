@@ -13,12 +13,11 @@ export function CompendiumPrintView({ entry }: CompendiumPrintViewProps) {
   return createPortal(
     <section className="compendium-print-root" aria-hidden="true">
       <header className="compendium-print-header">
-        <span>GRIMFORGE · COMPENDIUM-AKTE</span>
+        <span>GrimForge · Kodexblatt</span>
         <h1>{entry.name}</h1>
         <p>{entry.description || "Keine Beschreibung hinterlegt."}</p>
       </header>
 
-      <div className="compendium-print-sigil" aria-hidden="true">◈</div>
 
       <table className="compendium-print-table">
         <tbody>

@@ -1,9 +1,14 @@
+import { spellFact } from "./spellFact";
 import type {
   SpellDefinition,
   SpellComponents,
 } from "./types";
 
 import { sourceSpellRulesLevel0To3 } from "../../content/phase1/spellRulesLevel0To3";
+import { sourceSpellRulesLevel4To5 } from "../../content/srd/spellRulesLevel4To5";
+import { grimHollowSpellRulesLevel4To5 } from "../../content/grimHollow/spellRulesLevel4To5";
+import { abilityLabels } from "../core";
+import { cleanSpellRule, readExplicitSpellMechanics, spellOverrides } from "./spellMechanics";
 
 const verbalSomatic = {
   verbal: true,
@@ -1094,7 +1099,7 @@ const curatedSpells: SpellDefinition[] = [
   },
 
   {
-    id: "hunters-mark",
+    id: "hunter-s-mark",
     name: "Mal des Jägers",
     level: 1,
     school: "divination",
@@ -1330,62 +1335,72 @@ function parseSourceComponents(value: string): SpellComponents {
   };
 }
 
-const sourceRuleById = new Map<string, (typeof sourceSpellRulesLevel0To3)[number]>(
-  sourceSpellRulesLevel0To3.map((spell) => [spell.id, spell]),
-);
+const sourceSpellRules = [
+  ...sourceSpellRulesLevel0To3,
+  ...sourceSpellRulesLevel4To5,
+  ...grimHollowSpellRulesLevel4To5,
+];
+type SourceSpellRule = (typeof sourceSpellRules)[number];
+const sourceRuleById = new Map<string, SourceSpellRule>(sourceSpellRules.map((spell) => [spell.id, spell]));
 
-const enrichedCuratedSpells: SpellDefinition[] = curatedSpells.map((spell) => {
-  const sourceRule = sourceRuleById.get(spell.id);
-  if (!sourceRule) return spell;
+const curatedSpellIds = new Set(curatedSpells.map((spell) => spell.id));
 
-  return {
-    ...spell,
-    mechanicsSummary: sourceRule.mechanicsSummaryGerman,
-    rulesText: sourceRule.rulesTextEnglish,
-    attackTypes: [...sourceRule.attackTypesGerman],
-    savingThrows: [...sourceRule.savingThrowsGerman],
-    damageText: [...sourceRule.damageGerman],
-    healingText: [...sourceRule.healingGerman],
-    conditions: [...sourceRule.conditionsGerman],
-    effectTags: [...sourceRule.effectTagsGerman],
-    sourceLabel: sourceRule.source,
-    sourcePage: sourceRule.sourcePage,
-    higherLevels: spell.higherLevels || sourceRule.scalingTextEnglish || undefined,
-  };
-});
-
-const curatedSpellIds = new Set(enrichedCuratedSpells.map((spell) => spell.id));
-
-const importedSpells: SpellDefinition[] = sourceSpellRulesLevel0To3
+const importedSpells: SpellDefinition[] = sourceSpellRules
   .filter((spell) => !curatedSpellIds.has(spell.id))
   .map((spell) => ({
     id: spell.id,
     name: spell.name,
-    level: spell.level,
-    school: spell.school,
+    level: spell.level as SpellDefinition["level"],
+    school: spell.school as SpellDefinition["school"],
     castingTime: spell.castingTime,
     range: spell.range,
     components: parseSourceComponents(spell.components),
     duration: spell.duration,
     concentration: spell.concentration,
     ritual: spell.ritual,
-    description: spell.mechanicsSummaryGerman,
-    mechanicsSummary: spell.mechanicsSummaryGerman,
-    rulesText: spell.rulesTextEnglish,
-    attackTypes: [...spell.attackTypesGerman],
-    savingThrows: [...spell.savingThrowsGerman],
-    damageText: [...spell.damageGerman],
-    healingText: [...spell.healingGerman],
-    conditions: [...spell.conditionsGerman],
-    effectTags: [...spell.effectTagsGerman],
-    sourceLabel: spell.source,
-    sourcePage: spell.sourcePage,
-    higherLevels: spell.scalingTextEnglish || undefined,
+    description: cleanSpellRule(spell.rulesTextEnglish) || "Für diesen Zauber liegt kein verlässlicher Kurztext vor.",
     classIds: [...spell.classIds],
   }));
 
+function applySpellMechanics(spell: SpellDefinition): SpellDefinition {
+  const source = sourceRuleById.get(spell.id);
+  const rulesText = cleanSpellRule(source?.rulesTextEnglish ?? "");
+  const higherLevels = cleanSpellRule(source?.scalingTextEnglish ?? "");
+  const mechanics = readExplicitSpellMechanics(rulesText || spell.description, higherLevels, spell.level);
+  const override = spellOverrides[spell.id];
+  const resolved: SpellDefinition = {
+    ...spell,
+    ...mechanics,
+    damage: spell.damage ?? mechanics.damage,
+    healing: spell.healing ?? mechanics.healing,
+    scaling: spell.scaling ?? mechanics.scaling,
+    ...(source ? { castingTime:spellFact(source.castingTime), range:spellFact(source.range), duration:spellFact(source.duration), components: parseSourceComponents(source.components) } : {}),
+    sourceLabel: source?.source,
+    sourcePage: source && "sourcePage" in source ? source.sourcePage : undefined,
+    mechanicsReview: override ? "checked" : "source-excerpt",
+    ...(rulesText && rulesText !== spell.description ? { rulesText } : {}),
+    higherLevels: spell.higherLevels || higherLevels || undefined,
+    ...override,
+  };
+  if (/[…]|\.\.\.$/.test(resolved.description.trim())) {
+    resolved.description = resolved.description.replace(/[^.!?]*?(?:\.\.\.|…)\s*$/, "").trim() +
+      " [Der vorliegende Quellauszug ist unvollständig; Einzelheiten bitte im Regelbuch prüfen.]";
+  }
+  const save = resolved.savingThrowAbility ?? resolved.damage?.savingThrowAbility;
+  return {
+    ...resolved,
+    savingThrows: save ? [abilityLabels[save]] : undefined,
+    damageText: resolved.damage?.dice ? [
+      `${resolved.damage.dice.dice}W${resolved.damage.dice.die}${resolved.damage.flatModifier ? ` + ${resolved.damage.flatModifier}` : ""}${resolved.damage.addsCastingModifier ? " + Zauberattributsmodifikator" : ""}${resolved.damageNote ? ` · ${resolved.damageNote}` : ""}`,
+    ] : undefined,
+    healingText: resolved.healing ? [
+      `${resolved.healing.dice.dice}W${resolved.healing.dice.die}${resolved.healing.addsCastingModifier !== false ? " + Zauberattributsmodifikator" : ""}`,
+    ] : undefined,
+  };
+}
+
 /** Zentrale, deduplizierte Zauber-Registry für Creator, Sheet und Compendium. */
-export const spells: SpellDefinition[] = [...enrichedCuratedSpells, ...importedSpells]
+export const spells: SpellDefinition[] = [...curatedSpells, ...importedSpells].map(applySpellMechanics)
   .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, "de"));
 
 export const spellRegistry = new Map(spells.map((spell) => [spell.id, spell]));
@@ -1393,7 +1408,7 @@ export const spellRegistry = new Map(spells.map((spell) => [spell.id, spell]));
 export function getSpellById(
   spellId: string,
 ): SpellDefinition | undefined {
-  return spellRegistry.get(spellId);
+  return spellRegistry.get(spellId === "hunters-mark" ? "hunter-s-mark" : spellId);
 }
 
 export function getSpellsForClass(

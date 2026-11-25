@@ -1,3 +1,4 @@
+import "./compact-choices.css";
 import {
   ancestries,
   ancestryTraits,
@@ -50,6 +51,7 @@ const flexibleSizeAncestryIds = new Set([
 
 export function AncestryStep({
   selectedId,
+  usesReducedSpeed,
   selectedSize,
   selectedVariantId,
   selectedBonusChoices,
@@ -89,7 +91,7 @@ export function AncestryStep({
         </p>
       </header>
 
-      <div className="ancestry-reforged__selector" role="list">
+      <div className="ancestry-reforged__selector">
         {ancestries.map((ancestry) => {
           const isSelected = ancestry.id === selectedId;
           const traits = resolveTraits(ancestry);
@@ -98,7 +100,6 @@ export function AncestryStep({
             <button
               key={ancestry.id}
               type="button"
-              role="listitem"
               className={[
                 "ancestry-choice-card",
                 isSelected ? "ancestry-choice-card--selected" : "",
@@ -114,7 +115,6 @@ export function AncestryStep({
               <span className="ancestry-choice-card__copy">
                 <small>{getAncestryEyebrow(ancestry)}</small>
                 <strong>{ancestry.name}</strong>
-                <span>{ancestry.description}</span>
               </span>
               <span className="ancestry-choice-card__facts">
                 <span>{formatSpeed(ancestry.speed)} Bewegung</span>
@@ -140,7 +140,7 @@ export function AncestryStep({
 
           <section className="ancestry-dossier__facts" aria-label="Grundwerte">
             <AncestryFact label="Größe" value={getSizeLabel(selectedSize)} />
-            <AncestryFact label="Bewegung" value={formatSpeed(selectedAncestry.speed)} />
+            <AncestryFact label="Bewegung" value={formatSpeed(usesReducedSpeed ? 7.5 : selectedAncestry.speed + (selectedAncestry.variants.find(v=>v.id===selectedVariantId)?.speedBonus ?? 0))} />
             <AncestryFact
               label="Sicht"
               value={selectedAncestry.darkvision ? `Dunkelsicht ${formatSpeed(selectedAncestry.darkvision)}` : "Normale Sicht"}
@@ -156,7 +156,9 @@ export function AncestryStep({
               <small>Traditionelle Attributsboni</small>
               <strong>{formatAbilityBonuses(resolvedBonuses.total)}</strong>
             </div>
-            <p>Diese Werte werden auf deine Point-Buy-Basis addiert und fließen automatisch in alle abgeleiteten Werte ein.</p>
+            <p>{Object.keys(resolvedBonuses.total).length ? "Diese Boni sind im Endwert bereits enthalten. Addiere sie am Spieltisch nicht noch einmal." :
+              selectedAncestry.abilityBonusChoice ? "Wähle unten deine freien Boni. Erst dann erscheinen sie in den Endwerten." :
+              "Für diese Abstammung sind keine automatischen Attributsboni hinterlegt. Gleiche die Werte vor dem Spiel mit eurer Regelversion ab."}</p>
           </section>
 
           {selectedAncestry.variants.length > 0 && (
@@ -171,12 +173,14 @@ export function AncestryStep({
                     key={variant.id}
                     type="button"
                     className={selectedVariantId === variant.id ? "ancestry-size-pill ancestry-size-pill--active" : "ancestry-size-pill"}
+                    aria-pressed={selectedVariantId === variant.id}
                     onClick={() => onVariantChange(variant.id)}
                   >
                     {variant.name} · {formatAbilityBonuses(variant.abilityBonuses ?? {})}
                   </button>
                 ))}
               </div>
+              {selectedVariantId && <p>{selectedAncestry.variants.find(v => v.id === selectedVariantId)?.description}</p>}
             </section>
           )}
 
@@ -197,6 +201,7 @@ export function AncestryStep({
                         key={abilityId}
                         type="button"
                         disabled={!active && limitReached}
+                        aria-pressed={active}
                         className={active ? "ancestry-size-pill ancestry-size-pill--active" : "ancestry-size-pill"}
                         onClick={() => onBonusChoicesChange(
                           active
@@ -224,6 +229,7 @@ export function AncestryStep({
                     key={size}
                     type="button"
                     className={selectedSize === size ? "ancestry-size-pill ancestry-size-pill--active" : "ancestry-size-pill"}
+                    aria-pressed={selectedSize === size}
                     onClick={() => onSizeChange(size)}
                   >
                     {getSizeLabel(size)}

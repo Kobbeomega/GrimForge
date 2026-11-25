@@ -38,6 +38,12 @@ export function calculateMovementSpeed({
   );
 }
 
+export function getClassMovementBonus(classId: string, level: number, armor: "none" | "shield" | "armor" | "heavy"): number {
+  if (classId === "barbarian" && level >= 5 && armor !== "heavy") return 3;
+  if (classId === "monk" && level >= 2 && armor === "none") return Math.min(9, 3 + 1.5 * Math.floor((level - 2) / 4));
+  return 0;
+}
+
 export function feetToMeters(
   feet: number,
 ): number {

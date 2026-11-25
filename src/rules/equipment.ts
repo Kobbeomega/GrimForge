@@ -1,6 +1,4 @@
-import {
-  getEquipmentById,
-} from "../compendium/equipment";
+import { resolveInventoryItem } from "../modules/archives/utils/resolveInventoryItem";
 
 import type {
   ArmorItem,
@@ -30,7 +28,7 @@ export function resolveCharacterEquipment(
       }
 
       const definition =
-        getEquipmentById(item.id);
+        resolveInventoryItem(item);
 
       return definition
         ? [definition]

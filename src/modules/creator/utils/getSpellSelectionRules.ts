@@ -12,6 +12,7 @@ import {
   getExpandedSubclassSpellIds,
   getGrantedSubclassSpellIds,
   getSubclassSpellcastingProfile,
+  getThirdCasterSlots,
   type CharacterPathChoices,
 } from "../../../compendium/classes";
 import type { AbilityId, AbilityScores } from "../../../compendium/core";
@@ -35,6 +36,7 @@ export interface SpellSelectionRules {
   forcedCantripIds: string[];
   restrictedSchools?: SpellSchool[];
   restrictedSpellCount?: number;
+  canReplaceCantrip?: boolean;
 }
 
 export interface SpellSelectionValidation {
@@ -72,12 +74,13 @@ export function getSpellSelectionRules({
       cantripsRequired: Math.max(0, cantripsKnown - forcedCantripIds.length),
       levelledSpellsRequired: spellsKnown,
       preparedSpellsRequired: 0,
-      maximumSpellLevel: getMaximumSpellLevel(subclassProfile.sourceClassId, level),
+      maximumSpellLevel: Math.max(0, ...Object.keys(getThirdCasterSlots(level)).map(Number)),
       grantedSpellIds: [...new Set([...grantedSpellIds, ...forcedCantripIds])],
       expandedSpellIds,
       forcedCantripIds,
       restrictedSchools: subclassProfile.restrictedSchools,
-      restrictedSpellCount: subclassProfile.restrictedSpellCount,
+      restrictedSpellCount: Math.max(0, spellsKnown - (subclassProfile.unrestrictedSpellCount ?? spellsKnown) - [8, 14, 20].filter((unlock) => level >= unlock).length),
+      canReplaceCantrip: subclassProfile.canReplaceCantrip,
     };
   }
 
@@ -96,8 +99,12 @@ export function getSpellSelectionRules({
   }
 
   const maximumSpellLevel = getMaximumSpellLevel(classId, level);
-  const cantripsRequired = getCantripsKnown(classId, level) +
+  let cantripsRequired = getCantripsKnown(classId, level) +
     getBonusSelectableSubclassCantrips(classId, subclassId, level);
+  const magicalSecrets = classId === "bard"
+    ? normalizeChoiceIds(pathChoices?.["bard-magical-secrets"]).map(getSpellById).filter(Boolean)
+    : [];
+  cantripsRequired = Math.max(0, cantripsRequired - magicalSecrets.filter((spell) => spell?.level === 0).length);
 
   if (maximumSpellLevel <= 0 && cantripsRequired === 0 && grantedSpellIds.length === 0) {
     return {
@@ -149,7 +156,7 @@ export function getSpellSelectionRules({
         abilityId: definition.abilityId,
         sourceClassId: classId,
         cantripsRequired,
-        levelledSpellsRequired: getSpellsKnown(classId, level) ?? 0,
+        levelledSpellsRequired: Math.max(0, (getSpellsKnown(classId, level) ?? 0) - magicalSecrets.filter((spell) => (spell?.level ?? 0) > 0).length),
         preparedSpellsRequired: 0,
         maximumSpellLevel,
         grantedSpellIds,
@@ -187,6 +194,10 @@ export function getSpellSelectionRules({
       };
     }
   }
+}
+
+function normalizeChoiceIds(value: string | string[] | undefined): string[] {
+  return Array.isArray(value) ? value : value ? [value] : [];
 }
 
 export function validateSpellSelection({

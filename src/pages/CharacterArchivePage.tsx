@@ -180,11 +180,9 @@ export function CharacterArchivePage({
 
       <div className="intro-copy">
         <p>
-          Öffne eine bestehende
-          Charakterakte oder beginne ein
-          neues Schicksal. Alle Akten
-          werden lokal auf deinem Gerät
-          gespeichert.
+          Neu am Tisch? Lege zuerst eine Akte an. Im Charakterbogen kannst du später
+          aufsteigen, deine Ausrüstung anlegen und den A4-Spielbogen drucken.
+          Die Akten liegen nur in diesem Browser. Sichere gespielte Figuren zusätzlich als JSON unter „Datensicherung“.
         </p>
       </div>
 

@@ -69,7 +69,7 @@ export function resolveCharacterClassResources({
           amount: resource.amount,
           classLevel: level,
           proficiencyBonus,
-          abilityModifier,
+          abilityModifier: resource.abilityId ? calculateAbilityModifier(abilityScores[resource.abilityId]) : abilityModifier,
         });
 
       const spent = clampResourceUsage(

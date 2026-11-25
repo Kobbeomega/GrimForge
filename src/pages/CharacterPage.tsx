@@ -1,5 +1,8 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 
+import { ChapterHeader } from "../components/ui/ChapterHeader";
+import { PaperPage } from "../components/ui/PaperPage";
+import { GrimButton } from "../components/ui/GrimButton";
 import { useCharacters } from "../hooks/useCharacters";
 
 import { createFileNumber } from "../modules/archives/utils/createFileNumber";
@@ -34,7 +37,7 @@ function CharacterViewFallback() {
 
 export type CharacterView = "archive" | "creator" | "sheet";
 
-export function CharacterPage() {
+export function CharacterPage({ session = false }: { session?: boolean }) {
   const [view, setView] = useState<CharacterView>("archive");
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(
@@ -129,6 +132,17 @@ export function CharacterPage() {
         />
       </Suspense>
     );
+  }
+
+  if (session) {
+    return <PaperPage>
+      <ChapterHeader chapter="Kapitel II · Spieltisch" title="Sessionboard"
+        subtitle={characters.length ? "Mit welcher Figur spielst du heute?" : "Lege deine erste Figur an, um eine Sitzung zu beginnen."} />
+      {characters.length ? <ul className="session-roster">{characters.map(entry =>
+        <li key={entry.id}><div><small>{entry.fileNumber} · {entry.className}</small><h3>{entry.name}</h3></div>
+          <GrimButton aria-label={`Session mit ${entry.name} öffnen`} onClick={() => handleOpenCharacter(entry.id)}>Board öffnen</GrimButton></li>
+      )}</ul> : <GrimButton onClick={handleCreateRequest}>Charakter anlegen</GrimButton>}
+    </PaperPage>;
   }
 
   return (

@@ -11,6 +11,7 @@ import {
 
 import {
   getSubclassSpellcastingProfile,
+  getThirdCasterSlots,
 } from "../../../compendium/classes";
 
 import type { AbilityId } from "../../../compendium/core";
@@ -35,6 +36,12 @@ export function getSpellcastingStats(character: CharacterArchiveEntry): Spellcas
 
   const subclassProfile = getSubclassSpellcastingProfile(classId, character.subclassId);
   const baseDefinition = getClassSpellcasting(classId);
+  if (classId === "monk" && character.subclassId === "way-of-shadow" && character.level >= 3) {
+    return { ...createStats({ character, abilityId: "wisdom", spellSlots: {}, ritualCasting: false, focusLabel: "Schattenkünste · Ki" }), spellAttackBonus: undefined, spellSaveDifficultyClass: undefined };
+  }
+  if (classId === "barbarian" && character.subclassId === "totem-warrior" && character.level >= 3) {
+    return { ...createEmptySpellcastingStats(), enabled: true, ritualCasting: true, focusLabel: "Geistsucher · nur Rituale" };
+  }
 
   if (subclassProfile && character.level >= subclassProfile.startsAtLevel) {
     return createStats({
@@ -42,7 +49,7 @@ export function getSpellcastingStats(character: CharacterArchiveEntry): Spellcas
       abilityId: subclassProfile.abilityId,
       spellSlots: getThirdCasterSlots(character.level),
       ritualCasting: false,
-      focusLabel: "Komponententasche oder arkaner Fokus",
+      focusLabel: classId === "monster-hunter" ? "Komponententasche oder arkaner Fokus" : "Komponententasche",
     });
   }
 
@@ -87,16 +94,6 @@ function createStats({
     ritualCasting,
     focusLabel,
   };
-}
-
-function getThirdCasterSlots(level: number): SpellSlots {
-  if (level < 3) return {};
-  if (level < 7) return { 1: level === 3 ? 2 : 3 };
-  if (level < 10) return { 1: 4, 2: 2 };
-  if (level < 13) return { 1: 4, 2: 3 };
-  if (level < 16) return { 1: 4, 2: 3, 3: 2 };
-  if (level < 19) return { 1: 4, 2: 3, 3: 3 };
-  return { 1: 4, 2: 3, 3: 3, 4: 1 };
 }
 
 function createEmptySpellcastingStats(): SpellcastingStats {

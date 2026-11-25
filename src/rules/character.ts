@@ -1,5 +1,6 @@
 import {
   getClassById,
+  getSubclassSkillProficiencies,
 } from "../compendium/classes";
 import {
   getFeatAbilityChoices,
@@ -89,6 +90,7 @@ export interface CharacterRuleInput {
   proficientSkillIds?: readonly SkillId[];
   expertiseSkillIds?: readonly SkillId[];
   baseSpeed: number;
+  classMovementBonus?: number;
   usesReducedSpeed?: boolean;
   armorClass?: Omit<
     ArmorClassInput,
@@ -200,10 +202,7 @@ export function calculateCharacterRules(
       >,
     );
 
-  const subclassSkillIds =
-    input.classId === "bard" && input.subclassId === "college-of-lore" && level >= 3
-      ? normalizeSkillChoice(input.pathChoices?.["lore-bonus-skills"])
-      : [];
+  const subclassSkillIds = getSubclassSkillProficiencies(input.classId, input.subclassId, level, input.pathChoices);
 
   const resolvedProficientSkillIds = [...new Set([
     ...(input.proficientSkillIds ?? []),
@@ -297,6 +296,9 @@ export function calculateCharacterRules(
       featInitiativeBonus +
       (input.classId === "ranger" && input.subclassId === "gloom-stalker" && level >= 3
         ? abilityModifiers.wisdom
+        : 0) +
+      (input.classId === "monster-hunter" && input.subclassId === "monster-hunter-trapper-guild" && level >= 7
+        ? abilityModifiers.intelligence
         : 0),
     maximumHitPoints:
       calculateMaximumHitPoints({
@@ -325,7 +327,7 @@ export function calculateCharacterRules(
             .usesReducedSpeed ??
           false,
         flatBonus:
-          featSpeedBonus,
+          featSpeedBonus + (input.classMovementBonus ?? 0),
       }),
     spellcasting:
       calculateClassSpellcasting({
@@ -344,12 +346,3 @@ export function calculateCharacterRules(
 }
 
 
-function normalizeSkillChoice(value: import("../compendium/classes").CharacterPathChoiceValue | undefined): SkillId[] {
-  const values = Array.isArray(value) ? value : value ? [value] : [];
-  const allowed = new Set<SkillId>([
-    "acrobatics", "animal-handling", "arcana", "athletics", "deception", "history",
-    "insight", "intimidation", "investigation", "medicine", "nature", "perception",
-    "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival",
-  ]);
-  return values.filter((value): value is SkillId => allowed.has(value as SkillId));
-}

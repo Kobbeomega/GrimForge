@@ -1,14 +1,61 @@
-# GrimForge 1.0.1
+# GrimForge 1.2.0-rc.11 · Zehnter Kreis
+
+**Erste Partie:** Unter **Charaktere** eine Akte erstellen, die Auswahl prüfen und speichern. Für die Runde im Charakterbogen die **GrimForge-Spielakte (A4)** ausgeben. Unter **Spieltisch** werden laufende Werte wie aktuelle TP und verbrauchte Ressourcen geführt. Das **Grim-Hollow-Original (PDF)** bleibt eine separate Ausgabe.
+
+**Update einer laufenden Kampagne:** Vor dem Versionswechsel unter **Datensicherung** das gesamte Archiv als JSON exportieren und die Datei aufbewahren. Bestehende Akten nicht vorsorglich neu anlegen. Gewürfelte TP und verbrauchtes Inventar bleiben erhalten. Speziell bei alten Hügelzwergen die maximalen TP mit dem Kampagnenbogen vergleichen.
+
+**Release prüfen:** `npm ci`, `npm run check:release`, `npm test`, `npm run test:smoke`. Prüfumfang, Befunde und Grenzen: [Audit RC11](docs/AUDIT-RC11.md).
+
+## Inventar und Homebrew
+
+Im Inventar unter **Gegenstand hinzufügen** entweder **Aus dem Ausrüstungskatalog** oder **Eigener Gegenstand** wählen. Waffen erhalten Würfel, Schadensart, Eigenschaften, Reichweite und Zusatzboni. Rüstungen und Schilde erhalten Basis-RK bzw. RK-Bonus. Werte greifen nach **Ausrüsten**; freie Effekte bleiben Notizen. Homebrew lässt sich später über **Werte bearbeiten** ändern und wird mit der Akte als JSON gespeichert. Der Katalog dient nicht als automatischer Kauf: GM ändern sich erst bei manueller Münzeingabe.
+
+Die üblichen zusätzlichen Gegenstände verwenden die [2014-Ausrüstungswerte](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/equipment). Nicht eindeutig zuordenbare Hintergrundgegenstände bleiben Freitext; gespielte Inventare werden nicht nachträglich aufgefüllt. Das Projekt enthält verschiedene Regelstände, daher ist der Katalogabgleich keine Vollständigkeitsprüfung aller Grim-Hollow-Quellen.
+
+## Spielumfang
+
+Regelabgleich bis Stufe 10: Die Tests prüfen die Datenpakete, Startpakete, regulären Unterklassen, Zauberwahl und die Werte des Spielbogens. RC11 enthält alle 36 Grim-Hollow-Unterklassen der zwölf Kernklassen sowie die vier Monsterjäger-Gilden. Ihre Merkmale, automatischen Zauberlisten und erreichbaren Entscheidungen sind bis Stufe 10 hinterlegt. Bestehende Inventare bleiben erhalten; korrigierte Startpakete werden nicht nachträglich in gespielte Akten eingebucht.
+
+Der Spielbogen trennt schnelle Spielwerte von Merkmalen und bedingten Boni.
+Nach einem Build erzeugt der Testlauf mit gesetzter Umgebungsvariable
+`GRIMFORGE_PRINT_QA` im dort angegebenen Verzeichnis Druckproben für HTML und die A4-Spielakte.
+
+Die Kapitel **Charaktere**, **Spieltisch** und **Kodex** teilen sich eine kompakte Navigation. **Datensicherung** enthält weiterhin Import und Export. Das Journal gehört zur Figur. Über **Charakter drucken** erhältst du den hellen Spielbogen; **Grim-Hollow-PDF** verwendet weiterhin das separate Formular.
+
+Der **Spieltisch** bündelt Trefferpunkte und Kampfwerte mit Schaden, Heilung, Rast und Zuständen. Ausgerüstete Angriffe, freie Zauberplätze (inklusive Paktmagie) und verfügbare Klassenressourcen stehen direkt daneben. Ausführliche Werte und Exportfunktionen lassen sich bei Bedarf aufklappen.
 
 GrimForge ist ein deutschsprachiger Dark-Fantasy-Charaktermanager für D&D 5e auf Basis der 2014-Regeln mit Grim-Hollow-Erweiterungen. Die Anwendung ist als installierbare PWA ausgelegt und unterstützt Charaktererstellung, Charakterarchiv, Spielzustand, Journal, Kompendium sowie Druck- und PDF-Ausgabe.
 
-## Umfang von 1.0.0
+## Neu in 1.2.0-rc.2: spielbare Werte ohne digitale Würfel
 
-Der Release-Schwerpunkt liegt auf Charakteren der Stufen 1–3:
+- Kein eingebauter Würfelgenerator mehr. Attribute, Proben, Rettungswürfe und Waffenschaden zeigen berechnete Boni und Werte zum Würfeln mit echten Würfeln.
+- Todesrettungswürfe werden über Erfolge/Fehlschläge manuell markiert. Verbleibende Trefferwürfel werden weiterhin verwaltet, das echte Würfelergebnis wird eingegeben.
+- Beibehalten: Erschöpfungsstufe 0–6, Konzentrationserinnerung nach Schaden, Rückgängig während der geöffneten Sitzung.
+- Zauberauswahl in Erstellung und Level-up: Wirkung, Reichweite, Wirkzeit, Dauer, Schaden/Heilung und Regeltext direkt sichtbar. Suche und getrennte Auswahl-/Lesebedienung.
+- Zauberplatzwahl bei Zauberwirken einschließlich höheren Graden und Paktmagie.
+- Ruhigeres Dark-Fantasy-Theme mit neutralen Anthrazitflächen, gezielter Pergament-Hervorhebung für TP, Messingdetails und besser lesbaren Schriften.
 
-- 12 D&D-2014-Kernklassen mit ihrer Progression auf Stufe 1–3
+**Kompatibilität:** Das Charakterschema bleibt Version 7. Bestehende Charakterdaten und Druckvorlagen bleiben bestehen. Vor dem Update empfehle ich unter „Datensicherung“ einen JSON-Export.
+
+**Teststatus RC11:** Der Produktionsbuild, 127 automatisierte Tests und vollständige Aufstiegsdurchläufe aller Klassen und regulären Unterklassen bis Stufe 10 liefen unter Windows erfolgreich.
+
+## Charakteraufstieg
+
+Im Charakterbogen können Charaktere bis Stufe 10 aufsteigen. Der Assistent zeigt die anstehenden Entscheidungen und speichert sie erst beim Abschließen des Aufstiegs.
+
+Jeder Schritt zeigt, welche Angaben noch fehlen. Trefferwürfe, Attributspunkte und Zauber werden aus passenden Optionen ausgewählt. Bereits gelernte Zaubertricks und Zauberbucheinträge sind geschützt. Ohne Zauberausbildung entfällt der Zauberschritt.
+
+Im Zauberschritt sind Wirkung, Reichweite, Wirkzeit, Dauer sowie verfügbare Schadens-, Heilungs- und Rettungswurfdaten schon in der durchsuchbaren Auswahl sichtbar. „Wählen“ übernimmt einen Zauber erst nach einer bewussten Aktion. Gelernte und automatisch gewährte Zauber lassen sich für dieselbe Vorschau aufklappen.
+
+Spieltisch und Aufstiegsassistent verwenden dieselben dunklen, neutralen Flächen und Bedienelemente. Große Zahlen, gut lesbare Beschriftungen und Bronzeakzente heben Trefferpunkte, RK und Initiative hervor. Unter **Kampf** und den aufklappbaren Klassenmerkmalen stehen berechnete Unterklassenwerte und die sieben Tiergefährten-Profile der App. Permanente Werte fließen in den Bogen ein; bei Reaktionen, Zielzuständen, Tiergestalt und ähnlichen Effekten zeigt der Bogen Wert und Auslöser, führt den Kampf aber nicht selbst. Neue Unterklassen und Kreaturenprofile außerhalb des vorhandenen Katalogs sind nicht Teil dieser Version. Grim-Hollow-Zauber der Grade 4 und 5 besitzen direkt lesbare Kurzregeln; das Regelbuch bleibt für vollständige Sonderfälle maßgeblich.
+
+Regelgrundlagen für den Abgleich: [D&D Basic Rules 2014](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/classes), [Waldläufer (2014)](https://www.dndbeyond.com/classes/5-ranger) und das im Projekt referenzierte Grim-Hollow-Spielerhandbuch (2025) für die Monsterjäger-Gilden.
+
+- 12 D&D-2014-Kernklassen und der Monsterjäger mit Aufstiegen bis Stufe 10
 - 44 in GrimForge enthaltene D&D-Unterklassen
-- zusätzliche Grim-Hollow-Inhalte und Transformationen
+- 36 Grim-Hollow-Unterklassen für Kernklassen plus vier Monsterjäger-Gilden
+- Grim-Hollow-Zauber einschließlich der bis Stufe 10 relevanten Grade 4 und 5
+- zusätzliche Grim-Hollow-Hintergründe und Transformationen
 - Klassen- und Unterklassenentscheidungen mit persistenter Speicherung
 - Ressourcen, Zauberwirken und relevante Sondermechaniken
 - Hintergründe, Ausrüstung, Währung und Charakterinventar
@@ -31,7 +78,10 @@ npm run dev
 ## Release-Prüfung
 
 ```bash
+npm run typecheck
+npm run test:smoke
 npm run check:release
+npm test
 ```
 
 Alternativ einzeln:
@@ -46,12 +96,18 @@ Der fertige Web-Build wird in `dist/` erzeugt.
 
 ## Daten & Kompatibilität
 
+Vor dem Wechsel aus der bisherigen App die Charakterakten als JSON exportieren. Die App in einem eigenen Ordner entpacken und starten. Falls das Archiv leer ist, die Sicherung importieren. Browserdaten gehören zur bisher verwendeten Adresse und zum Browserprofil.
+
 GrimForge migriert ältere gespeicherte Charakterakten auf das aktuelle Schema. Importierte Akten werden vor der Übernahme strukturell validiert. Charaktere, die bearbeitet und erneut gespeichert werden, behalten ihren laufenden Spielzustand wie Trefferpunkte, Ressourcen, Inspiration, Journal, Währung und Inventar.
 
 ## Regelumfang
 
-GrimForge 1.0.0 konzentriert sich bewusst auf die implementierten D&D-2014- und Grim-Hollow-Inhalte der Anwendung. Nicht jede jemals für D&D 5e veröffentlichte Klasse, Unterklasse oder Zusatzregel ist Bestandteil dieses Releases.
+Der Zauberkatalog enthält zusätzlich die SRD-Zauber der Grade 4 und 5, damit Vollzauberwirker auf Stufe 7 bis 10 regelgerechte Optionen erhalten. Basisfelder und Regeltexte stammen aus SRD 5.1; die Namensnennung steht in `ATTRIBUTION.md`. Karten mit Regelauszug leiten ausdrücklich genannte Würfel, Rettungswürfe und Angriffe aus dem gelieferten Kurztext ab. Mehrstufige und situationsabhängige Effekte sowie Hochstufung werden gegebenenfalls im Regeltext erläutert. D&D-Kernzauber folgen soweit geprüft den [Basisregeln 2014](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/spells). Für die Grim-Hollow-Zauber ist der [Player’s Guide](https://www.dndbeyond.com/sources/dnd/ghpg) die Referenz.
+
+Die Grundklassen verwenden das Regelprofil von 2014. Der Monsterjäger verwendet die Progression aus dem [Grim Hollow Player’s Guide von 2025](https://www.dndbeyond.com/sources/dnd/ghpg). Das Update ergänzt die vier Gildenmerkmale auf Stufe 3, Occultist-Zauber, das Verzehrlimit der Devourer-Gilde, den SG der Trapper-Geräte und die Werte von Expert Strike auf Stufe 5. Situationsabhängige Gildeneffekte werden am Tisch angewendet. Alte Spezialisierungen bleiben in gespeicherten Akten erhalten und können über „Bearbeiten“ gewählt oder aktualisiert werden. Bereits abgeschlossene Aufstiege behalten ihr gespeichertes TP-Maximum und ihre Aufstiegshistorie. Bei der nächsten Stufe meldet der Assistent zu hochgradige Zauber aus alten Akten des Mystischen Ritters und Arkanen Trickbetrügers.
+
+Die Abschlussübersicht zeigt die Änderungen bei Merkmalen, Attributen, Bewegung, Initiative, Entscheidungen, Zaubern, Zauberplätzen und Klassenressourcen. Die Grundbewegung bleibt separat editierbar. Der Barbarenbonus wird abhängig von der aktuell angelegten Rüstung angezeigt.
 
 ## Version
 
-**GrimForge 1.0.1**
+**GrimForge 1.2.0-rc.11**

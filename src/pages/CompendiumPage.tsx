@@ -1,3 +1,4 @@
+import { weaponDamageLabel } from "../compendium/equipment";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ArtworkHero } from "../components/artwork";
@@ -145,7 +146,7 @@ function formatPrice(price: number) {
 }
 
 function formatDice(damage: WeaponItem["damage"]) {
-  return `${damage.dice}W${damage.die} ${damageTypeLabels[damage.type] ?? damage.type}`;
+  return weaponDamageLabel(damage, damageTypeLabels[damage.type] ?? damage.type);
 }
 
 function getEntryMeta(entry: CompendiumEntry) {
@@ -363,8 +364,8 @@ export function CompendiumPage() {
     <PaperPage>
       <div className="compendium-page">
         <ChapterHeader
-          chapter="Kapitel V · Das Nachschlagewerk"
-          title="Compendium"
+          chapter="Kapitel III · Nachschlagewerk"
+          title="Kodex"
           subtitle="Abstammungen, Klassen, Verwandlungen, Ausrüstung und Zauber aus einer gemeinsamen Quelle."
         />
 
@@ -795,7 +796,7 @@ function SpellDetail({ entry, onClose, isFavorite, onToggleFavorite, onPrint, on
   const components = [
     entry.components.verbal ? "V" : null,
     entry.components.somatic ? "G" : null,
-    entry.components.material ? `M${typeof entry.components.material === "string" ? ` (${entry.components.material})` : ""}` : null,
+    entry.components.material ? `M${entry.components.materialDescription ? ` (${entry.components.materialDescription})` : ""}` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -810,6 +811,7 @@ function SpellDetail({ entry, onClose, isFavorite, onToggleFavorite, onPrint, on
         <CompendiumStat label="Komponenten" value={components.join(", ") || "—"} />
       </div>
       <DetailList title="Besonderheiten" items={[entry.concentration ? "Konzentration" : "Keine Konzentration", entry.ritual ? "Ritual" : "Kein Ritual"]} />
+      {entry.mechanicsReview === "source-excerpt" && <p>Die Werte stammen aus dem mitgelieferten Regelauszug. Bei Sonderfällen gilt die vollständige Regelquelle.</p>}
       {entry.rulesText ? (
         <section className="compendium-detail-section">
           <h3>Kurzregel (EN)</h3>
@@ -826,9 +828,12 @@ function SpellDetail({ entry, onClose, isFavorite, onToggleFavorite, onPrint, on
       {entry.damageText?.length ? <DetailList title="Schaden" items={entry.damageText} /> : null}
       {entry.healingText?.length ? <DetailList title="Heilung / Trefferpunkte" items={entry.healingText} /> : null}
       {entry.savingThrows?.length ? <DetailList title="Rettungswürfe" items={entry.savingThrows} /> : null}
+      {entry.savingThrowNote && <p>{entry.savingThrowNote}</p>}
       {entry.conditions?.length ? <DetailList title="Zustände" items={entry.conditions} /> : null}
       <DetailList title="Klassen" items={entry.classIds} />
       {entry.sourceLabel ? <DetailList title="Quelle" items={[`${entry.sourceLabel}${entry.sourcePage ? ` · PDF-Seite ${entry.sourcePage}` : ""}`]} /> : null}
+      {entry.sourceLabel === "PHB 2014" && <p><a href="https://www.dndbeyond.com/sources/dnd/basic-rules-2014/spells">D&D-Zauberregeln 2014</a></p>}
+      {entry.sourceLabel === "Grim Hollow 2025" && <p><a href="https://www.dndbeyond.com/sources/dnd/ghpg">Grim Hollow Player’s Guide</a></p>}
     </CompendiumDetailPanel>
   );
 }

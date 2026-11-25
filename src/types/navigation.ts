@@ -1,7 +1,6 @@
 export type AppSectionId =
   | "character"
   | "session"
-  | "journal"
   | "compendium"
   | "archive";
 

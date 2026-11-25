@@ -5,12 +5,11 @@ import {
 
 import {
   defaultAbilityScores,
+  getAbilityModifier,
   getProficiencyBonus,
 } from "../../../compendium/core";
 
-import {
-  getEquipmentById,
-} from "../../../compendium/equipment";
+import { resolveInventoryItem, homebrewWeaponBonus } from "../../archives/utils/resolveInventoryItem";
 
 import type {
   AbilityId,
@@ -19,9 +18,11 @@ import type {
 import type {
   WeaponItem,
 } from "../../../compendium/equipment";
+import { getWeaponMastery2024 } from "../../../compendium/equipment/weaponMasteries2024";
 
 import {
   calculateWeaponAttack,
+  formatDamage,
 } from "../../../rules/attacks";
 
 import type {
@@ -38,6 +39,7 @@ export interface WeaponAttackSummary {
   proficient: boolean;
   attackBonus: number;
   attackBonusLabel: string;
+  criticalMinimum: number;
   damage: string;
   versatileDamage?: string;
   damageType: string;
@@ -74,6 +76,9 @@ const weaponPropertyLabels = {
 } as const;
 
 const weaponProficiencyAliases: Record<string, string[]> = {
+  handarmbrust: ["Handarmbrüste"],
+  sichel: ["Sicheln"],
+  schleuder: ["Schleudern"],
   club: ["Keulen", "Knüppel"],
   dagger: ["Dolche"],
   dart: ["Wurfpfeile"],
@@ -111,7 +116,7 @@ export function getEquippedWeaponAttacks(
       }
 
       const definition =
-        getEquipmentById(inventoryItem.id);
+        resolveInventoryItem(inventoryItem);
 
       if (
         !definition ||
@@ -126,27 +131,47 @@ export function getEquippedWeaponAttacks(
           definition,
           inventoryItem.quantity,
           inventory,
+          inventoryItem,
         ),
       ];
     },
   );
 }
 
+/** Reference values for a printed arsenal, without applying loadout-dependent damage bonuses. */
+export function getInventoryWeaponAttacks(character: CharacterArchiveEntry, inventory: CharacterInventory) {
+  return inventory.items.filter(item=>item.category==="weapon" && item.quantity>0).map(item=>{
+    const definition=resolveInventoryItem(item);
+    const attack=definition?.category==="weapon"
+      ? createWeaponAttackSummary(character,definition,item.quantity,inventory,item,true)
+      : undefined;
+    return {item,attack};
+  });
+}
+
 function createWeaponAttackSummary(
   character: CharacterArchiveEntry,
-  weapon: WeaponItem,
+  catalogWeapon: WeaponItem,
   quantity: number,
   inventory: CharacterInventory,
+  inventoryItem: CharacterInventory["items"][number],
+  printReference = false,
 ): WeaponAttackSummary {
+  const weapon = !inventoryItem.homebrew && character.classId === "monster-hunter" ? get2024WeaponDamage(catalogWeapon) : catalogWeapon;
   const proficient =
     isProficientWithWeapon(
       character,
       weapon,
     );
 
+  const isRanged = weapon.properties.includes("ammunition") || ["dart","netz"].includes(weapon.id);
+  const unarmored = !inventory.items.some(i => i.equipped && i.quantity > 0 && (i.category === "armor" || i.id === "shield"));
+  const martialArts = character.classId === "monk" && unarmored && !isRanged &&
+    (weapon.weaponCategory === "simple" || weapon.id === "shortsword") && !weapon.properties.some(p => p === "heavy" || p === "two-handed");
+  const attackWeapon = martialArts ? { ...weapon, properties: [...weapon.properties, "finesse" as const] } : weapon;
   const calculation =
     calculateWeaponAttack({
-      weapon,
+      weapon: attackWeapon,
       abilityScores: {
         ...defaultAbilityScores,
         ...character.abilityScores,
@@ -159,11 +184,14 @@ function createWeaponAttackSummary(
     });
 
   const fightingStyle = character.pathChoices?.[`${character.classId}-fighting-style`];
-  const isRanged = weapon.properties.includes("ammunition");
-  const otherEquippedWeapon = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "weapon" && item.id !== weapon.id);
+
+  const otherEquippedWeapon = inventory.items.some((item) => item.equipped && item.quantity > 0 && item.category === "weapon" && item.id !== inventoryItem.id);
   const isOneHandedMelee = !isRanged && !weapon.properties.includes("two-handed");
   const attackStyleBonus = fightingStyle === "archery" && isRanged ? 2 : 0;
-  const damageStyleBonus = fightingStyle === "dueling" && isOneHandedMelee && !otherEquippedWeapon ? 2 : 0;
+  const qualifiesForDueling = fightingStyle === "dueling" && isOneHandedMelee;
+  const damageStyleBonus = qualifiesForDueling && !otherEquippedWeapon && !printReference ? 2 : 0;
+  const expertStrike = character.classId === "monster-hunter" && character.level >= 5
+    ? Math.max(0, getAbilityModifier(character.abilityScores?.intelligence ?? 10)) : 0;
 
   const damageType =
     damageTypeLabels[
@@ -176,15 +204,24 @@ function createWeaponAttackSummary(
       : `${weapon.range.normal} ft`
     : undefined;
 
-  const properties =
+  const properties: string[] =
     weapon.properties.map(
       (property) =>
         weaponPropertyLabels[property],
     );
+  const masteries = character.pathChoices?.["monster-hunter-weapon-mastery"];
+  const mastery = character.classId === "monster-hunter" && Array.isArray(masteries) && masteries.includes(catalogWeapon.id)
+    ? getWeaponMastery2024(weapon.id) : undefined;
+  if (mastery) properties.push(`Meisterschaft: ${mastery}`);
+  const versatileDamage = weapon.versatile
+    ? formatDamage(weapon.versatile.dice, weapon.versatile.die, calculation.abilityModifier + expertStrike + homebrewWeaponBonus(inventoryItem,"damageBonus")) : undefined;
 
   const details = [
-    calculation.versatileDamage
-      ? `Vielseitig ${calculation.versatileDamage}`
+    printReference && qualifiesForDueling ? "Duellieren: +2 Schaden, wenn einhändig geführt und keine andere Waffe geführt wird" : undefined,
+    printReference && martialArts ? "Kampfkunst: Werte gelten ohne Rüstung und Schild" : undefined,
+    expertStrike ? `Meisterschlag +${expertStrike} Angriff und Schaden` : undefined,
+    versatileDamage
+      ? `Vielseitig ${versatileDamage}`
       : undefined,
     range
       ? `Reichweite ${range}`
@@ -198,8 +235,8 @@ function createWeaponAttackSummary(
     .join(" · ");
 
   return {
-    id: weapon.id,
-    name: weapon.name,
+    id: inventoryItem.id,
+    name: inventoryItem.name,
     quantity,
     abilityId: calculation.abilityId,
     abilityLabel:
@@ -208,13 +245,15 @@ function createWeaponAttackSummary(
       ],
     proficient,
     attackBonus:
-      calculation.attackBonus + attackStyleBonus,
+      calculation.attackBonus + attackStyleBonus + expertStrike + homebrewWeaponBonus(inventoryItem,"attackBonus"),
     attackBonusLabel:
-      formatSigned(calculation.attackBonus + attackStyleBonus),
-    damage: addFlatDamage(calculation.damage, damageStyleBonus),
-    versatileDamage:
-      calculation.versatileDamage,
-    damageType,
+      formatSigned(calculation.attackBonus + attackStyleBonus + expertStrike + homebrewWeaponBonus(inventoryItem,"attackBonus")),
+    criticalMinimum: character.classId === "fighter" && character.subclassId === "champion" && character.level >= 3
+      ? (character.level >= 15 ? 18 : 19)
+      : 20,
+    damage: formatDamage(weapon.damage.dice, martialArts ? Math.max(weapon.damage.die, character.level >= 5 ? 6 : 4) : weapon.damage.die, calculation.abilityModifier + damageStyleBonus + expertStrike + homebrewWeaponBonus(inventoryItem,"damageBonus")),
+    versatileDamage,
+    damageType: weapon.damage.dice ? damageType : "",
     range,
     properties,
     details,
@@ -235,7 +274,8 @@ function isProficientWithWeapon(
     return false;
   }
 
-  const subclassProficiencies = getSubclassProficiencyPackage(character.classId ?? "", character.subclassId);
+  if (character.ancestryId === "dwarf" && ["battleaxe","handaxe","leichter-hammer","warhammer"].includes(weapon.id)) return true;
+  const subclassProficiencies = getSubclassProficiencyPackage(character.classId ?? "", character.subclassId, character.level);
   const proficiencies = [
     ...classDefinition.weaponProficiencies,
     ...(subclassProficiencies?.weapons ?? []),
@@ -264,4 +304,13 @@ function isProficientWithWeapon(
 }
 
 function formatSigned(value: number): string { return value >= 0 ? `+${value}` : `${value}`; }
-function addFlatDamage(damage: string, bonus: number): string { return bonus > 0 ? `${damage} +${bonus}` : damage; }
+function get2024WeaponDamage(weapon: WeaponItem): WeaponItem {
+  if (weapon.id === "lanze") return { ...weapon, damage: { ...weapon.damage, die: 10 } };
+  if (weapon.id !== "dreizack" && weapon.id !== "kriegspicke") return weapon;
+  return {
+    ...weapon,
+    damage: { ...weapon.damage, die: 8 },
+    versatile: { ...weapon.damage, die: 10 },
+    properties: [...new Set([...weapon.properties, "versatile" as const])],
+  };
+}

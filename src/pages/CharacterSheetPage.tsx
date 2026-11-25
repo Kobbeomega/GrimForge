@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { DeathSavesPanel } from "../modules/sheet/components/DeathSavesPanel";
 import { LevelUpPanel } from "../modules/level-up/LevelUpPanel";
 import { MAX_LEVEL_UP_LEVEL } from "../modules/level-up/levelUp";
 import { getClassById } from "../compendium/classes";
 
 import { CharacterPrintView } from "../modules/print/CharacterPrintView";
-import { downloadBlankGrimHollowSheet, exportGrimHollowSheet } from "../modules/print/exportGrimHollowSheet";
+import { downloadBlankGrimHollowSheet, exportGrimforgePlayPdf, exportGrimHollowSheet } from "../modules/print/exportGrimHollowSheet";
 
 import { exportSingleCharacter } from "../modules/archives/io/characterArchiveIO";
 
@@ -43,9 +44,9 @@ import {
   AbilitySealGrid,
 } from "../modules/sheet/components/AbilitySealGrid";
 
-import {
-  CharacterQuickOverview,
-} from "../modules/sheet/components/CharacterQuickOverview";
+import { SessionDashboard } from "../modules/sheet/components/SessionDashboard";
+import { SubclassStats } from "../modules/sheet/components/SubclassStats";
+import { tableConditions } from "../modules/sheet/tableConditions";
 
 import {
   CharacterSheetHeader,
@@ -91,6 +92,7 @@ import type {
   CharacterArchiveEntry,
   CharacterInventory,
   CharacterVitals,
+  DeathSaves,
 } from "../modules/archives/types";
 
 type CharacterSheetSection =
@@ -121,12 +123,12 @@ const sheetSections: Array<{
   {
     id: "overview",
     chapter: "I",
-    title: "Übersicht",
+    title: "Spieltisch",
   },
   {
     id: "rolls",
     chapter: "II",
-    title: "Würfe",
+    title: "Proben",
   },
   {
     id: "combat",
@@ -146,7 +148,7 @@ const sheetSections: Array<{
   {
     id: "magic",
     chapter: "VI",
-    title: "Grimoire",
+    title: "Zauber",
   },
   {
     id: "transformation",
@@ -160,15 +162,6 @@ const sheetSections: Array<{
   },
 ];
 
-const statusLabels: Record<
-  CharacterArchiveEntry["status"],
-  string
-> = {
-  active: "Aktiv",
-  draft: "Entwurf",
-  retired: "Im Ruhestand",
-  deceased: "Verstorben",
-};
 
 export function CharacterSheetPage({
   character,
@@ -177,6 +170,12 @@ export function CharacterSheetPage({
 }: CharacterSheetPageProps) {
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [levelUpNotice, setLevelUpNotice] = useState("");
+  const [undoStack, setUndoStack] = useState<Array<{ id: string; before: CharacterArchiveEntry; note: string }>>([]);
+  const currentUndo = undoStack.length && undoStack[undoStack.length - 1]?.id === character.id
+    ? undoStack[undoStack.length - 1] : undefined;
+  const deathSaves: DeathSaves = { successes: Math.max(0, Math.min(3, character.deathSaves?.successes ?? 0)),
+    failures: Math.max(0, Math.min(3, character.deathSaves?.failures ?? 0)) };
+  const exhaustionLevel = Math.max(0, Math.min(6, character.exhaustionLevel ?? (character.conditionIds?.includes("exhaustion") ? 1 : 0)));
   const [
     activeSection,
     setActiveSection,
@@ -202,9 +201,11 @@ export function CharacterSheetPage({
     );
 
   function updateCharacter(
-    changes:
-      Partial<CharacterArchiveEntry>,
+    changes: Partial<CharacterArchiveEntry>,
+    note = "Änderung an der Akte",
   ) {
+    setUndoStack((old) => [...old.filter((entry) => entry.id === character.id),
+      { id: character.id, before: character, note }].slice(-8));
     onUpdateCharacter({
       ...character,
       ...changes,
@@ -214,12 +215,42 @@ export function CharacterSheetPage({
     });
   }
 
-  function updateVitals(
-    nextVitals: CharacterVitals,
-  ) {
-    updateCharacter({
-      vitals: nextVitals,
-    });
+  function updateVitals(nextVitals: CharacterVitals) {
+    updateCharacter({ vitals: nextVitals }, "Trefferpunkte / Spielwerte");
+  }
+
+  function handleUndo() {
+    if (!currentUndo) return;
+    onUpdateCharacter({ ...currentUndo.before, updatedAt: new Date().toISOString() });
+    setUndoStack((old) => old.slice(0, -1));
+    setLevelUpNotice(`Rückgängig: ${currentUndo.note}.`);
+  }
+
+  function updateDeathSaves(successes: number, failures: number, note: string) {
+    updateCharacter({ deathSaves: {
+      successes: Math.max(0, Math.min(3, successes)),
+      failures: Math.max(0, Math.min(3, failures)),
+    } }, note);
+    setLevelUpNotice(note);
+  }
+
+  function handleMarkDeathSave(type: "success" | "failure") {
+    if (vitals.currentHitPoints !== 0 || deathSaves.successes >= 3 || deathSaves.failures >= 3) return;
+    updateDeathSaves(deathSaves.successes + (type === "success" ? 1 : 0),
+      deathSaves.failures + (type === "failure" ? 1 : 0),
+      type === "success" ? "Todesrettungswurf: Erfolg markiert." : "Todesrettungswurf: Fehlschlag markiert.");
+  }
+
+  function handleResetDeathSaves() {
+    updateDeathSaves(0, 0, "Todesrettungswürfe zurückgesetzt.");
+  }
+
+  function handleExhaustion(level: number) {
+    const safe = Math.max(0, Math.min(6, Math.floor(level)));
+    updateCharacter({ exhaustionLevel: safe, conditionIds: safe > 0
+      ? [...new Set([...(character.conditionIds ?? []), "exhaustion"])]
+      : (character.conditionIds ?? []).filter((id) => id !== "exhaustion") }, "Erschöpfung angepasst");
+    setLevelUpNotice(`Erschöpfung: Stufe ${safe}.`);
   }
 
   function updateInventory(
@@ -260,6 +291,7 @@ export function CharacterSheetPage({
   }
 
   function toggleCondition(conditionId: string) {
+    if (conditionId === "exhaustion") { handleExhaustion(exhaustionLevel > 0 ? 0 : 1); return; }
     const conditionIds = new Set(character.conditionIds ?? []);
     const conditionLabel = tableConditions.find((condition) => condition.id === conditionId)?.label ?? "Status";
     if (conditionIds.has(conditionId)) {
@@ -269,7 +301,7 @@ export function CharacterSheetPage({
       conditionIds.add(conditionId);
       setLevelUpNotice(`${conditionLabel} markiert.`);
     }
-    updateCharacter({ conditionIds: [...conditionIds] });
+    updateCharacter({ conditionIds: [...conditionIds] }, "Zustand geändert");
   }
 
   function handleDamage(
@@ -313,7 +345,9 @@ export function CharacterSheetPage({
             remainingDamage,
         ),
     });
-    setLevelUpNotice(`${safeAmount} Schaden angewendet.`);
+    const concentration = (character.conditionIds ?? []).includes("concentrating") && safeAmount > 0
+      ? ` Konzentration: KO-Rettungswurf gegen SG ${Math.max(10, Math.floor(safeAmount / 2))} erforderlich.` : "";
+    setLevelUpNotice(`${safeAmount} Schaden angewendet.${concentration}`);
   }
 
   function handleHeal(
@@ -328,7 +362,11 @@ export function CharacterSheetPage({
           : 0,
       );
 
-    updateVitals({
+    const healed = Math.min(vitals.maximumHitPoints, vitals.currentHitPoints + safeAmount);
+    updateCharacter({
+      ...(healed > 0 ? { deathSaves: { successes: 0, failures: 0 },
+        conditionIds: (character.conditionIds ?? []).filter((id) => id !== "unconscious") } : {}),
+      vitals: {
       ...vitals,
 
       currentHitPoints:
@@ -340,8 +378,9 @@ export function CharacterSheetPage({
             .currentHitPoints +
             safeAmount,
         ),
-    });
-    setLevelUpNotice(`${safeAmount} Trefferpunkte geheilt.`);
+      },
+    }, "Heilung");
+    setLevelUpNotice(`${healed - vitals.currentHitPoints} Trefferpunkte geheilt (${healed}/${vitals.maximumHitPoints}).`);
   }
 
   function handleTemporaryHitPointsChange(
@@ -393,24 +432,30 @@ export function CharacterSheetPage({
     setLevelUpNotice("Ressource wiederhergestellt.");
   }
 
-  function handleUseHitDie() {
+  function handleUseHitDie(rolled: number) {
     const hitDie = getClassById(character.classId ?? "")?.hitDie;
     const totalHitDice = Math.max(1, character.level);
     const spentHitDice = Math.min(character.spentHitDice ?? 0, totalHitDice);
     if (!hitDie || spentHitDice >= totalHitDice) return;
 
     const constitutionModifier = Math.floor(((character.abilityScores?.constitution ?? 10) - 10) / 2);
-    const roll = Math.floor(Math.random() * hitDie) + 1;
+    // The player rolls physical dice and enters the result; no RNG in GrimForge.
+    if (!Number.isInteger(rolled) || rolled < 1 || rolled > hitDie) return;
+    const roll = rolled;
     const recoveredHitPoints = Math.max(0, roll + constitutionModifier);
 
     updateCharacter({
       spentHitDice: spentHitDice + 1,
+      ...(vitals.currentHitPoints === 0 && recoveredHitPoints > 0 ? {
+        deathSaves: { successes: 0, failures: 0 },
+        conditionIds: (character.conditionIds ?? []).filter((id) => id !== "unconscious"),
+      } : {}),
       vitals: {
         ...vitals,
         currentHitPoints: Math.min(vitals.maximumHitPoints, vitals.currentHitPoints + recoveredHitPoints),
       },
     });
-    setLevelUpNotice(`Trefferwürfel: W${hitDie} zeigt ${roll}, ${recoveredHitPoints} TP geheilt.`);
+    setLevelUpNotice(`Trefferwürfel: W${hitDie} zeigt ${roll}, ${Math.min(recoveredHitPoints, vitals.maximumHitPoints - vitals.currentHitPoints)} TP geheilt.`);
   }
 
   function handleToggleInspiration() {
@@ -421,12 +466,13 @@ export function CharacterSheetPage({
   function handleShortRest() {
     const rules = calculateCharacterRules(createCharacterRuleInput(character));
     updateCharacter({
+      ...(derivedStats.spellcasting.pactSlots && character.spellcasting ? { spellcasting: { ...character.spellcasting, slots: { ...character.spellcasting.slots, spentPactSlots: 0 } } } : {}),
       spentClassResources: restoreClassResourcesByRest({
         resources: rules.classResources,
         rest: "short-rest",
       }),
     });
-    setLevelUpNotice("Kurze Rast: passende Klassenressourcen erneuert.");
+    setLevelUpNotice(derivedStats.spellcasting.pactSlots ? "Kurze Rast: Paktplätze und passende Klassenressourcen erneuert." : "Kurze Rast: passende Klassenressourcen erneuert.");
   }
 
   function handleLongRest() {
@@ -438,6 +484,7 @@ export function CharacterSheetPage({
       );
 
     updateCharacter({
+      deathSaves: { successes: 0, failures: 0 },
       vitals: {
         ...vitals,
         currentHitPoints:
@@ -472,7 +519,7 @@ export function CharacterSheetPage({
         },
       },
     });
-    setLevelUpNotice("Lange Rast: TP, Zauberplätze und passende Ressourcen erneuert.");
+    setLevelUpNotice("Lange Rast: TP, Zauberplätze und passende Ressourcen erneuert. Erschöpfung ggf. nach Regelbedingungen reduzieren.");
   }
 
   return (
@@ -491,53 +538,34 @@ export function CharacterSheetPage({
 
         <div className="sheet-toolbar__actions">
           <GrimButton type="button" disabled={levelUpOpen || character.level >= MAX_LEVEL_UP_LEVEL || !getClassById(character.classId ?? "")}
-            title={character.level >= MAX_LEVEL_UP_LEVEL ? "Der aktuelle Regelumfang reicht bis Stufe 5." : "Nächste Charakterstufe vorbereiten"}
+            title={character.level >= MAX_LEVEL_UP_LEVEL ? `Der aktuelle Regelumfang reicht bis Stufe ${MAX_LEVEL_UP_LEVEL}.` : "Nächste Charakterstufe vorbereiten"}
             onClick={() => { setLevelUpNotice(""); setLevelUpOpen(true); }}>
-            {character.level >= MAX_LEVEL_UP_LEVEL ? "Stufe 5 erreicht" : "Level-up"}
+            {character.level >= MAX_LEVEL_UP_LEVEL ? `Stufe ${MAX_LEVEL_UP_LEVEL} erreicht` : "Level-up"}
           </GrimButton>
-          <GrimButton
-            type="button"
-            onClick={() => exportSingleCharacter(character)}
-          >
-            Akte exportieren
+          <GrimButton type="button" onClick={() => exportGrimforgePlayPdf(character)}>
+            Spielakte (A4)
           </GrimButton>
-
-          <GrimButton
-            type="button"
-            onClick={() => void exportGrimHollowSheet(character)}
-          >
-            Grim-Hollow-PDF
-          </GrimButton>
-
-          <GrimButton
-            type="button"
-            onClick={downloadBlankGrimHollowSheet}
-          >
-            Leerer Bogen
-          </GrimButton>
-
-          <GrimButton
-            type="button"
-            onClick={() => window.print()}
-          >
-            Charakter drucken
-          </GrimButton>
+          <details className="sheet-export">
+            <summary>Weitere Exporte</summary>
+            <div className="sheet-export__actions">
+              <GrimButton type="button" onClick={() => exportSingleCharacter(character)}>Akte exportieren</GrimButton>
+              <small><strong>Datensicherung:</strong> Der Charakter wird im Browser gespeichert. Regelmäßig „Akte exportieren“ nutzen – besonders vor Updates oder Browserwechseln.</small>
+              <GrimButton type="button" onClick={() => void exportGrimHollowSheet(character)}>Grim-Hollow-Original (PDF)</GrimButton>
+              <GrimButton type="button" onClick={downloadBlankGrimHollowSheet}>Leerer Bogen</GrimButton>
+              <GrimButton type="button" onClick={() => window.print()}>Charakter drucken</GrimButton>
+            </div>
+          </details>
         </div>
-
-        <span className="sheet-toolbar__status">
-          Status:{" "}
-          {
-            statusLabels[
-              character.status
-            ]
-          }
-        </span>
       </div>
 
-      {levelUpNotice && <p className="sheet-session-notice" role="status">{levelUpNotice}</p>}
+      {(levelUpNotice || currentUndo) && <div className="gf-action-feedback" role="status">
+        {levelUpNotice && <span>{levelUpNotice}</span>}
+        {currentUndo && <button type="button" onClick={handleUndo} aria-label={`${currentUndo.note} rückgängig machen`}>↶ Rückgängig</button>}
+      </div>}
       {levelUpOpen ? <LevelUpPanel key={`${character.id}-${character.level}`} character={character}
         onCancel={() => setLevelUpOpen(false)} onSave={(next) => {
           onUpdateCharacter(next);
+          setUndoStack([]);
           setLevelUpOpen(false);
           setLevelUpNotice(`Aufstieg gespeichert: ${next.name} ist jetzt Stufe ${next.level}.`);
         }} /> : <div className="sheet-layout">
@@ -626,6 +654,13 @@ export function CharacterSheetPage({
               }
               onNavigate={setActiveSection}
               onToggleCondition={toggleCondition}
+              onSpendClassResource={handleSpendClassResource}
+              onRestoreClassResource={handleRestoreClassResource}
+              deathSaves={deathSaves}
+              exhaustionLevel={exhaustionLevel}
+              onMarkDeathSave={handleMarkDeathSave}
+              onResetDeathSaves={handleResetDeathSaves}
+              onExhaustionChange={handleExhaustion}
             />
           )}
 
@@ -731,7 +766,7 @@ interface CharacterOverviewProps {
 
   onLongRest: () => void;
 
-  onUseHitDie: () => void;
+  onUseHitDie: (rolled: number) => void;
 
   onToggleInspiration: () => void;
 
@@ -740,6 +775,13 @@ interface CharacterOverviewProps {
   onNavigate: (section: CharacterSheetSection) => void;
 
   onToggleCondition: (conditionId: string) => void;
+  onSpendClassResource: (resourceId: string, maximum: number) => void;
+  onRestoreClassResource: (resourceId: string) => void;
+  deathSaves: DeathSaves;
+  exhaustionLevel: number;
+  onMarkDeathSave: (type: "success" | "failure") => void;
+  onResetDeathSaves: () => void;
+  onExhaustionChange: (level: number) => void;
 }
 
 function CharacterOverview({
@@ -757,295 +799,97 @@ function CharacterOverview({
   rulesSection,
   onNavigate,
   onToggleCondition,
+  onSpendClassResource,
+  onRestoreClassResource,
+  deathSaves,
+  exhaustionLevel,
+  onMarkDeathSave,
+  onResetDeathSaves,
+  onExhaustionChange,
 }: CharacterOverviewProps) {
-  const classLabel = [
-    character.className,
-    character.subclass,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const weight = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
 
   return (
     <section className="sheet-overview">
-      <header className="sheet-overview__header">
-        <p>
-          {character.fileNumber}
-        </p>
-
-        <h2>
-          {character.name}
-        </h2>
-
-        <span>
-          {character.summary}
-        </span>
-      </header>
-
-      <CharacterQuickOverview
-        vitals={vitals}
-        derivedStats={
-          derivedStats
-        }
-      />
-
       <SessionDashboard
         character={character}
         vitals={vitals}
         derivedStats={derivedStats}
+        onDamage={onDamage}
+        onHeal={onHeal}
+        onShortRest={onShortRest}
+        onLongRest={onLongRest}
         onNavigate={onNavigate}
         onToggleCondition={onToggleCondition}
+        onSpendClassResource={onSpendClassResource}
+        onRestoreClassResource={onRestoreClassResource}
       />
 
-      <dl className="sheet-overview__facts">
-        <div>
-          <dt>Abstammung</dt>
-
-          <dd>
-            {character.ancestry}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Hintergrund</dt>
-
-          <dd>
-            {character
-              .backgroundName ??
-              "Nicht gespeichert"}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Klasse</dt>
-
-          <dd>
-            {classLabel}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Stufe</dt>
-
-          <dd>
-            {character.level}
-          </dd>
-        </div>
-
-        <div>
-          <dt>Status</dt>
-
-          <dd>
-            {
-              statusLabels[
-                character.status
-              ]
-            }
-          </dd>
-        </div>
-
-        <div>
-          <dt>Wandlung</dt>
-
-          <dd>
-            {character
-              .transformation ||
-              "Keine Wandlung"}
-          </dd>
-        </div>
-
-        <div>
-          <dt>
-            Geübte Fertigkeiten
-          </dt>
-
-          <dd>
-            {
-              character
-                .skillProficiencies
-                ?.length ?? 0
-            }
-          </dd>
-        </div>
-
-        <div>
-          <dt>
-            Zuletzt geändert
-          </dt>
-
-          <dd>
-            {formatDate(
-              character.updatedAt,
-            )}
-          </dd>
-        </div>
-      </dl>
-
-      <VitalPanel
-        vitals={vitals}
-        onDamage={
-          onDamage
-        }
-        onHeal={
-          onHeal
-        }
-        onTemporaryHitPointsChange={
-          onTemporaryHitPointsChange
-        }
-        onVitalsChange={
-          onVitalsChange
-        }
-        onShortRest={
-          onShortRest
-        }
-        onLongRest={
-          onLongRest
-        }
-        hitDie={getClassById(character.classId ?? "")?.hitDie}
-        totalHitDice={Math.max(1, character.level)}
-        spentHitDice={character.spentHitDice ?? 0}
-        onUseHitDie={onUseHitDie}
-        inspiration={character.inspiration ?? false}
-        onToggleInspiration={onToggleInspiration}
-      />
-
-      {rulesSection}
-
-      {character
-        .abilityScores && (
+      {vitals.currentHitPoints === 0 ?
+        <DeathSavesPanel vitals={vitals} saves={deathSaves} onMark={onMarkDeathSave}
+          onReset={onResetDeathSaves} /> :
+        <details className="gf-status-disclosure"><summary>Todesrettungswürfe (bei 0 TP)</summary>
+          <DeathSavesPanel vitals={vitals} saves={deathSaves} onMark={onMarkDeathSave}
+            onReset={onResetDeathSaves} />
+        </details>}
+      <section className="gf-exhaustion" aria-label="Erschöpfung verwalten">
+        <div><h3>Erschöpfung</h3><p>Stufe 0–6 · die Folgen werden nicht automatisch auf Werte angewendet.</p></div>
+        <label>Stufe <select value={exhaustionLevel} onChange={(event) => onExhaustionChange(Number(event.target.value))}>
+          {[0,1,2,3,4,5,6].map((level) => <option key={level} value={level}>{level}</option>)}
+        </select></label>
+        {exhaustionLevel > 0 && <p className="gf-exhaustion__effect">{[
+          "", "Nachteil auf Attributsproben", "Bewegung halbiert", "Nachteil auf Angriffe und Rettungswürfe",
+          "TP-Maximum halbiert", "Bewegung 0", "Tod (SL entscheidet)",
+        ][exhaustionLevel]}{exhaustionLevel > 1 ? " · Alle niedrigeren Stufen gelten ebenfalls." : ""}</p>}
+      </section>
+      {character.abilityScores && (
         <section className="sheet-overview__abilities">
-          <div className="sheet-overview__section-heading">
-            <p>
-              Grundwerte
-            </p>
-
-            <h3>
-              Attribute
-            </h3>
-
-            <span>
-              Die vollständigen
-              Würfwerte findest du
-              im Kapitel „Würfe“.
-            </span>
-          </div>
-
-          <AbilitySealGrid
-            values={
-              character
-                .abilityScores
-            }
-          />
+          <h3>Attribute</h3>
+          <AbilitySealGrid values={character.abilityScores} />
         </section>
       )}
+
+      <details className="table-board-disclosure">
+        <summary>Trefferwürfel, Inspiration und Spielwerte bearbeiten</summary>
+        <VitalPanel
+          vitals={vitals}
+          effectiveSpeed={derivedStats.speed}
+          onDamage={onDamage}
+          onHeal={onHeal}
+          onTemporaryHitPointsChange={onTemporaryHitPointsChange}
+          onVitalsChange={onVitalsChange}
+          onShortRest={onShortRest}
+          onLongRest={onLongRest}
+          hitDie={getClassById(character.classId ?? "")?.hitDie}
+          totalHitDice={Math.max(1, character.level)}
+          spentHitDice={character.spentHitDice ?? 0}
+          onUseHitDie={onUseHitDie}
+          inspiration={character.inspiration ?? false}
+          onToggleInspiration={onToggleInspiration}
+        />
+      </details>
+
+      <details className="table-board-disclosure">
+        <summary>Klassenmerkmale und Ressourcen verwalten</summary>
+        <SubclassStats character={character} />
+        {rulesSection}
+      </details>
+
+      <details className="table-board-disclosure">
+        <summary>Hintergrund und weitere Werte</summary>
+        <dl className="table-board__more">
+          <div><dt>Hintergrund</dt><dd>{character.backgroundName || "Nicht gespeichert"}</dd></div>
+          <div><dt>Passive Nachforschungen</dt><dd>{derivedStats.passiveScores.investigation}</dd></div>
+          <div><dt>Passives Motiv erkennen</dt><dd>{derivedStats.passiveScores.insight}</dd></div>
+          <div><dt>Traglast</dt><dd>{weight.format(derivedStats.totalWeight)} / {weight.format(derivedStats.carryingCapacity)} kg</dd></div>
+          <div><dt>Geübte Fertigkeiten</dt><dd>{character.skillProficiencies?.length ?? 0}</dd></div>
+          {derivedStats.spellcasting.enabled && <>
+            <div><dt>Zauberfokus</dt><dd>{derivedStats.spellcasting.focusLabel ?? "Keiner"}</dd></div>
+            <div><dt>Ritualmagie</dt><dd>{derivedStats.spellcasting.ritualCasting ? "Ja" : "Nein"}</dd></div>
+          </>}
+        </dl>
+      </details>
     </section>
   );
-}
-
-const tableConditions = [
-  { id: "concentrating", label: "Konzentration", hint: "Bei Schaden Konzentrationswurf prüfen." },
-  { id: "blessed", label: "Gesegnet", hint: "+1W4 auf Angriffe und Rettungswürfe." },
-  { id: "frightened", label: "Verängstigt", hint: "Nachteil, solange die Quelle sichtbar ist." },
-  { id: "poisoned", label: "Vergiftet", hint: "Nachteil auf Angriffe und Attributswürfe." },
-  { id: "restrained", label: "Festgesetzt", hint: "Bewegung 0, Angriffe gegen dich mit Vorteil." },
-  { id: "exhaustion", label: "Erschöpfung", hint: "Stufe im Notizfeld festhalten." },
-  { id: "unconscious", label: "Bewusstlos", hint: "Kampfunfähig, am Boden, automatische kritische Nahkampftreffer." },
-];
-
-function SessionDashboard({
-  character,
-  vitals,
-  derivedStats,
-  onNavigate,
-  onToggleCondition,
-}: {
-  character: CharacterArchiveEntry;
-  vitals: CharacterVitals;
-  derivedStats: ReturnType<typeof getCharacterDerivedStats>;
-  onNavigate: (section: CharacterSheetSection) => void;
-  onToggleCondition: (conditionId: string) => void;
-}) {
-  const activeConditions = new Set(character.conditionIds ?? []);
-  const activeConditionList = tableConditions.filter((condition) => activeConditions.has(condition.id));
-  const spellcasting = character.spellcasting;
-  const spentSlots = Object.values(spellcasting?.slots.spentSlots ?? {}).reduce((sum, value) => sum + value, 0);
-  const resourceCount = Object.keys(character.spentClassResources ?? {}).length;
-
-  return (
-    <section className="session-dashboard" aria-label="Spieltisch">
-      <header className="session-dashboard__header">
-        <div>
-          <p>Spieltisch</p>
-          <h3>Schnellzugriff</h3>
-        </div>
-        <div className="session-dashboard__nav">
-          <button type="button" onClick={() => onNavigate("combat")}>Kampf</button>
-          <button type="button" onClick={() => onNavigate("magic")}>Zauber</button>
-          <button type="button" onClick={() => onNavigate("journal")}>Notizen</button>
-        </div>
-      </header>
-
-      <dl className="session-dashboard__metrics">
-        <div><dt>TP</dt><dd>{vitals.currentHitPoints}/{vitals.maximumHitPoints}</dd></div>
-        <div><dt>Temp</dt><dd>{vitals.temporaryHitPoints}</dd></div>
-        <div><dt>RK</dt><dd>{derivedStats.armorClass}</dd></div>
-        <div><dt>INI</dt><dd>{vitals.initiativeModifier >= 0 ? "+" : ""}{vitals.initiativeModifier}</dd></div>
-        <div><dt>Passive Wahrnehmung</dt><dd>{derivedStats.passivePerception}</dd></div>
-        <div><dt>Slots verbraucht</dt><dd>{spentSlots}</dd></div>
-        <div><dt>Ressourcen</dt><dd>{resourceCount}</dd></div>
-      </dl>
-
-      <div className="session-dashboard__conditions">
-        {tableConditions.map((condition) => {
-          const selected = activeConditions.has(condition.id);
-          return (
-            <button
-              key={condition.id}
-              type="button"
-              className={selected ? "session-condition session-condition--active" : "session-condition"}
-              aria-pressed={selected}
-              onClick={() => onToggleCondition(condition.id)}
-            >
-              {condition.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeConditionList.length > 0 && (
-        <div className="session-dashboard__active">
-          <span>Aktiv</span>
-          {activeConditionList.map((condition) => (
-            <strong key={condition.id} title={condition.hint}>
-              {condition.label}
-            </strong>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function formatDate(
-  value: string,
-): string {
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return "Unbekannt";
-  }
-
-  return new Intl.DateTimeFormat(
-    "de-DE",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    },
-  ).format(date);
 }
 

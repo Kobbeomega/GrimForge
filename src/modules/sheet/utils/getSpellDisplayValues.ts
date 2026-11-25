@@ -17,6 +17,7 @@ export interface SpellDisplayValues {
   damage?: {
     dice: string;
     type: string;
+    note?: string;
   };
 
   healing?: {
@@ -33,6 +34,7 @@ export interface SpellDisplayValues {
   };
 
   usesSpellAttack: boolean;
+  attackCount?: number;
 
   spellAttackBonus?: number;
 
@@ -41,6 +43,8 @@ export interface SpellDisplayValues {
 
 interface GetSpellDisplayValuesOptions {
   spell: SpellDefinition;
+  lifeDomainHealing?: boolean;
+  invocations?: string | string[];
 
   characterLevel: number;
 
@@ -73,6 +77,8 @@ const damageTypeLabels: Record<
 export function getSpellDisplayValues({
   spell,
   characterLevel,
+  lifeDomainHealing = false,
+  invocations = [],
   spellcastingAbilityModifier = 0,
   spellAttackBonus,
   spellSaveDifficultyClass,
@@ -87,17 +93,18 @@ export function getSpellDisplayValues({
 
   const damage = damageDice
     ? {
-        dice: formatSpellDice(
-          damageDice,
-        ),
+        dice: spell.damage?.flatModifier ? formatDiceWithModifier(damageDice,spell.damage.flatModifier) : spell.damage?.addsCastingModifier || (spell.id === "eldritch-blast" && (Array.isArray(invocations) ? invocations : [invocations]).includes("agonizing-blast"))
+          ? formatDiceWithModifier(damageDice, spellcastingAbilityModifier)
+          : formatSpellDice(damageDice),
 
-        type:
-          damageTypeLabels[
-            spell.damage!.damageType
-          ],
+        type: (spell.damage!.selectableTypes ?? [spell.damage!.damageType, spell.damage!.alternativeDamageType])
+          .flatMap((id) => id ? [damageTypeLabels[id]] : []).join(" oder "),
+        note: spell.damageNote,
       }
     : undefined;
 
+  const healingModifier = (spell.healing?.addsCastingModifier === false ? 0 : spellcastingAbilityModifier) +
+    (lifeDomainHealing && spell.level > 0 ? 2 + spell.level : 0);
   const healing = spell.healing
     ? {
         dice: formatSpellDice(
@@ -105,18 +112,18 @@ export function getSpellDisplayValues({
         ),
 
         modifier:
-          spellcastingAbilityModifier,
+          healingModifier,
 
         formatted:
-          formatHealingValue(
+          formatDiceWithModifier(
             spell.healing.dice,
-            spellcastingAbilityModifier,
+            healingModifier,
           ),
       }
     : undefined;
 
   const savingThrowAbility =
-    spell.damage
+    spell.savingThrowAbility ?? spell.damage
       ?.savingThrowAbility;
 
   const savingThrow =
@@ -134,25 +141,13 @@ export function getSpellDisplayValues({
             spellSaveDifficultyClass,
 
           resultOnSuccess:
-            spell.damage
-              ?.halfDamageOnSave
+            spell.savingThrowNote ?? (spell.damage?.halfDamageOnSave
               ? "Halber Schaden bei Erfolg"
-              : "Kein Schaden bei Erfolg",
+              : spell.damage?.savingThrowAbility === savingThrowAbility ? "Kein Schaden bei Erfolg" : ""),
         }
       : undefined;
 
-  /*
-   * Direkter Zauberangriff:
-   * Der Zauber verursacht Schaden, verlangt
-   * aber keinen Rettungswurf.
-   *
-   * Automatisch treffende Zauber wie
-   * Magisches Geschoss sind eine Ausnahme.
-   */
-  const usesSpellAttack =
-    Boolean(spell.damage) &&
-    !savingThrowAbility &&
-    spell.id !== "magic-missile";
+  const usesSpellAttack = spell.attackRoll === true;
 
   return {
     damage,
@@ -160,6 +155,7 @@ export function getSpellDisplayValues({
     savingThrow,
 
     usesSpellAttack,
+    attackCount: spell.numberOfAttacks?.(characterLevel),
 
     spellAttackBonus:
       usesSpellAttack
@@ -244,7 +240,7 @@ export function formatSpellDice(
   return `${dice.dice}W${dice.die}`;
 }
 
-function formatHealingValue(
+function formatDiceWithModifier(
   dice: SpellDice,
   modifier: number,
 ): string {

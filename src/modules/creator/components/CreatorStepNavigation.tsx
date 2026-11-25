@@ -27,14 +27,14 @@ export function CreatorStepNavigation({
   completedStepIds,
   onStepChange,
 }: CreatorStepNavigationProps) {
-  const completedCount = completedStepIds.length;
-  const progress = Math.round((completedCount / creatorSteps.length) * 100);
+  const position = creatorSteps.findIndex(step => step.id === activeStepId) + 1;
+  const progress = 100 * position / creatorSteps.length;
 
   return (
     <nav className="creator-step-nav" aria-label="Kapitel der Charaktererstellung">
       <header className="creator-step-nav__header">
         <p>Schicksalsfaden</p>
-        <strong>{progress}% vollendet</strong>
+        <strong>Schritt {position} von {creatorSteps.length}</strong>
         <div className="creator-step-nav__progress" aria-hidden="true">
           <span style={{ width: `${progress}%` }} />
         </div>
@@ -66,11 +66,7 @@ export function CreatorStepNavigation({
                 <span className="creator-step-nav__copy">
                   <strong>{step.shortTitle}</strong>
                   <small>
-                    {isCompleted
-                      ? "Abgeschlossen"
-                      : isActive
-                        ? "Aktives Kapitel"
-                        : "Noch offen"}
+                    {isActive ? "Aktives Kapitel" : isCompleted ? "Besucht" : "Noch offen"}
                   </small>
                 </span>
 

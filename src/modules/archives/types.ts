@@ -25,6 +25,11 @@ export type CharacterStatus =
   | "deceased"
   | "draft";
 
+export interface DeathSaves {
+  successes: number;
+  failures: number;
+}
+
 export interface CharacterVitals {
   maximumHitPoints: number;
   currentHitPoints: number;
@@ -43,7 +48,14 @@ export type InventoryItemCategory =
   | "treasure"
   | "other";
 
+export type HomebrewEquipment = { price: number } & (
+  | { kind: "gear" }
+  | { kind: "weapon"; dice: number; die: number; damageType: "slashing" | "piercing" | "bludgeoning"; martial: boolean; finesse: boolean; ranged: boolean; thrown?: boolean; rangeNormal?: number; rangeLong?: number; twoHanded: boolean; attackBonus: number; damageBonus: number }
+  | { kind: "armor" | "shield"; armorClass: number; dexterity: "none" | "limited" | "full" }
+);
 export interface CharacterInventoryItem {
+  homebrew?: HomebrewEquipment;
+  catalogId?: string;
   id: string;
   name: string;
 
@@ -199,6 +211,8 @@ export interface CharacterArchiveEntry {
   abilityScores?: AbilityScores;
 
   vitals?: CharacterVitals;
+  /** Stored movement excludes equipment-dependent class bonuses. */
+  movementBaseVersion?: 1;
 
   inventory?: CharacterInventory;
 
@@ -224,6 +238,12 @@ export interface CharacterArchiveEntry {
 
   /** Schnelle Spieltisch-Marker wie vergiftet, konzentriert oder erschöpft. */
   conditionIds?: string[];
+
+  /** Optional, permanent tracker for death saving throws. */
+  deathSaves?: DeathSaves;
+
+  /** 2014 rules: exhaustion level 0–6; not the same as a boolean condition. */
+  exhaustionLevel?: number;
 
   sealId?: string;
 

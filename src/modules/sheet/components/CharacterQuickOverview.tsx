@@ -115,7 +115,7 @@ export function CharacterQuickOverview({
 
         <QuickStat
           label="Bewegung"
-          value={`${vitals.speed} m`}
+          value={`${derivedStats.speed} m`}
         />
 
         <QuickStat

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   createEmptyCharacterDraft,
@@ -20,14 +20,22 @@ export function useCharacterCreator({
   fileNumber,
   initialDraft,
 }: UseCharacterCreatorOptions) {
+  const key = "grimforge.creator.v1." + (initialDraft ? initialDraft.id + "." + initialDraft.updatedAt : "neu." + fileNumber);
+  function clearDraft() { try { sessionStorage.removeItem(key); } catch { /* Storage may be disabled. */ } }
   const [state, setState] =
-    useState<CharacterCreatorState>(() => ({
+    useState<CharacterCreatorState>(() => {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(key) ?? "null");
+        if (cached?.draft?.fileNumber === fileNumber && Array.isArray(cached.completedSteps) && creatorSteps.some(step => step.id === cached.draft.currentStep)) return cached;
+      } catch { /* Start fresh if this tab has no usable draft. */ }
+      return {
       draft:
         initialDraft ??
         createEmptyCharacterDraft(fileNumber),
 
       completedSteps: [],
-    }));
+    }; });
+  useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(state)); } catch { /* Continue in memory. */ } }, [key,state]);
 
   const currentStep = useMemo<
     CreatorStepDefinition
@@ -205,5 +213,6 @@ export function useCharacterCreator({
     resetCreator,
 
     replaceDraft,
+    clearDraft,
   };
 }

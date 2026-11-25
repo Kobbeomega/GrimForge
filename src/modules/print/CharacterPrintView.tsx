@@ -1,4 +1,6 @@
-import { getClassById } from "../../compendium/classes";
+import { getBeastCompanion } from "../sheet/utils/getBeastCompanion";
+import { getSubclassSheetStats } from "../sheet/utils/getSubclassSheetStats";
+import { getClassById, getSubclassById } from "../../compendium/classes";
 import { getBackgroundById } from "../../compendium/backgrounds";
 import { createPortal } from "react-dom";
 import {
@@ -11,7 +13,7 @@ import {
 import { getSpellById } from "../../compendium/spells";
 import { getFeatById } from "../../compendium/feats";
 import { getGrantedSubclassSpellIds } from "../../compendium/classes";
-import { getTransformationById } from "../../compendium/transformations";
+import { resolveCharacterTransformation, transformationApplicationLabels, type ActiveTransformationFeature } from "../../compendium/transformations/activeRecord";
 import { calculateCharacterRules } from "../../rules";
 import { createCharacterRuleInput } from "../sheet/rules/createCharacterRuleInput";
 import { getCharacterDerivedStats } from "../sheet/utils/getCharacterDerivedStats";
@@ -21,6 +23,7 @@ import { getSpellDisplayValues } from "../sheet/utils/getSpellDisplayValues";
 import type { CharacterArchiveEntry } from "../archives/types";
 import type { TransformationFeatureKind } from "../../compendium/transformations";
 import "./character-print.css";
+import "./folio.css";
 
 interface CharacterPrintViewProps {
   character: CharacterArchiveEntry;
@@ -39,6 +42,12 @@ const tableConditionLabels: Record<string, string> = {
 };
 
 export function CharacterPrintView({ character }: CharacterPrintViewProps) {
+  return createPortal(<CharacterPrintSheets character={character} />, document.body);
+}
+
+export function CharacterPrintSheets({ character }: CharacterPrintViewProps) {
+  const companion = getBeastCompanion(character);
+  const subclass = getSubclassById(character.classId ?? "", character.subclassId ?? "");
   const backgroundDefinition = getBackgroundById(character.backgroundId ?? "");
   const currentBackgroundFeature =
     backgroundDefinition?.feature ?? character.backgroundFeature;
@@ -48,30 +57,10 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
   const rules = calculateCharacterRules(createCharacterRuleInput(character));
   const abilityScores = { ...defaultAbilityScores, ...character.abilityScores };
 
-  const transformation = character.transformationId
-    ? getTransformationById(character.transformationId)
-    : undefined;
-  const selectedTransformationIds = new Set(character.transformationFeatureIds ?? []);
-  const activeTransformationStages = transformation?.stages.filter(
-    (stage) => stage.stage <= (character.transformationStage ?? 0),
-  ) ?? [];
-  const transformationBoons = activeTransformationStages.flatMap((stage) =>
-    [...(stage.automaticFeatures ?? []), ...(stage.boons ?? []), ...(stage.features ?? [])]
-      .filter((feature) =>
-        feature.kind === "passive" ||
-        feature.kind === "action" ||
-        feature.kind === "reaction" ||
-        feature.kind === "benefit"
-          ? (stage.automaticFeatures ?? []).some((automatic) => automatic.id === feature.id) || selectedTransformationIds.has(feature.id)
-          : false,
-      )
-      .map((feature) => ({ ...feature, stage: stage.stage })),
-  );
-  const transformationFlaws = activeTransformationStages.flatMap((stage) =>
-    [...(stage.flaws ?? []), ...(stage.features ?? [])]
-      .filter((feature) => feature.kind === "drawback" && selectedTransformationIds.has(feature.id))
-      .map((feature) => ({ ...feature, stage: stage.stage })),
-  );
+  const transformationRecord=resolveCharacterTransformation(character);
+  const transformation=transformationRecord.definition;
+  const transformationBoons=transformationRecord.features.filter(f=>f.group!=="flaw");
+  const transformationFlaws=transformationRecord.features.filter(f=>f.group==="flaw");
 
   const grantedSpellIds = getGrantedSubclassSpellIds({
     classId: character.classId ?? "",
@@ -99,6 +88,8 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
     .map(({ spell, selection }) => {
       const display = getSpellDisplayValues({
         spell,
+        invocations: character.pathChoices?.["warlock-invocations"],
+        lifeDomainHealing: character.classId === "cleric" && character.subclassId === "life-domain",
         characterLevel: character.level,
         spellcastingAbilityModifier: derived.spellcasting.abilityModifier,
         spellAttackBonus: derived.spellcasting.spellAttackBonus,
@@ -106,7 +97,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
       });
 
       const mechanic = display.damage
-        ? `${display.damage.dice} ${display.damage.type}`
+        ? `${display.attackCount && display.attackCount > 1 ? display.attackCount + "× je " : spell.id === "magic-missile" ? "3× je " : ""}${display.damage.dice} ${display.damage.type}`
         : display.healing
           ? display.healing.formatted
           : display.savingThrow
@@ -146,31 +137,22 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
     })
     .join(" · ");
 
-  const spentSpellSlotCount = Object.entries(derived.spellcasting.spellSlots)
-    .filter(([, total]) => (total ?? 0) > 0)
-    .reduce((sum, [level]) => {
-      const spent = character.spellcasting?.slots.spentSlots[
-        Number(level) as keyof typeof character.spellcasting.slots.spentSlots
-      ] ?? 0;
-      return sum + spent;
-    }, 0);
   const activeConditionLabels = (character.conditionIds ?? [])
     .map((conditionId) => tableConditionLabels[conditionId] ?? conditionId)
     .filter(Boolean);
   const resourceSummary = rules.classResources
     .filter((resource) => resource.maximum > 0)
-    .slice(0, 4)
     .map((resource) => `${resource.name}: ${resource.remaining}/${resource.maximum}`);
   const hitDieLabel = `W${getClassById(character.classId ?? "")?.hitDie ?? "—"}`;
   const chosenFeats = (character.featIds ?? [])
     .map((featId) => getFeatById(featId))
     .filter((feat): feat is NonNullable<typeof feat> => Boolean(feat));
 
-  const identitySubtitle = [character.className, character.level ? `Stufe ${character.level}` : "", character.ancestry]
+  const identitySubtitle = [character.className, subclass?.name, character.level ? `Stufe ${character.level}` : "", character.ancestry]
     .filter(Boolean)
     .join(" · ");
 
-  return createPortal(
+  return (
     <div className="character-print-root" aria-hidden="true">
       {/* PAGE 1 — table-ready core sheet */}
       <section className="print-sheet print-sheet--core">
@@ -229,8 +211,8 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
 
             <div className="print-death-strip">
               <strong>Todesrettungen</strong>
-              <span>Erfolge ○ ○ ○</span>
-              <span>Fehlschläge ○ ○ ○</span>
+              <span>Erfolge {[1,2,3].map(n => n <= (character.deathSaves?.successes ?? 0) ? "●" : "○").join(" ")}</span>
+              <span>Fehlschläge {[1,2,3].map(n => n <= (character.deathSaves?.failures ?? 0) ? "●" : "○").join(" ")}</span>
             </div>
 
             <div className="print-death-strip print-reserve-strip">
@@ -242,9 +224,8 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
             <PrintPanel title="Live am Tisch" compact>
               <div className="print-tabletop-grid">
                 <PrintNumberLine label="Aktive Zustände" value={activeConditionLabels.length > 0 ? activeConditionLabels.join(" · ") : "Keine"} />
-                <PrintNumberLine label="Trefferwürfel" value={`${Math.max(0, character.level - (character.spentHitDice ?? 0))}/${character.level} ${hitDieLabel}`} />
-                <PrintNumberLine label="Inspiration" value={character.inspiration ? "Vorhanden" : "Offen"} />
-                <PrintNumberLine label="Slots verbraucht" value={derived.spellcasting.enabled ? spentSpellSlotCount : "—"} />
+                {!!character.exhaustionLevel && <PrintNumberLine label="Erschöpfung" value={`Stufe ${character.exhaustionLevel}/6`} />}
+                <PrintNumberLine label="Unterklasse" value={subclass?.name ?? "—"} />
               </div>
               {resourceSummary.length > 0 && (
                 <div className="print-tabletop-resources">
@@ -253,14 +234,15 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
               )}
             </PrintPanel>
 
-            <PrintPanel title="Angriffe & Zauberwirken">
+            <PrintPanel title="Angriffe">
+              {rules.classFeatures.some(feature => feature.id.endsWith("-extra-attack")) && <p>Angriffsaktion: zwei Angriffe.</p>}
               <div className="print-attacks-grid" role="table" aria-label="Angriffe und Zauberwirken">
                 <div className="print-attacks-head" role="row">
                   <span>Name</span>
                   <span>Angriff</span>
                   <span>Schaden / Art</span>
                 </div>
-                {derived.equippedWeapons.slice(0, 5).map((weapon) => (
+                {derived.equippedWeapons.map((weapon) => (
                   <div className="print-attack-row" role="row" key={weapon.id}>
                     <div className="print-attack-name">
                       <strong>{weapon.name}</strong>
@@ -293,6 +275,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                   <span><b>Attribut</b> {derived.spellcasting.abilityId ? abilityShortLabels[derived.spellcasting.abilityId] : "—"}</span>
                   <span><b>SG</b> {derived.spellcasting.spellSaveDifficultyClass ?? "—"}</span>
                   <span><b>Angriff</b> {formatAbilityModifier(derived.spellcasting.spellAttackBonus ?? 0)}</span>
+                  {derived.spellcasting.pactSlots && <span><b>Paktplätze</b> {Math.max(0, derived.spellcasting.pactSlots.slots - (character.spellcasting?.slots.spentPactSlots ?? 0))}/{derived.spellcasting.pactSlots.slots} · Grad {derived.spellcasting.pactSlots.slotLevel}</span>}
                   {pageOneSlotSummary && <span className="print-page1-slots"><b>Plätze</b> {pageOneSlotSummary}</span>}
                 </div>
                 <div className="print-page1-spells">
@@ -303,11 +286,46 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                       <em>{spell.mechanic}</em>
                     </div>
                   ))}
+                  {spells.length > pageOneSpells.length && <span>Weitere Zauber: siehe Zauberblatt.</span>}
                   {pageOneSpells.length === 0 && <PrintRuleLine text="Keine vorbereiteten Zauber." />}
                 </div>
               </PrintPanel>
             )}
 
+            <PrintPanel title="Notizen" grow>
+              <div className="print-notes-area" aria-label="Notizen">
+                {Array.from({ length: derived.spellcasting.enabled ? 12 : 18 }, (_, index) => (
+                  <div className="print-note-line" key={index} />
+                ))}
+              </div>
+            </PrintPanel>
+          </main>
+
+          <aside className="print-core-right">
+            <PrintPanel title="Fertigkeiten" compact>
+              <div className="print-skills-list">
+                {rules.skillBonuses.map((skill) => (
+                  <div key={skill.id}>
+                    <b>{skill.expertise ? "◆" : skill.proficient ? "●" : "○"}</b>
+                    <span>{formatAbilityModifier(skill.bonus)}</span>
+                    <em>{skill.name}</em>
+                  </div>
+                ))}
+              </div>
+            </PrintPanel>
+
+          </aside>
+        </div>
+      </section>
+
+      <section className="print-sheet folio-details">
+        <PrintBanner title="Merkmale & Ausrüstung" subtitle={identitySubtitle} />
+        <p>{character.name}</p>
+        {companion && <PrintPanel title={"Tiergefährte: " + companion.name}>
+          <p>RK {companion.armor} · TP {companion.hp} · {companion.speed} · Passive Wahrnehmung {companion.passive}</p>
+          {companion.attacks.map(a => <p key={a.name}>{a.name}: {a.attack} · {a.damage} {a.note}</p>)}<p>{companion.traits}</p>
+        </PrintPanel>}
+        {getSubclassSheetStats(character).map(stat => <p key={stat.label}><b>{stat.label}: {stat.value}</b>{stat.condition && " · " + stat.condition}</p>)}
             <PrintPanel title="Klassenmerkmale & Ressourcen" compact>
               <div className="print-class-feature-grid">
                 {classFeatureRows.map((feature) => (
@@ -345,46 +363,22 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
               </PrintPanel>
             )}
 
-            <PrintPanel title="Notizen" grow>
-              <div className="print-notes-area" aria-label="Notizen">
-                {Array.from({ length: derived.spellcasting.enabled ? 12 : 18 }, (_, index) => (
-                  <div className="print-note-line" key={index} />
-                ))}
-              </div>
-            </PrintPanel>
-          </main>
-
-          <aside className="print-core-right">
-            <PrintPanel title="Fertigkeiten" compact>
-              <div className="print-skills-list">
-                {rules.skillBonuses.map((skill) => (
-                  <div key={skill.id}>
-                    <b>{skill.expertise ? "◆" : skill.proficient ? "●" : "○"}</b>
-                    <span>{formatAbilityModifier(skill.bonus)}</span>
-                    <em>{skill.name}</em>
-                  </div>
-                ))}
-              </div>
-            </PrintPanel>
-
             <PrintPanel title="Ausrüstung & Währung" grow>
               <div className="print-currency">GM {inventory.currency.gold} · SM {inventory.currency.silver} · KM {inventory.currency.copper}</div>
               <div className="print-inventory-list">
-                {inventory.items.slice(0, 15).map((item) => (
-                  <PrintRuleLine key={item.id} text={`${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}${item.equipped ? " · ●" : ""}`} />
+                {inventory.items.map((item) => (
+                  <PrintRuleLine key={item.id} text={`${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}${item.equipped ? " · ●" : ""}${item.homebrew && item.notes ? " · " + item.notes : ""}`} />
                 ))}
               </div>
             </PrintPanel>
 
             <PrintPanel title="Werkzeuge & Sprachen">
-              {(character.toolProficiencies ?? []).slice(0, 5).map((tool) => <PrintRuleLine key={tool} text={tool} />)}
+              {(character.toolProficiencies ?? []).map((tool) => <PrintRuleLine key={tool} text={tool} />)}
               {(character.languageChoices ?? 0) > 0 && <PrintRuleLine text={`Zusätzliche Sprachen: ${character.languageChoices}`} />}
               {(character.toolProficiencies ?? []).length === 0 && (character.languageChoices ?? 0) === 0 && emptyLines.slice(0, 2).map((line) => <PrintRuleLine key={line} />)}
             </PrintPanel>
-          </aside>
-        </div>
-      </section>
 
+      </section>
       {/* PAGE 2 — story / transformation */}
       <section className="print-sheet print-sheet--story">
         <PrintBanner title={character.name || "Unbenannter Charakter"} subtitle="GESCHICHTE · TRANSFORMATION · SCHÄTZE" />
@@ -430,19 +424,20 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
 
         <PrintPanel title="Transformation">
           <div className="print-transformation-meta">
-            <PrintNumberLine label="Typ" value={transformation?.name || character.transformation || "Keine"} />
-            <PrintNumberLine label="Stufe" value={character.transformationStage ?? 0} />
+            <PrintNumberLine label="Typ" value={transformationRecord.name || "Keine"} />
+            <PrintNumberLine label="Stufe" value={transformationRecord.stage} />
             <PrintNumberLine label="Ursprung" value={transformation?.origin || "—"} />
           </div>
+          {transformationRecord.warning && <p>{transformationRecord.warning}</p>}
           <div className="print-transformation-grid">
             <div>
               <h3>Segen & Merkmale</h3>
-              {transformationBoons.slice(0, 8).map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
+              {transformationBoons.map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
               {transformationBoons.length === 0 && emptyLines.slice(0, 4).map((line) => <PrintRuleLine key={line} />)}
             </div>
             <div>
               <h3>Makel & Konsequenzen</h3>
-              {transformationFlaws.slice(0, 8).map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
+              {transformationFlaws.map((feature) => <PrintTransformationRule key={`${feature.stage}-${feature.id}`} feature={feature} />)}
               {transformationFlaws.length === 0 && emptyLines.slice(0, 4).map((line) => <PrintRuleLine key={line} />)}
             </div>
           </div>
@@ -469,12 +464,14 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
             <PrintStat label="Zauberangriff" value={formatAbilityModifier(derived.spellcasting.spellAttackBonus ?? 0)} />
             <PrintStat label="Fokus" value={derived.spellcasting.focusLabel || "—"} />
           </div>
+          {derived.spellcasting.pactSlots && <p>Paktplätze: {Math.max(0, derived.spellcasting.pactSlots.slots - (character.spellcasting?.slots.spentPactSlots ?? 0))}/{derived.spellcasting.pactSlots.slots} frei · Grad {derived.spellcasting.pactSlots.slotLevel}</p>}
           <div className="print-spell-grid">
-            {spellGroups.map(({ level, spells: levelSpells }) => (
+            {spellGroups.filter(group => group.spells.length || derived.spellcasting.spellSlots[group.level as keyof typeof derived.spellcasting.spellSlots]).map(({ level, spells: levelSpells }) => (
               <PrintPanel key={level} title={level === 0 ? "Zaubertricks" : `Grad ${level}`} compact>
-                {level > 0 && (
+                {level > 0 && Boolean(derived.spellcasting.spellSlots[level as keyof typeof derived.spellcasting.spellSlots] || derived.spellcasting.pactSlots?.slotLevel === level) && (
                   <div className="print-slot-row">
-                    <b>Plätze</b>
+                    <b>{derived.spellcasting.pactSlots?.slotLevel === level ? "Paktplätze" : "Plätze"}</b>
+                    {derived.spellcasting.pactSlots?.slotLevel === level && <span>{Math.max(0, derived.spellcasting.pactSlots.slots - (character.spellcasting?.slots.spentPactSlots ?? 0))}/{derived.spellcasting.pactSlots.slots} frei</span>}
                     <span>{Array.from({ length: derived.spellcasting.spellSlots[level as keyof typeof derived.spellcasting.spellSlots] ?? 0 }, (_, index) => {
                       const spent = character.spellcasting?.slots.spentSlots[level as keyof typeof character.spellcasting.slots.spentSlots] ?? 0;
                       return <i key={index}>{index < spent ? "●" : "○"}</i>;
@@ -491,6 +488,8 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                   {levelSpells.map(({ spell, selection }) => {
                     const display = getSpellDisplayValues({
                       spell,
+                      invocations: character.pathChoices?.["warlock-invocations"],
+        lifeDomainHealing: character.classId === "cleric" && character.subclassId === "life-domain",
                       characterLevel: character.level,
                       spellcastingAbilityModifier: derived.spellcasting.abilityModifier,
                       spellAttackBonus: derived.spellcasting.spellAttackBonus,
@@ -499,7 +498,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
 
                     const effectParts: string[] = [];
                     if (display.damage) {
-                      effectParts.push(`${display.damage.dice} ${display.damage.type}`);
+                      effectParts.push(`${display.attackCount && display.attackCount > 1 ? display.attackCount + "× je " : spell.id === "magic-missile" ? "3× je " : ""}${display.damage.dice} ${display.damage.type}`);
                     }
                     if (display.healing) {
                       effectParts.push(`${display.healing.formatted} Heilung`);
@@ -527,7 +526,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
                         <span className="print-spell-prepared">{selection.prepared ? "●" : "○"}</span>
                         <strong className="print-spell-name">{spell.name}</strong>
                         <span className="print-spell-range">{spell.range || "—"}</span>
-                        <span className="print-spell-effect">{effect}</span>
+                        <span className="print-spell-effect">{effect !== "—" && <b>{effect} · </b>}{spell.description} <i>{[spell.castingTime, spell.duration, spell.concentration && "Konzentration", spell.ritual && "Ritual", [spell.components.verbal && "V", spell.components.somatic && "G", spell.components.material && ("M" + (spell.components.materialDescription ? ": "+spell.components.materialDescription : ""))].filter(Boolean).join("/"), spell.level > 0 && spell.higherLevels].filter(Boolean).join(" · ")}</i></span>
                       </div>
                     );
                   })}
@@ -586,8 +585,7 @@ export function CharacterPrintView({ character }: CharacterPrintViewProps) {
           )}
         </section>
       )}
-    </div>,
-    document.body,
+    </div>
   );
 }
 
@@ -634,14 +632,14 @@ function PrintNumberLine({ label, value }: { label: string; value: string | numb
 function PrintRuleLine({ text = "" }: { text?: string }) {
   return <div className="print-rule-line">{text}</div>;
 }
-function PrintTransformationRule({ feature }: { feature: { stage: number; name: string; description: string; kind: TransformationFeatureKind } }) {
+function PrintTransformationRule({ feature }: { feature: ActiveTransformationFeature }) {
   return (
     <article className={`print-transformation-rule print-transformation-rule--${feature.kind}`}>
       <header>
         <strong>{feature.stage}. {feature.name}</strong>
         <span>{formatPrintFeatureKind(feature.kind)}</span>
       </header>
-      <p>{feature.description}</p>
+      <p><b>{transformationApplicationLabels[feature.application]}:</b> {feature.description}</p>
     </article>
   );
 }

@@ -1,3 +1,4 @@
+import "./compact-choices.css";
 import {
   classes,
   getCharacterPathChoices,
@@ -11,6 +12,7 @@ interface ClassStepProps {
   selectedClassId: string;
   selectedSubclassId: string;
   level: number;
+  existingLevel?: number;
   pathChoices: CharacterPathChoices;
   onSelectClass: (classId: string) => void;
   onChangeLevel: (level: number) => void;
@@ -36,6 +38,7 @@ export function ClassStep({
   selectedClassId,
   selectedSubclassId,
   level,
+  existingLevel,
   pathChoices,
   onSelectClass,
   onChangeLevel,
@@ -71,12 +74,12 @@ export function ClassStep({
         <header className="creator-path-choices__header">
           <div>
             <span>Progression</span>
-            <h3>Startstufe</h3>
+            <h3>{existingLevel ? "Aktuelle Stufe" : "Startstufe"}</h3>
           </div>
-          <p>GrimForge bildet für den aktuellen Rules-Audit die Stufen 1 bis 3 vollständig ab.</p>
+          <p>{existingLevel ? `Stufe ${existingLevel} bleibt beim Bearbeiten erhalten. Zum Aufsteigen öffne den Charakterbogen.` : "Erste Figur? Starte auf Stufe 1. Beginnt eure Runde auf Stufe 2 oder 3, wähle diese direkt. Weitere Aufstiege bis Stufe 10 machst du im Charakterbogen."}</p>
         </header>
         <div className="creator-path-choice__options">
-          {[1, 2, 3].map((candidateLevel) => (
+          {(existingLevel ? [] : [1, 2, 3]).map((candidateLevel) => (
             <button
               key={candidateLevel}
               type="button"
@@ -95,7 +98,7 @@ export function ClassStep({
       </section>
 
       <div className="creator-class-dossier-grid">
-        {classes.map((entry, index) => {
+        {classes.map(entry => {
           const selected = entry.id === selectedClassId;
           const primaryAbilities = entry.primaryAbilities
             .map((abilityId) => abilityLabels[abilityId])
@@ -106,44 +109,37 @@ export function ClassStep({
           const levelOneFeatures = (entry.features ?? []).filter(
             (feature) => feature.level === 1,
           );
+          const startingFeatures = (entry.features ?? []).filter(
+            (feature) => feature.level <= level,
+          );
 
           return (
-            <button
-              key={entry.id}
-              type="button"
-              className={[
-                "creator-class-dossier",
-                selected ? "creator-class-dossier--selected" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-pressed={selected}
-              onClick={() => onSelectClass(entry.id)}
-            >
-              <span className="creator-class-dossier__number" aria-hidden="true">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-
-              <ArtworkHero
-                category="class"
-                entryId={entry.id}
-                eyebrow={entry.spellcasting ? "Arkaner Pfad" : "Kampfpfad"}
-                title={entry.name}
-                description={entry.description}
-                compact
-                className="creator-class-dossier__artwork"
-                badge={
-                  <span className="creator-class-dossier__artwork-badge">
-                    <small>Trefferwürfel</small>
-                    <strong>W{entry.hitDie}</strong>
-                  </span>
-                }
-              />
-
-              <strong className="creator-class-dossier__choice">
-                {selected ? "Gewählt" : "Wählen"}
-              </strong>
-
+            <article className="gf-choice" key={entry.id} data-selected={selected}>
+              <button type="button" className="gf-choice__pick" aria-pressed={selected} onClick={() => onSelectClass(entry.id)}>
+                <span className="gf-choice__copy"><strong>{entry.name}</strong><small>{primaryAbilities} · W{entry.hitDie}{entry.spellcasting ? " · Zauberwirken" : ""}</small></span>
+                <span className="gf-choice__state">{selected ? "✓ Gewählt" : "Wählen"}</span>
+              </button>
+              <dl className="gf-choice__quickfacts" aria-label={`Wichtige Werte für ${entry.name}`}>
+                <div>
+                  <dt>Rettungswürfe</dt>
+                  <dd>{savingThrows}</dd>
+                </div>
+                <div>
+                  <dt>Rüstung</dt>
+                  <dd>{entry.armorProficiencies.length > 0 ? entry.armorProficiencies.join(" · ") : "Keine"}</dd>
+                </div>
+                <div>
+                  <dt>Waffen</dt>
+                  <dd>{entry.weaponProficiencies.length > 0 ? entry.weaponProficiencies.join(" · ") : "Keine"}</dd>
+                </div>
+                <div>
+                  <dt>Merkmale bis Stufe {level}</dt>
+                  <dd>{startingFeatures.length > 0 ? startingFeatures.map((feature) => feature.name).join(" · ") : "Keine"}</dd>
+                </div>
+              </dl>
+              <details className="gf-choice__details">
+                <summary>Beschreibungen und vollständige Regeln</summary>
+                <ArtworkHero category="class" entryId={entry.id} eyebrow="Klassenprofil" title={entry.name} description={entry.description} compact />
               <dl className="creator-class-dossier__facts">
                 <div>
                   <dt>Primärattribute</dt>
@@ -199,7 +195,8 @@ export function ClassStep({
                 <span>{entry.subclasses.length} Unterklassen</span>
                 <span>{entry.spellcasting ? "Zauberwirken" : "Ohne Zauberwirken"}</span>
               </footer>
-            </button>
+              </details>
+            </article>
           );
         })}
       </div>
@@ -215,7 +212,7 @@ export function ClassStep({
           </header>
 
           <div className="creator-subclass-dossier__grid">
-            {selectedClass.subclasses.map((subclass) => {
+            {selectedClass.subclasses.filter((subclass) => !subclass.legacy || subclass.id === selectedSubclassId).map((subclass) => {
               const selected = selectedSubclassId === subclass.id;
               const unlockLevel = getSubclassUnlockLevel(selectedClass.id, subclass.id) ?? 1;
               const locked = level < unlockLevel;
