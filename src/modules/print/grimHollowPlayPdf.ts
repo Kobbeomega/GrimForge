@@ -62,7 +62,7 @@ export function makeGrimHollowPlayPdf(c:CharacterArchiveEntry): Uint8Array {
   pdf.metrics(abilityIds.map(id=>[abilityLabels[id],scores[id]+"  "+signed(getAbilityModifier(scores[id])),"Rettungswurf "+signed(rules.savingThrows[id])]),3);
   // Keep the complete skill overview together so a continuation page never
   // starts with unlabeled skill cells.
-  pdf.keepTogether(250);
+  pdf.keepTogether(205);
   pdf.heading("Fertigkeiten");
   pdf.cells(rules.skillBonuses.map(s=>[skillsById[s.id]?.name??s.id,signed(s.bonus)+(c.skillExpertise?.includes(s.id)?" · Expertise":s.proficient?" · Geübt":"")]),3);
   if(stats.spellcasting.enabled)pdf.row("Zauberwerte",join(["SG "+(stats.spellcasting.spellSaveDifficultyClass??"-"),"Angriff "+signed(stats.spellcasting.spellAttackBonus??0)]));
